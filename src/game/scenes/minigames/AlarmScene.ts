@@ -62,7 +62,7 @@ export class AlarmScene extends Phaser.Scene {
       this.endGame(reaction <= 500, reaction);
     });
 
-    emitGameState({ scene: 'AlarmScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'AlarmScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private triggerAlarm() {

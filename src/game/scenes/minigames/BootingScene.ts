@@ -88,7 +88,7 @@ export class BootingScene extends Phaser.Scene {
       },
     });
 
-    emitGameState({ scene: 'BootingScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'BootingScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private scheduleFreezes() {

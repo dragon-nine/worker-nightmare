@@ -25,23 +25,48 @@
   letter-spacing: 1px;
 }
 
+.stressInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.stressValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.stressFace {
+  font-size: 24px;
+}
+
 .progressList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .progressItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  padding: 4px 0;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 0;
+}
+
+.timeLabel {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  width: 36px;
+  flex-shrink: 0;
+  font-family: monospace;
 }
 
 .progressDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -72,6 +97,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 12px;
 }
 
 .stageNameActive {
@@ -80,7 +106,7 @@
 }
 
 .stageStatus {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -124,16 +150,14 @@
 
 .progressBarOuter {
   width: 100%;
-  height: 6px;
+  height: 8px;
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 3px;
-  margin-top: 12px;
+  border-radius: 4px;
   overflow: hidden;
 }
 
-.progressBarInner {
+.stressBarInner {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-accent), var(--color-success));
-  border-radius: 3px;
+  border-radius: 4px;
   transition: width 0.5s ease;
 }

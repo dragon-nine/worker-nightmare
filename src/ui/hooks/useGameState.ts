@@ -5,6 +5,7 @@ const DEFAULT_STATE: GameState = {
   scene: 'BootScene',
   progress: 0,
   allCleared: false,
+  stress: 0,
 };
 
 export function useGameState(): GameState {

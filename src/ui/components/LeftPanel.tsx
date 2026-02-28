@@ -8,14 +8,17 @@ interface Props {
 
 export function LeftPanel({ gameState }: Props) {
   const currentStage = STAGES.find(s => s.id === gameState.stageId) ?? null;
+  const timeDisplay = gameState.time
+    ? `${gameState.time} ${gameState.period ?? ''}`
+    : null;
 
   return (
     <aside className={styles.panel}>
       <div className={styles.card}>
         <div className={styles.cardTitle}>게임 소개</div>
         <p className={styles.description}>
-          평범한 직장인의 하루를 10개의 미니게임으로 체험하세요.
-          출근부터 퇴사까지, 과연 살아남을 수 있을까?
+          평범한 직장인의 하루를 처음부터 끝까지 체험하세요.
+          아침 7시부터 밤 11시까지, 과연 살아남을 수 있을까?
         </p>
       </div>
 
@@ -40,6 +43,9 @@ export function LeftPanel({ gameState }: Props) {
       {currentStage && (
         <div className={styles.card}>
           <div className={styles.cardTitle}>현재 스테이지</div>
+          {timeDisplay && (
+            <div className={styles.timeDisplay}>{timeDisplay}</div>
+          )}
           <div className={styles.currentStage}>
             <span className={styles.stageEmoji}>{currentStage.emoji}</span>
             <div className={styles.stageInfo}>

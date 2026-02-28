@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
-import { StageSelectScene } from './scenes/StageSelectScene';
+import { NarrativeScene } from './scenes/NarrativeScene';
 import { MinigameIntroScene } from './scenes/MinigameIntroScene';
 import { ResultScene } from './scenes/ResultScene';
 import { EndingScene } from './scenes/EndingScene';
@@ -24,13 +24,13 @@ export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     parent,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0a0a14',
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     scene: [
-      BootScene, StageSelectScene, MinigameIntroScene, ResultScene, EndingScene,
+      BootScene, NarrativeScene, MinigameIntroScene, ResultScene, EndingScene,
       AlarmScene, BootingScene, MenuRouletteScene, SleepFightScene, FileSaveScene,
       AltTabScene, ChargingScene, MosquitoScene, SomekScene, ResignScene,
     ],

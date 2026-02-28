@@ -86,7 +86,7 @@ export class MenuRouletteScene extends Phaser.Scene {
       },
     });
 
-    emitGameState({ scene: 'MenuRouletteScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'MenuRouletteScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private onStop() {

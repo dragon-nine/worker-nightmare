@@ -132,7 +132,7 @@ export class FileSaveScene extends Phaser.Scene {
       },
     });
 
-    emitGameState({ scene: 'FileSaveScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'FileSaveScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private shuffleFiles() {

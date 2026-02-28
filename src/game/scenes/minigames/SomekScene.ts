@@ -118,7 +118,7 @@ export class SomekScene extends Phaser.Scene {
       },
     });
 
-    emitGameState({ scene: 'SomekScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'SomekScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private updatePour(glassH: number, barH: number) {

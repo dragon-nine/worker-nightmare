@@ -114,7 +114,7 @@ export class ChargingScene extends Phaser.Scene {
       },
     });
 
-    emitGameState({ scene: 'ChargingScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'ChargingScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private movePlug() {

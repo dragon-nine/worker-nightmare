@@ -22,59 +22,67 @@ export class ResultScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const success = this.resultData.success;
 
-    if (success) {
-      GameManager.clearStage(this.resultData.stageId);
-    }
+    // 결과 기록
+    GameManager.recordResult(this.resultData.stageId, success);
 
     // 배경
     this.cameras.main.setBackgroundColor(success ? '#0d2818' : '#2e0a0a');
 
-    // 결과 이모지
-    const emoji = this.add.text(width / 2, height * 0.25, success ? '🎉' : '💀', {
-      fontSize: '90px',
+    // 결과 이모지 — 빠른 등장
+    const emoji = this.add.text(width / 2, height * 0.28, success ? '🎉' : '💀', {
+      fontSize: '80px',
     }).setOrigin(0.5).setScale(0);
 
     this.tweens.add({
-      targets: emoji, scale: 1, duration: 500, ease: 'Back.easeOut',
+      targets: emoji, scale: 1, duration: 400, ease: 'Back.easeOut',
     });
 
     // 결과 텍스트
-    this.add.text(width / 2, height * 0.48, success ? '성공!' : '실패...', {
-      fontFamily: 'sans-serif', fontSize: '52px',
+    this.add.text(width / 2, height * 0.5, success ? '성공!' : '실패...', {
+      fontFamily: 'sans-serif', fontSize: '48px',
       color: success ? '#00b894' : '#e94560',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // 서브 텍스트
+    // 서브 텍스트 — 실패해도 하루는 계속된다
     const subMsg = success
-      ? (GameManager.allCleared ? '모든 스테이지 클리어!' : `STAGE ${this.resultData.stageId} 클리어!`)
-      : '다시 도전해보세요...';
-
-    this.add.text(width / 2, height * 0.6, subMsg, {
-      fontFamily: 'sans-serif', fontSize: '20px', color: '#aaaaaa',
+      ? '그래, 이 정도면...'
+      : '어쨌든 하루는 계속된다...';
+    this.add.text(width / 2, height * 0.62, subMsg, {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#aaaaaa',
     }).setOrigin(0.5);
 
-    // 버튼
-    const btnY = height * 0.78;
-    const btnLabel = success
-      ? (GameManager.allCleared ? '엔딩 보기' : '다음으로')
-      : '재도전';
-    const btnColor = success ? 0x00b894 : 0xe94560;
+    // 스트레스 표시
+    const stressMsg = success ? 'Stress +5' : 'Stress +15';
+    const stressColor = success ? '#888888' : '#e94560';
+    const stressText = this.add.text(width / 2, height * 0.72, stressMsg, {
+      fontFamily: 'sans-serif', fontSize: '16px', color: stressColor,
+    }).setOrigin(0.5).setAlpha(0);
+    this.tweens.add({ targets: stressText, alpha: 1, duration: 300, delay: 400 });
 
-    const btn = this.add.rectangle(width / 2, btnY, 280, 56, btnColor)
-      .setInteractive({ useHandCursor: true });
-    this.add.text(width / 2, btnY, btnLabel, {
-      fontFamily: 'sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5);
+    // 자동 진행 (2초 후)
+    this.time.delayedCall(2000, () => {
+      GameManager.advanceStage();
 
-    btn.on('pointerdown', () => {
-      if (success && GameManager.allCleared) {
+      if (GameManager.currentStageIndex >= 10) {
+        // 모든 스테이지 완료 → 엔딩
         this.scene.start('EndingScene');
       } else {
-        this.scene.start('StageSelectScene');
+        // 다음 내러티브로
+        this.scene.start('NarrativeScene');
       }
     });
 
-    emitGameState({ scene: 'ResultScene', stageId: this.resultData.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    const stage = GameManager.getCurrentStage();
+    emitGameState({
+      scene: 'ResultScene',
+      stageId: this.resultData.stageId,
+      progress: GameManager.progress,
+      allCleared: GameManager.allCleared,
+      stress: GameManager.stress,
+      time: stage.time,
+      period: stage.period,
+      successCount: GameManager.successCount,
+    });
   }
 }

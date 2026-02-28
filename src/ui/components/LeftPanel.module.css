@@ -56,6 +56,13 @@
   white-space: nowrap;
 }
 
+.timeDisplay {
+  font-size: 13px;
+  color: var(--color-accent);
+  font-family: monospace;
+  margin-bottom: 8px;
+}
+
 .currentStage {
   display: flex;
   align-items: center;

@@ -90,7 +90,7 @@ export class ResignScene extends Phaser.Scene {
     // 터치 핸들러
     this.input.on('pointerdown', () => this.onTap());
 
-    emitGameState({ scene: 'ResignScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'ResignScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   update() {

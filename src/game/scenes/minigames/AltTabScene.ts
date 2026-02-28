@@ -48,7 +48,7 @@ export class AltTabScene extends Phaser.Scene {
     // 첫 경고 시작
     this.scheduleWarning();
 
-    emitGameState({ scene: 'AltTabScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'AltTabScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private showFunScreen() {

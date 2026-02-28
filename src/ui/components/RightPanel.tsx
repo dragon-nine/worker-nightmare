@@ -7,66 +7,80 @@ interface Props {
 }
 
 export function RightPanel({ gameState }: Props) {
-  const { progress } = gameState;
-  const percent = (progress / STAGES.length) * 100;
+  const { progress, stress, successCount } = gameState;
+  const stressPercent = Math.floor(stress ?? 0);
+  const survived = successCount ?? 0;
 
   return (
     <aside className={styles.panel}>
+      {/* 스트레스 게이지 */}
       <div className={styles.card}>
-        <div className={styles.cardTitle}>진행도</div>
+        <div className={styles.cardTitle}>스트레스</div>
+        <div className={styles.stressInfo}>
+          <span className={styles.stressValue}>{stressPercent}%</span>
+          <span className={styles.stressFace}>
+            {stressPercent < 30 ? '😊' : stressPercent < 60 ? '😐' : stressPercent < 80 ? '😤' : '🤯'}
+          </span>
+        </div>
+        <div className={styles.progressBarOuter}>
+          <div
+            className={styles.stressBarInner}
+            style={{
+              width: `${stressPercent}%`,
+              background: stressPercent > 70 ? '#ff0000' : stressPercent > 40 ? '#ff8800' : '#e94560',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 오늘의 하루 타임라인 */}
+      <div className={styles.card}>
+        <div className={styles.cardTitle}>오늘의 하루</div>
         <div className={styles.progressList}>
-          {STAGES.map((stage) => {
-            const cleared = stage.id <= progress;
-            const isCurrent = stage.id === progress + 1;
+          {STAGES.map((stage, i) => {
+            const isDone = i < progress;
+            const isCurrent = i === progress;
 
-            let dotClass = styles.dotCurrent;
-            let nameClass = `${styles.stageName} ${styles.stageNameActive}`;
-            let statusClass = styles.statusCurrent;
-            let statusText = '도전';
+            let dotClass = styles.dotLocked;
+            let nameClass = styles.stageName;
+            let statusText = '';
 
-            if (cleared) {
+            if (isDone) {
               dotClass = styles.dotCleared;
-              nameClass = styles.stageName;
-              statusClass = styles.statusCleared;
               statusText = '✓';
             } else if (isCurrent) {
               dotClass = styles.dotCurrent;
               nameClass = `${styles.stageName} ${styles.stageNameActive}`;
-              statusClass = styles.statusCurrent;
-              statusText = '진행중';
+              statusText = '▶';
             }
 
             return (
               <div key={stage.id} className={styles.progressItem}>
+                <span className={styles.timeLabel}>{stage.time}</span>
                 <div className={`${styles.progressDot} ${dotClass}`} />
                 <span className={nameClass}>
                   {stage.emoji} {stage.name}
                 </span>
-                <span className={`${styles.stageStatus} ${statusClass}`}>
+                <span className={`${styles.stageStatus} ${isDone ? styles.statusCleared : isCurrent ? styles.statusCurrent : styles.statusLocked}`}>
                   {statusText}
                 </span>
               </div>
             );
           })}
         </div>
-        <div className={styles.progressBarOuter}>
-          <div
-            className={styles.progressBarInner}
-            style={{ width: `${percent}%` }}
-          />
-        </div>
       </div>
 
+      {/* 통계 */}
       <div className={styles.card}>
         <div className={styles.cardTitle}>통계</div>
         <div className={styles.statsGrid}>
           <div className={styles.statBox}>
-            <div className={styles.statValue}>{progress}</div>
-            <div className={styles.statLabel}>클리어</div>
+            <div className={styles.statValue}>{survived}</div>
+            <div className={styles.statLabel}>성공</div>
           </div>
           <div className={styles.statBox}>
-            <div className={styles.statValue}>{STAGES.length - progress}</div>
-            <div className={styles.statLabel}>남은 스테이지</div>
+            <div className={styles.statValue}>{progress - survived}</div>
+            <div className={styles.statLabel}>실패</div>
           </div>
         </div>
       </div>

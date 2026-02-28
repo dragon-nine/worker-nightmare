@@ -101,7 +101,7 @@ export class SleepFightScene extends Phaser.Scene {
       this.cameras.main.shake(30, 0.003);
     });
 
-    emitGameState({ scene: 'SleepFightScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared });
+    emitGameState({ scene: 'SleepFightScene', stageId: this.stageId, progress: GameManager.progress, allCleared: GameManager.allCleared, stress: GameManager.stress });
   }
 
   private updateGauge() {
