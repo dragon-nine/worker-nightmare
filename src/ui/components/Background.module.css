@@ -1,0 +1,45 @@
+.background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 40%, var(--color-bg-secondary), var(--color-bg-primary));
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(233, 69, 96, 0.03) 39px,
+      rgba(233, 69, 96, 0.03) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(233, 69, 96, 0.03) 39px,
+      rgba(233, 69, 96, 0.03) 40px
+    );
+}
+
+.icon {
+  position: absolute;
+  font-size: 28px;
+  opacity: 0.04;
+  animation: floatIcon linear infinite;
+  pointer-events: none;
+}
+
+@keyframes floatIcon {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-110vh) rotate(360deg);
+  }
+}

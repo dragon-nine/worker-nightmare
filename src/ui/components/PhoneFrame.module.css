@@ -1,0 +1,78 @@
+.frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(145deg, var(--color-phone-bezel-start), var(--color-phone-bezel-end));
+  border-radius: var(--phone-radius);
+  padding: var(--phone-bezel);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: glowPulse 4s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba(233, 69, 96, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 0 40px rgba(233, 69, 96, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+.notch {
+  position: absolute;
+  top: var(--phone-bezel);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 24px;
+  background: #111;
+  border-radius: 0 0 14px 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a1a3a;
+  border: 1px solid #2a2a4a;
+}
+
+.screen {
+  width: 100%;
+  flex: 1;
+  border-radius: calc(var(--phone-radius) - var(--phone-bezel));
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+
+.homeBar {
+  position: absolute;
+  bottom: calc(var(--phone-bezel) + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  z-index: 2;
+}
