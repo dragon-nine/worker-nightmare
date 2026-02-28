@@ -4,7 +4,7 @@ export const STAGES: StageDef[] = [
   {
     id: 1, name: '지옥의 출근길', emoji: '🚇', time: '07:00', period: 'AM', bgColor: '#0a0a14',
     minigames: [
-      { id: 1, sceneKey: 'AlarmScene', name: '알람 0.1초 컷', description: '울리자마자 빛의 속도로 끄기' },
+      { id: 1, sceneKey: 'AlarmScene', name: '스마트폰 깨부수기', description: '알람을 끄는 진짜 방법' },
     ],
   },
   {
