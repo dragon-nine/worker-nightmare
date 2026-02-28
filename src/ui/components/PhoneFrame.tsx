@@ -8,13 +8,9 @@ interface Props {
 export function PhoneFrame({ children }: Props) {
   return (
     <div className={styles.frame}>
-      <div className={styles.notch}>
-        <div className={styles.camera} />
-      </div>
       <div className={styles.screen}>
         {children}
       </div>
-      <div className={styles.homeBar} />
     </div>
   );
 }

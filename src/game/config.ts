@@ -15,8 +15,8 @@ import { MosquitoScene } from './scenes/minigames/MosquitoScene';
 import { SomekScene } from './scenes/minigames/SomekScene';
 import { ResignScene } from './scenes/minigames/ResignScene';
 
-export const GAME_WIDTH = 390;
-export const GAME_HEIGHT = 844;
+export const GAME_WIDTH = 960;
+export const GAME_HEIGHT = 540;
 
 export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
   return {

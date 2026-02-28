@@ -19,10 +19,10 @@ export function RightPanel({ gameState }: Props) {
             const cleared = stage.id <= progress;
             const isCurrent = stage.id === progress + 1;
 
-            let dotClass = styles.dotLocked;
-            let nameClass = styles.stageName;
-            let statusClass = styles.statusLocked;
-            let statusText = '잠김';
+            let dotClass = styles.dotCurrent;
+            let nameClass = `${styles.stageName} ${styles.stageNameActive}`;
+            let statusClass = styles.statusCurrent;
+            let statusText = '도전';
 
             if (cleared) {
               dotClass = styles.dotCleared;

@@ -4,10 +4,7 @@ import { emitGameState } from '../../GameBridge';
 
 /**
  * 스테이지5: 파일 저장의 저주
- * - 여러 파일이 화면에 표시됨
- * - "진짜 최종" 파일을 찾아 터치
- * - 잘못 터치하면 실패
- * - 파일들이 셔플됨
+ * 2열→3열 그리드로 변경 (가로 모드)
  */
 export class FileSaveScene extends Phaser.Scene {
   private stageId = 0;
@@ -42,43 +39,46 @@ export class FileSaveScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#f5f5f5');
 
     // 윈도우 탐색기 느낌
-    this.add.rectangle(width / 2, 0, width, 80, 0x2b579a).setOrigin(0.5, 0);
-    this.add.text(20, 25, '📁 내 문서 > 보고서', {
-      fontFamily: 'sans-serif', fontSize: '15px', color: '#ffffff',
+    this.add.rectangle(width / 2, 0, width, 60, 0x2b579a).setOrigin(0.5, 0);
+    this.add.text(20, 20, '📁 내 문서 > 보고서', {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#ffffff',
     });
-    this.add.text(width / 2, 60, '올바른 최종 파일을 찾으세요!', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#aaccff',
+    this.add.text(width / 2, 42, '올바른 최종 파일을 찾으세요!', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#aaccff',
     }).setOrigin(0.5);
 
-    // 파일 배치
+    // 시간 제한
+    let timeLeft = 10;
+    const timerText = this.add.text(width - 20, 20, `${timeLeft}s`, {
+      fontFamily: 'sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(1, 0);
+
+    // 파일 배치 (3열 그리드)
     const shuffled = Phaser.Utils.Array.Shuffle([...this.fileNames]);
-    const cols = 2;
-    const cellW = (width - 30) / cols;
-    const cellH = 75;
-    const startY = 100;
+    const cols = 3;
+    const cellW = (width - 60) / cols;
+    const cellH = 70;
+    const startY = 80;
 
     shuffled.forEach((name, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const x = 15 + col * cellW + cellW / 2;
+      const x = 30 + col * cellW + cellW / 2;
       const y = startY + row * cellH + cellH / 2;
 
       const container = this.add.container(x, y);
 
-      const bg = this.add.rectangle(0, 0, cellW - 10, cellH - 8, 0xffffff)
+      const bg = this.add.rectangle(0, 0, cellW - 12, cellH - 8, 0xffffff)
         .setStrokeStyle(1, 0xdddddd)
         .setInteractive({ useHandCursor: true });
 
       // 파일 아이콘
-      const icon = this.add.text(-cellW / 2 + 15, 0, '📄', { fontSize: '24px' }).setOrigin(0, 0.5);
+      const icon = this.add.text(-cellW / 2 + 20, 0, '📄', { fontSize: '24px' }).setOrigin(0, 0.5);
 
-      // 파일 이름 (긴 이름은 줄바꿈)
-      const displayName = name.length > 16
-        ? name.substring(0, 16) + '\n' + name.substring(16)
-        : name;
-      const text = this.add.text(-cellW / 2 + 42, 0, displayName, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#333333',
-        wordWrap: { width: cellW - 65 },
+      // 파일 이름
+      const text = this.add.text(-cellW / 2 + 48, 0, name, {
+        fontFamily: 'sans-serif', fontSize: '13px', color: '#333333',
+        wordWrap: { width: cellW - 75 },
       }).setOrigin(0, 0.5);
 
       container.add([bg, icon, text]);
@@ -100,8 +100,8 @@ export class FileSaveScene extends Phaser.Scene {
         } else {
           bg.setFillStyle(0xffcdd2);
           bg.setStrokeStyle(2, 0xff4444);
-          this.add.text(width / 2, height - 60, `❌ 그건 최종이 아닙니다...`, {
-            fontFamily: 'sans-serif', fontSize: '16px', color: '#e94560', fontStyle: 'bold',
+          this.add.text(width / 2, height - 40, '❌ 그건 최종이 아닙니다...', {
+            fontFamily: 'sans-serif', fontSize: '18px', color: '#e94560', fontStyle: 'bold',
           }).setOrigin(0.5);
           this.time.delayedCall(1200, () => {
             this.scene.start('ResultScene', { stageId: this.stageId, success: false });
@@ -109,12 +109,6 @@ export class FileSaveScene extends Phaser.Scene {
         }
       });
     });
-
-    // 시간 제한
-    let timeLeft = 10;
-    const timerText = this.add.text(width - 15, 90, `${timeLeft}s`, {
-      fontFamily: 'sans-serif', fontSize: '18px', color: '#e94560', fontStyle: 'bold',
-    }).setOrigin(1, 0);
 
     this.time.addEvent({
       delay: 1000, repeat: 9,

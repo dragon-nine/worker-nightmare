@@ -29,22 +29,22 @@ export class AlarmScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0a0a14');
 
     // 자는 중 표시
-    const zzz = this.add.text(width / 2, height * 0.35, 'z Z z', {
-      fontFamily: 'sans-serif', fontSize: '64px', color: '#222244',
+    const zzz = this.add.text(width / 2, height * 0.3, 'z Z z', {
+      fontFamily: 'sans-serif', fontSize: '72px', color: '#222244',
     }).setOrigin(0.5);
 
     this.tweens.add({
-      targets: zzz, y: height * 0.3, alpha: 0.3,
+      targets: zzz, y: height * 0.25, alpha: 0.3,
       duration: 1500, yoyo: true, repeat: -1,
     });
 
     this.add.text(width / 2, height * 0.55, '알람이 울리면\n즉시 터치!', {
-      fontFamily: 'sans-serif', fontSize: '22px', color: '#444466',
+      fontFamily: 'sans-serif', fontSize: '26px', color: '#444466',
       align: 'center', lineSpacing: 6,
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.65, '(너무 빨리 누르면 실패!)', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#333355',
+    this.add.text(width / 2, height * 0.7, '(너무 빨리 누르면 실패!)', {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#333355',
     }).setOrigin(0.5);
 
     // 랜덤 딜레이 후 알람
@@ -73,9 +73,9 @@ export class AlarmScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#ff1a1a');
 
-    this.add.text(width / 2, height * 0.3, '⏰', { fontSize: '100px' }).setOrigin(0.5);
-    this.add.text(width / 2, height * 0.52, '지금!!', {
-      fontFamily: 'sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
+    this.add.text(width / 2, height * 0.25, '⏰', { fontSize: '120px' }).setOrigin(0.5);
+    this.add.text(width / 2, height * 0.55, '지금!!', {
+      fontFamily: 'sans-serif', fontSize: '56px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // 카메라 흔들림
@@ -93,8 +93,8 @@ export class AlarmScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.ended = true;
 
-    this.add.text(width / 2, height * 0.75, '아직 안 울렸어요!', {
-      fontFamily: 'sans-serif', fontSize: '20px', color: '#ff6666', fontStyle: 'bold',
+    this.add.text(width / 2, height * 0.8, '아직 안 울렸어요!', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#ff6666', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.time.delayedCall(1000, () => {
@@ -110,8 +110,8 @@ export class AlarmScene extends Phaser.Scene {
 
     if (success && reactionMs !== undefined) {
       this.cameras.main.setBackgroundColor('#0d2818');
-      this.add.text(width / 2, height * 0.7, `반응속도: ${reactionMs}ms`, {
-        fontFamily: 'sans-serif', fontSize: '22px', color: '#00b894', fontStyle: 'bold',
+      this.add.text(width / 2, height * 0.75, `반응속도: ${reactionMs}ms`, {
+        fontFamily: 'sans-serif', fontSize: '26px', color: '#00b894', fontStyle: 'bold',
       }).setOrigin(0.5);
     }
 

@@ -4,10 +4,7 @@ import { emitGameState } from '../../GameBridge';
 
 /**
  * 스테이지6: 웹서핑 숨기기
- * - 뉴스/쇼핑 화면이 보임
- * - 랜덤으로 "발자국 소리!" 경고
- * - 1초 내에 "업무" 버튼 터치 = 라운드 성공
- * - 3라운드 클리어 = 성공
+ * 비율 조정, 하단 버튼 넓히기
  */
 export class AltTabScene extends Phaser.Scene {
   private stageId = 0;
@@ -32,18 +29,18 @@ export class AltTabScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    this.roundText = this.add.text(width / 2, 30, `라운드 ${this.round + 1} / ${this.maxRounds}`, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#888888',
+    this.roundText = this.add.text(width / 2, 25, `라운드 ${this.round + 1} / ${this.maxRounds}`, {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#888888',
     }).setOrigin(0.5).setDepth(5);
 
     // 딴짓 화면 표시
     this.showFunScreen();
 
-    // 업무 전환 버튼 (항상 하단에)
-    this.workBtn = this.add.rectangle(width / 2, height - 50, width - 40, 50, 0x333333)
+    // 업무 전환 버튼 (하단 — 넓은 가로 버튼)
+    this.workBtn = this.add.rectangle(width / 2, height - 40, width - 60, 56, 0x333333)
       .setInteractive({ useHandCursor: true }).setDepth(5).setAlpha(0.6);
-    this.add.text(width / 2, height - 50, '⌨️ Alt + Tab (업무 전환)', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#ffffff',
+    this.add.text(width / 2, height - 40, '⌨️ Alt + Tab (업무 전환)', {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#ffffff',
     }).setOrigin(0.5).setDepth(5);
 
     this.workBtn.on('pointerdown', () => this.onAltTab());
@@ -65,13 +62,13 @@ export class AltTabScene extends Phaser.Scene {
     ];
     const site = Phaser.Math.RND.pick(sites);
 
-    this.add.text(width / 2, height * 0.15, site.title, {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#1a1a1a', fontStyle: 'bold',
+    this.add.text(width / 2, height * 0.18, site.title, {
+      fontFamily: 'sans-serif', fontSize: '28px', color: '#1a1a1a', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.35, site.content, {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#444444',
-      align: 'center', lineSpacing: 12,
+    this.add.text(width / 2, height * 0.4, site.content, {
+      fontFamily: 'sans-serif', fontSize: '20px', color: '#444444',
+      align: 'center', lineSpacing: 14,
     }).setOrigin(0.5);
   }
 
@@ -89,8 +86,8 @@ export class AltTabScene extends Phaser.Scene {
 
     // 빨간 경고
     this.cameras.main.setBackgroundColor('#fff0f0');
-    const warning = this.add.text(width / 2, height * 0.55, '👞 발자국 소리!', {
-      fontFamily: 'sans-serif', fontSize: '32px', color: '#e94560', fontStyle: 'bold',
+    const warning = this.add.text(width / 2, height * 0.5, '👞 발자국 소리!', {
+      fontFamily: 'sans-serif', fontSize: '38px', color: '#e94560', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(3);
 
     this.cameras.main.shake(500, 0.005);
@@ -113,7 +110,6 @@ export class AltTabScene extends Phaser.Scene {
     if (this.ended) return;
 
     if (!this.danger) {
-      // 위험이 아닐 때 누르면 - 그냥 무시 (패널티 없음)
       return;
     }
 
@@ -125,8 +121,8 @@ export class AltTabScene extends Phaser.Scene {
 
     // 업무 화면 잠깐 표시
     this.cameras.main.setBackgroundColor('#f0f0f0');
-    const safe = this.add.text(width / 2, height * 0.55, '📊 엑셀 보는 중...', {
-      fontFamily: 'sans-serif', fontSize: '20px', color: '#00b894', fontStyle: 'bold',
+    const safe = this.add.text(width / 2, height * 0.5, '📊 엑셀 보는 중...', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#00b894', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(3);
 
     this.workBtn.setAlpha(0.6);

@@ -12,9 +12,8 @@ class GameManagerClass {
     return this.clearedStages.has(stageId);
   }
 
-  isStageUnlocked(stageId: number): boolean {
-    if (stageId === 1) return true;
-    return this.clearedStages.has(stageId - 1);
+  isStageUnlocked(_stageId: number): boolean {
+    return true;
   }
 
   get progress(): number {

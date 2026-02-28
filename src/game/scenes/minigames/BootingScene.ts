@@ -4,9 +4,7 @@ import { emitGameState } from '../../GameBridge';
 
 /**
  * 스테이지2: PC 부팅 기다리기
- * - 로딩 바가 자동으로 채워지다가 랜덤으로 멈춤
- * - "응답 없음" 팝업이 뜨면 클릭해서 해제
- * - 15초 내에 100% 달성 = 성공
+ * 좌(PC+텍스트) / 우(프로그레스바) 2컬럼 레이아웃
  */
 export class BootingScene extends Phaser.Scene {
   private stageId = 0;
@@ -34,34 +32,35 @@ export class BootingScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#0078d4');
 
-    // 윈도우 스타일 로딩
-    this.add.text(width / 2, height * 0.25, '🖥️', { fontSize: '80px' }).setOrigin(0.5);
+    const leftX = width * 0.3;
+    const rightX = width * 0.7;
 
-    this.add.text(width / 2, height * 0.4, '업데이트 설치 중...', {
-      fontFamily: 'sans-serif', fontSize: '20px', color: '#ffffff',
+    // 좌측: PC + 텍스트
+    this.add.text(leftX, height * 0.2, '🖥️', { fontSize: '90px' }).setOrigin(0.5);
+
+    this.add.text(leftX, height * 0.45, '업데이트 설치 중...', {
+      fontFamily: 'sans-serif', fontSize: '22px', color: '#ffffff',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.45, 'PC를 끄지 마십시오', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#aaccff',
-    }).setOrigin(0.5);
-
-    // 프로그레스 바 배경
-    const barW = 280;
-    const barH = 24;
-    const barX = width / 2 - barW / 2;
-    const barY = height * 0.55;
-    this.add.rectangle(width / 2, barY, barW, barH, 0x004488).setStrokeStyle(2, 0xffffff);
-
-    this.progressBar = this.add.rectangle(barX + 2, barY, 0, barH - 4, 0x00ff88)
-      .setOrigin(0, 0.5);
-
-    this.percentText = this.add.text(width / 2, barY + 30, '0%', {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+    this.add.text(leftX, height * 0.53, 'PC를 끄지 마십시오', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#aaccff',
     }).setOrigin(0.5);
 
     // 타이머
-    this.timerText = this.add.text(width / 2, height * 0.7, `남은 시간: ${this.timeLeft}s`, {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#aaccff',
+    this.timerText = this.add.text(leftX, height * 0.68, `남은 시간: ${this.timeLeft}s`, {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#aaccff',
+    }).setOrigin(0.5);
+
+    // 우측: 프로그레스 바
+    const barW = 320;
+    const barH = 28;
+    this.add.rectangle(rightX, height * 0.45, barW, barH, 0x004488).setStrokeStyle(2, 0xffffff);
+
+    this.progressBar = this.add.rectangle(rightX - barW / 2 + 2, height * 0.45, 0, barH - 4, 0x00ff88)
+      .setOrigin(0, 0.5);
+
+    this.percentText = this.add.text(rightX, height * 0.45 + 30, '0%', {
+      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // 매 프레임 로딩 진행
@@ -70,7 +69,7 @@ export class BootingScene extends Phaser.Scene {
       callback: () => {
         if (this.ended || this.frozen) return;
         this.progress = Math.min(100, this.progress + 0.8);
-        this.updateBar();
+        this.updateBar(barW);
         if (this.progress >= 100) this.endGame(true);
       },
     });
@@ -109,21 +108,21 @@ export class BootingScene extends Phaser.Scene {
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0xffffff, 0.85)
       .setDepth(10).setInteractive();
 
-    const popup = this.add.rectangle(width / 2, height / 2, 260, 140, 0xf0f0f0)
+    const popup = this.add.rectangle(width / 2, height / 2, 320, 160, 0xf0f0f0)
       .setStrokeStyle(2, 0x999999).setDepth(11);
 
-    const title = this.add.text(width / 2, height / 2 - 35, '⚠️ 응답 없음', {
-      fontFamily: 'sans-serif', fontSize: '18px', color: '#333333', fontStyle: 'bold',
+    const title = this.add.text(width / 2, height / 2 - 40, '⚠️ 응답 없음', {
+      fontFamily: 'sans-serif', fontSize: '22px', color: '#333333', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(11);
 
     const msg = this.add.text(width / 2, height / 2 - 5, 'update.exe가 응답하지 않습니다', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#666666',
+      fontFamily: 'sans-serif', fontSize: '15px', color: '#666666',
     }).setOrigin(0.5).setDepth(11);
 
-    const btn = this.add.rectangle(width / 2, height / 2 + 35, 140, 36, 0x0078d4)
+    const btn = this.add.rectangle(width / 2, height / 2 + 42, 160, 40, 0x0078d4)
       .setDepth(11).setInteractive({ useHandCursor: true });
-    const btnText = this.add.text(width / 2, height / 2 + 35, '기다리기', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#ffffff',
+    const btnText = this.add.text(width / 2, height / 2 + 42, '기다리기', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#ffffff',
     }).setOrigin(0.5).setDepth(11);
 
     btn.on('pointerdown', () => {
@@ -137,9 +136,9 @@ export class BootingScene extends Phaser.Scene {
     });
   }
 
-  private updateBar() {
-    const barW = 276;
-    this.progressBar.width = barW * (this.progress / 100);
+  private updateBar(barW: number) {
+    const innerW = barW - 4;
+    this.progressBar.width = innerW * (this.progress / 100);
     this.percentText.setText(`${Math.floor(this.progress)}%`);
   }
 

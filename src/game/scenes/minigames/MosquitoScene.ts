@@ -4,11 +4,7 @@ import { emitGameState } from '../../GameBridge';
 
 /**
  * 스테이지8: 모기 잡기
- * - 어두운 사무실 배경
- * - 작은 모기가 돌아다님
- * - 모기 근처를 터치하면 잡음
- * - 5번 실패하면 게임오버
- * - 10초 시간 제한
+ * 전체 화면 활용, 이동 범위 확장
  */
 export class MosquitoScene extends Phaser.Scene {
   private stageId = 0;
@@ -17,7 +13,7 @@ export class MosquitoScene extends Phaser.Scene {
   private missCount = 0;
   private maxMiss = 5;
   private missText!: Phaser.GameObjects.Text;
-  private hitRadius = 50;
+  private hitRadius = 60;
 
   constructor() {
     super({ key: 'MosquitoScene' });
@@ -34,21 +30,27 @@ export class MosquitoScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#12121e');
 
     // 조명 효과 (밝은 원)
-    this.add.circle(width / 2, height * 0.35, 150, 0x1a1a30);
+    this.add.circle(width / 2, height * 0.4, 200, 0x1a1a30);
 
-    this.add.text(width / 2, 35, '🌙 모기 잡기', {
-      fontFamily: 'sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
+    this.add.text(width / 2, 30, '🌙 모기 잡기', {
+      fontFamily: 'sans-serif', fontSize: '26px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.missText = this.add.text(width / 2, 65, `남은 기회: ${this.maxMiss - this.missCount}`, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#aaaaaa',
+    this.missText = this.add.text(width * 0.15, 30, `남은 기회: ${this.maxMiss - this.missCount}`, {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#aaaaaa',
+    }).setOrigin(0.5);
+
+    // 시간 제한
+    let timeLeft = 10;
+    const timerText = this.add.text(width * 0.85, 30, `${timeLeft}s`, {
+      fontFamily: 'sans-serif', fontSize: '22px', color: '#e94560', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // 모기
     this.mosquito = this.add.container(width / 2, height / 2);
-    const body = this.add.circle(0, 0, 8, 0xffffff);
-    const wingL = this.add.ellipse(-8, -5, 10, 6, 0xaaaaaa, 0.6);
-    const wingR = this.add.ellipse(8, -5, 10, 6, 0xaaaaaa, 0.6);
+    const body = this.add.circle(0, 0, 10, 0xffffff);
+    const wingL = this.add.ellipse(-10, -6, 12, 8, 0xaaaaaa, 0.6);
+    const wingR = this.add.ellipse(10, -6, 12, 8, 0xaaaaaa, 0.6);
     this.mosquito.add([wingL, wingR, body]);
 
     // 날개짓 애니메이션
@@ -57,7 +59,7 @@ export class MosquitoScene extends Phaser.Scene {
       duration: 80, yoyo: true, repeat: -1,
     });
 
-    // 모기 이동
+    // 모기 이동 (넓은 범위)
     this.moveMosquito();
     this.time.addEvent({
       delay: 800, loop: true,
@@ -83,7 +85,7 @@ export class MosquitoScene extends Phaser.Scene {
 
       // 손바닥 이펙트
       const slapEmoji = this.add.text(pointer.x, pointer.y, '👋', {
-        fontSize: '40px',
+        fontSize: '48px',
       }).setOrigin(0.5).setDepth(5);
       this.tweens.add({
         targets: slapEmoji, alpha: 0, scale: 1.5, duration: 300,
@@ -91,10 +93,8 @@ export class MosquitoScene extends Phaser.Scene {
       });
 
       if (dist <= this.hitRadius) {
-        // 잡음!
         this.onCatch();
       } else {
-        // 빗나감
         this.missCount++;
         this.missText.setText(`남은 기회: ${this.maxMiss - this.missCount}`);
         this.cameras.main.shake(50, 0.003);
@@ -102,17 +102,10 @@ export class MosquitoScene extends Phaser.Scene {
         if (this.missCount >= this.maxMiss) {
           this.endGame(false);
         } else {
-          // 모기 즉시 이동
           this.moveMosquito();
         }
       }
     });
-
-    // 시간 제한
-    let timeLeft = 10;
-    const timerText = this.add.text(width - 15, 35, `${timeLeft}s`, {
-      fontFamily: 'sans-serif', fontSize: '18px', color: '#e94560', fontStyle: 'bold',
-    }).setOrigin(1, 0);
 
     this.time.addEvent({
       delay: 1000, repeat: 9,
@@ -129,9 +122,9 @@ export class MosquitoScene extends Phaser.Scene {
 
   private moveMosquito() {
     const { width, height } = this.scale;
-    const margin = 40;
+    const margin = 50;
     const x = Phaser.Math.Between(margin, width - margin);
-    const y = Phaser.Math.Between(100, height - 100);
+    const y = Phaser.Math.Between(70, height - 50);
 
     this.tweens.add({
       targets: this.mosquito, x, y,
@@ -146,13 +139,13 @@ export class MosquitoScene extends Phaser.Scene {
 
     this.mosquito.setVisible(false);
     this.add.text(this.mosquito.x, this.mosquito.y, '💥', {
-      fontSize: '48px',
+      fontSize: '56px',
     }).setOrigin(0.5);
 
     this.cameras.main.flash(200, 255, 100, 100);
 
-    this.add.text(width / 2, height * 0.75, '잡았다!', {
-      fontFamily: 'sans-serif', fontSize: '28px', color: '#00b894', fontStyle: 'bold',
+    this.add.text(width / 2, height * 0.85, '잡았다!', {
+      fontFamily: 'sans-serif', fontSize: '32px', color: '#00b894', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.time.delayedCall(1000, () => {
@@ -165,8 +158,8 @@ export class MosquitoScene extends Phaser.Scene {
     this.ended = true;
 
     const { width, height } = this.scale;
-    this.add.text(width / 2, height * 0.75, '모기가 도망갔다...', {
-      fontFamily: 'sans-serif', fontSize: '20px', color: '#e94560', fontStyle: 'bold',
+    this.add.text(width / 2, height * 0.85, '모기가 도망갔다...', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#e94560', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.time.delayedCall(1200, () => {

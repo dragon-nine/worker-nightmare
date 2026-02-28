@@ -4,10 +4,7 @@ import { emitGameState } from '../../GameBridge';
 
 /**
  * 스테이지7: 노트북 충전
- * - 배터리가 8%부터 줄어듦
- * - 충전 플러그가 화면을 돌아다님
- * - 플러그를 터치하면 성공
- * - 0%가 되면 실패
+ * 좌(정보+배터리) / 우(플러그 이동 영역)
  */
 export class ChargingScene extends Phaser.Scene {
   private stageId = 0;
@@ -31,28 +28,37 @@ export class ChargingScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
-    this.add.text(width / 2, 40, '🔋 노트북 충전', {
-      fontFamily: 'sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
+    const leftX = width * 0.22;
+
+    // 좌측: 정보 + 배터리
+    this.add.text(leftX, height * 0.12, '🔋 노트북 충전', {
+      fontFamily: 'sans-serif', fontSize: '26px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, 70, '충전기를 잡으세요!', {
-      fontFamily: 'sans-serif', fontSize: '15px', color: '#888899',
+    this.add.text(leftX, height * 0.24, '충전기를 잡으세요!', {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#888899',
     }).setOrigin(0.5);
 
     // 배터리 표시
-    this.add.rectangle(width / 2, 110, 200, 30, 0x333344).setStrokeStyle(2, 0x666688);
-    this.batteryBar = this.add.rectangle(width / 2 - 97, 110, 0, 26, 0xff4444).setOrigin(0, 0.5);
-    this.batteryText = this.add.text(width / 2, 110, `${this.battery}%`, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
+    this.add.rectangle(leftX, height * 0.42, 220, 34, 0x333344).setStrokeStyle(2, 0x666688);
+    this.batteryBar = this.add.rectangle(leftX - 107, height * 0.42, 0, 30, 0xff4444).setOrigin(0, 0.5);
+    this.batteryText = this.add.text(leftX, height * 0.42, `${this.battery}%`, {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
+    // 우측: 플러그 이동 영역
+    const plugAreaX = width * 0.6;
+
+    // 구분선
+    this.add.rectangle(width * 0.4, height / 2, 2, height - 40, 0x333355);
+
     // 충전 플러그
-    this.plug = this.add.container(width / 2, height / 2);
-    const plugBody = this.add.rectangle(0, 0, 60, 35, 0xffffff)
+    this.plug = this.add.container(plugAreaX, height / 2);
+    const plugBody = this.add.rectangle(0, 0, 70, 40, 0xffffff)
       .setStrokeStyle(2, 0x00b894);
-    const plugText = this.add.text(0, 0, '🔌', { fontSize: '24px' }).setOrigin(0.5);
+    const plugText = this.add.text(0, 0, '🔌', { fontSize: '28px' }).setOrigin(0.5);
     this.plug.add([plugBody, plugText]);
-    this.plug.setSize(70, 45);
+    this.plug.setSize(80, 50);
     this.plug.setInteractive({ useHandCursor: true });
 
     this.plug.on('pointerdown', () => {
@@ -60,8 +66,8 @@ export class ChargingScene extends Phaser.Scene {
       this.ended = true;
 
       this.cameras.main.flash(300, 0, 184, 148);
-      this.add.text(width / 2, height * 0.7, '충전 시작!', {
-        fontFamily: 'sans-serif', fontSize: '28px', color: '#00b894', fontStyle: 'bold',
+      this.add.text(width / 2, height * 0.85, '충전 시작!', {
+        fontFamily: 'sans-serif', fontSize: '30px', color: '#00b894', fontStyle: 'bold',
       }).setOrigin(0.5);
 
       this.time.delayedCall(1000, () => {
@@ -69,7 +75,7 @@ export class ChargingScene extends Phaser.Scene {
       });
     });
 
-    // 플러그 움직임
+    // 플러그 움직임 — 우측 영역 내에서
     this.movePlug();
     this.time.addEvent({
       delay: 1200, loop: true,
@@ -90,7 +96,7 @@ export class ChargingScene extends Phaser.Scene {
           this.ended = true;
           this.cameras.main.setBackgroundColor('#000000');
           this.add.text(width / 2, height / 2, '💀 전원 꺼짐', {
-            fontFamily: 'sans-serif', fontSize: '28px', color: '#ff4444', fontStyle: 'bold',
+            fontFamily: 'sans-serif', fontSize: '32px', color: '#ff4444', fontStyle: 'bold',
           }).setOrigin(0.5);
           this.time.delayedCall(1200, () => {
             this.scene.start('ResultScene', { stageId: this.stageId, success: false });
@@ -113,11 +119,12 @@ export class ChargingScene extends Phaser.Scene {
 
   private movePlug() {
     const { width, height } = this.scale;
-    const margin = 60;
-    const newX = Phaser.Math.Between(margin, width - margin);
-    const newY = Phaser.Math.Between(160, height - 120);
+    // 플러그는 우측 영역(40%~95%)에서 이동
+    const minX = width * 0.44;
+    const maxX = width * 0.94;
+    const newX = Phaser.Math.Between(minX, maxX);
+    const newY = Phaser.Math.Between(60, height - 60);
 
-    // 배터리 낮을수록 빨리 이동
     const duration = Math.max(200, 600 - (8 - this.battery) * 50);
 
     this.tweens.add({
@@ -129,7 +136,7 @@ export class ChargingScene extends Phaser.Scene {
   }
 
   private updateBattery() {
-    const maxW = 194;
+    const maxW = 214;
     this.batteryBar.width = maxW * (this.battery / 100);
     this.batteryText.setText(`${this.battery}%`);
 

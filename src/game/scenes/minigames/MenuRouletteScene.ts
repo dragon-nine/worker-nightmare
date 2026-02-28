@@ -4,10 +4,7 @@ import { emitGameState } from '../../GameBridge';
 
 /**
  * 스테이지3: 메뉴 결정 장애
- * - 메뉴 텍스트가 빠르게 순환
- * - 타겟 메뉴가 위에 표시됨
- * - 터치해서 멈출 때 타겟 메뉴와 일치하면 성공
- * - 3번 기회
+ * 좌(부장님 대사) / 우(룰렛+버튼) 2컬럼
  */
 export class MenuRouletteScene extends Phaser.Scene {
   private stageId = 0;
@@ -36,40 +33,44 @@ export class MenuRouletteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#fff3e0');
 
-    // 부장님 주문
+    const leftX = width * 0.25;
+    const rightX = width * 0.65;
+
+    // 부장님 주문 (좌측)
     this.targetMenu = Phaser.Math.RND.pick(this.menus);
 
-    this.add.text(width / 2, 60, '🤵 부장님 왈:', {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#888888',
+    this.add.text(leftX, height * 0.25, '🤵 부장님 왈:', {
+      fontFamily: 'sans-serif', fontSize: '20px', color: '#888888',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, 95, `"${this.targetMenu} 먹자"`, {
-      fontFamily: 'sans-serif', fontSize: '28px', color: '#e94560', fontStyle: 'bold',
+    this.add.text(leftX, height * 0.42, `"${this.targetMenu}\n먹자"`, {
+      fontFamily: 'sans-serif', fontSize: '36px', color: '#e94560', fontStyle: 'bold',
+      align: 'center', lineSpacing: 8,
     }).setOrigin(0.5);
 
-    // 룰렛 영역
-    this.add.rectangle(width / 2, height * 0.45, 280, 80, 0xffffff)
+    // 기회 표시 (좌측 하단)
+    this.attemptText = this.add.text(leftX, height * 0.7, `남은 기회: ${this.attemptsLeft}`, {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#888888',
+    }).setOrigin(0.5);
+
+    // 룰렛 영역 (우측)
+    this.add.rectangle(rightX, height * 0.35, 340, 90, 0xffffff)
       .setStrokeStyle(3, 0xe94560);
 
     // 화살표
-    this.add.text(width / 2 - 155, height * 0.45, '▶', {
-      fontSize: '24px', color: '#e94560',
+    this.add.text(rightX - 185, height * 0.35, '▶', {
+      fontSize: '28px', color: '#e94560',
     }).setOrigin(0.5);
 
-    this.menuText = this.add.text(width / 2, height * 0.45, '', {
-      fontFamily: 'sans-serif', fontSize: '36px', color: '#1a1a1a', fontStyle: 'bold',
+    this.menuText = this.add.text(rightX, height * 0.35, '', {
+      fontFamily: 'sans-serif', fontSize: '40px', color: '#1a1a1a', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // 기회 표시
-    this.attemptText = this.add.text(width / 2, height * 0.6, `남은 기회: ${this.attemptsLeft}`, {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#888888',
-    }).setOrigin(0.5);
-
-    // 멈추기 버튼
-    const stopBtn = this.add.rectangle(width / 2, height * 0.72, 200, 56, 0xe94560)
+    // 멈추기 버튼 (우측 하단)
+    const stopBtn = this.add.rectangle(rightX, height * 0.65, 240, 60, 0xe94560)
       .setInteractive({ useHandCursor: true });
-    this.add.text(width / 2, height * 0.72, '여기!', {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+    this.add.text(rightX, height * 0.65, '여기!', {
+      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     stopBtn.on('pointerdown', () => this.onStop());
@@ -94,12 +95,13 @@ export class MenuRouletteScene extends Phaser.Scene {
 
     const selected = this.menus[this.currentIdx];
     const { width, height } = this.scale;
+    const rightX = width * 0.65;
 
     if (selected === this.targetMenu) {
       this.ended = true;
       this.menuText.setColor('#00b894');
-      this.add.text(width / 2, height * 0.55, '부장님 만족!', {
-        fontFamily: 'sans-serif', fontSize: '18px', color: '#00b894', fontStyle: 'bold',
+      this.add.text(rightX, height * 0.5, '부장님 만족!', {
+        fontFamily: 'sans-serif', fontSize: '20px', color: '#00b894', fontStyle: 'bold',
       }).setOrigin(0.5);
 
       this.time.delayedCall(1200, () => {
@@ -110,8 +112,8 @@ export class MenuRouletteScene extends Phaser.Scene {
       this.attemptText.setText(`남은 기회: ${this.attemptsLeft}`);
 
       this.menuText.setColor('#ff4444');
-      const miss = this.add.text(width / 2, height * 0.55, `"${selected}"은(는) 아니야...`, {
-        fontFamily: 'sans-serif', fontSize: '14px', color: '#ff4444',
+      const miss = this.add.text(rightX, height * 0.5, `"${selected}"은(는) 아니야...`, {
+        fontFamily: 'sans-serif', fontSize: '16px', color: '#ff4444',
       }).setOrigin(0.5);
 
       if (this.attemptsLeft <= 0) {

@@ -4,11 +4,7 @@ import { emitGameState } from '../../GameBridge';
 
 /**
  * 스테이지10: 사직서 던지기
- * - 파워 게이지가 좌우로 움직임
- * - 첫 터치: 파워 결정
- * - 사직서가 날아가서 상사 책상에 착지
- * - 적정 파워 = 책상 위 착지 = 성공
- * - 3번 기회
+ * 하드코딩 Y값 비율 기반으로 재계산, 파워 공식 재조정
  */
 export class ResignScene extends Phaser.Scene {
   private stageId = 0;
@@ -43,49 +39,49 @@ export class ResignScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#f5f0eb');
 
-    this.add.text(width / 2, 35, '📝 사직서 던지기', {
-      fontFamily: 'sans-serif', fontSize: '22px', color: '#1a1a1a', fontStyle: 'bold',
+    // 상단 바
+    this.add.text(width / 2, height * 0.06, '📝 사직서 던지기', {
+      fontFamily: 'sans-serif', fontSize: '26px', color: '#1a1a1a', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.attemptText = this.add.text(width / 2, 65, `${this.attempts} / ${this.maxAttempts}`, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#888888',
+    this.attemptText = this.add.text(width * 0.85, height * 0.06, `${this.attempts} / ${this.maxAttempts}`, {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#888888',
     }).setOrigin(0.5);
 
-    // 사무실 배경 (위쪽 = 멀리)
-    // 상사 책상 (타겟)
-    this.add.rectangle(width / 2, 180, 120, 50, 0x8d6e63)
+    // 상사 책상 (타겟) - 비율 기반
+    const deskY = height * 0.28;
+    this.add.rectangle(width / 2, deskY, 160, 50, 0x8d6e63)
       .setStrokeStyle(2, 0x5d4037);
-    this.add.text(width / 2, 160, '🤵 상사', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#666666',
+    this.add.text(width / 2, deskY - 22, '🤵 상사', {
+      fontFamily: 'sans-serif', fontSize: '15px', color: '#666666',
     }).setOrigin(0.5);
-    this.add.text(width / 2, 180, '📋 책상', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#ffffff',
-    }).setOrigin(0.5);
-
-    // 타겟 존 표시 (눈에 보이지 않게)
-    this.add.rectangle(width / 2, 180, 130, 60, 0x00ff00, 0.0); // 투명한 히트존
-
-    // 사직서
-    this.letter = this.add.text(width / 2, height - 180, '📄', {
-      fontSize: '40px',
+    this.add.text(width / 2, deskY, '📋 책상', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#ffffff',
     }).setOrigin(0.5);
 
-    // 파워 게이지
-    const barY = height - 80;
-    this.add.rectangle(width / 2, barY, 280, 28, 0xdddddd).setStrokeStyle(2, 0x999999);
+    // 사직서 — 비율 기반
+    const letterStartY = height * 0.65;
+    this.letter = this.add.text(width / 2, letterStartY, '📄', {
+      fontSize: '48px',
+    }).setOrigin(0.5);
+
+    // 파워 게이지 — 하단 비율 기반
+    const barY = height * 0.85;
+    const barW = 400;
+    this.add.rectangle(width / 2, barY, barW, 32, 0xdddddd).setStrokeStyle(2, 0x999999);
 
     // 타겟 존 표시 on gauge
-    const gaugeLeft = width / 2 - 138;
-    const gaugeW = 276;
+    const gaugeLeft = width / 2 - barW / 2;
+    const gaugeW = barW - 4;
     const targetX = gaugeLeft + gaugeW * (this.targetMin / 100);
     const targetW = gaugeW * ((this.targetMax - this.targetMin) / 100);
-    this.add.rectangle(targetX + targetW / 2, barY, targetW, 24, 0x00b894, 0.4);
+    this.add.rectangle(targetX + targetW / 2, barY, targetW, 28, 0x00b894, 0.4);
 
-    this.powerBar = this.add.rectangle(gaugeLeft + 2, barY, 4, 24, 0xe94560)
+    this.powerBar = this.add.rectangle(gaugeLeft + 2, barY, 4, 28, 0xe94560)
       .setOrigin(0, 0.5);
 
-    this.add.text(width / 2, barY + 25, '터치하여 파워 결정!', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#666666',
+    this.add.text(width / 2, barY + 28, '터치하여 파워 결정!', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#666666',
     }).setOrigin(0.5);
 
     // 파워 게이지 움직임
@@ -105,7 +101,7 @@ export class ResignScene extends Phaser.Scene {
     if (this.power >= 100) { this.power = 100; this.powerDir = -1; }
     if (this.power <= 0) { this.power = 0; this.powerDir = 1; }
 
-    const gaugeW = 276;
+    const gaugeW = 396;
     this.powerBar.width = Math.max(4, gaugeW * (this.power / 100));
   }
 
@@ -119,9 +115,12 @@ export class ResignScene extends Phaser.Scene {
 
     const { height } = this.scale;
 
-    // 사직서 날아가기
-    // 파워에 따라 도착 Y 결정: 파워 55% = 정확히 책상(180), 0% = 너무 가까움, 100% = 너무 멀리
-    const targetY = height - 180 - (this.power / 100) * (height - 250);
+    // 사직서 날아가기 — 비율 기반 계산
+    const letterStartY = height * 0.65;
+    const deskY = height * 0.28;
+    // 파워 55%일 때 정확히 책상에 도달
+    const flyRange = letterStartY - (height * 0.1);
+    const targetY = letterStartY - (this.power / 100) * flyRange;
 
     this.tweens.add({
       targets: this.letter,
@@ -129,13 +128,12 @@ export class ResignScene extends Phaser.Scene {
       scale: 0.5 + (1 - this.power / 100) * 0.5,
       duration: 600,
       ease: 'Quad.easeOut',
-      onComplete: () => this.checkLanding(targetY),
+      onComplete: () => this.checkLanding(targetY, deskY),
     });
   }
 
-  private checkLanding(landY: number) {
+  private checkLanding(landY: number, deskY: number) {
     const { width, height } = this.scale;
-    const deskY = 180;
     const success = Math.abs(landY - deskY) < 40;
 
     if (success) {
@@ -143,16 +141,16 @@ export class ResignScene extends Phaser.Scene {
       this.cameras.main.flash(300, 0, 184, 148);
 
       this.add.text(width / 2, height * 0.5, '사직서 접수 완료!', {
-        fontFamily: 'sans-serif', fontSize: '24px', color: '#00b894', fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '28px', color: '#00b894', fontStyle: 'bold',
       }).setOrigin(0.5);
 
       this.time.delayedCall(1200, () => {
         this.scene.start('ResultScene', { stageId: this.stageId, success: true });
       });
     } else {
-      const msg = landY > 220 ? '너무 가까이...' : '너무 멀리...';
+      const msg = landY > deskY + 40 ? '너무 가까이...' : '너무 멀리...';
       const missText = this.add.text(width / 2, height * 0.5, msg, {
-        fontFamily: 'sans-serif', fontSize: '18px', color: '#e94560',
+        fontFamily: 'sans-serif', fontSize: '20px', color: '#e94560',
       }).setOrigin(0.5);
 
       if (this.attempts >= this.maxAttempts) {
@@ -161,9 +159,10 @@ export class ResignScene extends Phaser.Scene {
           this.scene.start('ResultScene', { stageId: this.stageId, success: false });
         });
       } else {
+        const letterStartY = height * 0.65;
         this.time.delayedCall(800, () => {
           missText.destroy();
-          this.letter.y = height - 180;
+          this.letter.y = letterStartY;
           this.letter.setScale(1);
           this.power = 0;
           this.powerDir = 1;
