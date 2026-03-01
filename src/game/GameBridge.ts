@@ -12,3 +12,7 @@ export interface GameState {
 export function emitGameState(state: GameState) {
   window.dispatchEvent(new CustomEvent('game-state', { detail: state }));
 }
+
+export function emitJumpToStage(stageIndex: number) {
+  window.dispatchEvent(new CustomEvent('jump-to-stage', { detail: { stageIndex } }));
+}

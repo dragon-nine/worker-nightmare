@@ -1,4 +1,5 @@
 import { STAGES } from '../../game/data/stages';
+import { emitJumpToStage } from '../../game/GameBridge';
 import type { GameState } from '../../game/GameBridge';
 import styles from './RightPanel.module.css';
 
@@ -10,6 +11,10 @@ export function RightPanel({ gameState }: Props) {
   const { progress, stress, successCount } = gameState;
   const stressPercent = Math.floor(stress ?? 0);
   const survived = successCount ?? 0;
+
+  const handleStageClick = (stageIndex: number) => {
+    emitJumpToStage(stageIndex);
+  };
 
   return (
     <aside className={styles.panel}>
@@ -55,7 +60,12 @@ export function RightPanel({ gameState }: Props) {
             }
 
             return (
-              <div key={stage.id} className={styles.progressItem}>
+              <div
+                key={stage.id}
+                className={`${styles.progressItem} ${styles.clickable}`}
+                onClick={() => handleStageClick(i)}
+                title={`${stage.minigames[0].name} 바로 플레이`}
+              >
                 <span className={styles.timeLabel}>{stage.time}</span>
                 <div className={`${styles.progressDot} ${dotClass}`} />
                 <span className={nameClass}>
@@ -64,6 +74,7 @@ export function RightPanel({ gameState }: Props) {
                 <span className={`${styles.stageStatus} ${isDone ? styles.statusCleared : isCurrent ? styles.statusCurrent : styles.statusLocked}`}>
                   {statusText}
                 </span>
+                <span className={styles.playBtn}>▶</span>
               </div>
             );
           })}

@@ -72,6 +72,10 @@ class GameManagerClass {
     return GRADES[4]; // 사회초년생
   }
 
+  jumpToStage(index: number) {
+    this._currentStageIndex = Math.max(0, Math.min(index, STAGES.length - 1));
+  }
+
   reset() {
     this._currentStageIndex = 0;
     this._stress = 0;

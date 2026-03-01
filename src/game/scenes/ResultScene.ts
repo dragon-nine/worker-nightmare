@@ -28,7 +28,7 @@ export class ResultScene extends Phaser.Scene {
     // 배경
     this.cameras.main.setBackgroundColor(success ? '#0d2818' : '#2e0a0a');
 
-    // 결과 이모지 — 빠른 등장
+    // 결과 이모지
     const emoji = this.add.text(width / 2, height * 0.28, success ? '🎉' : '💀', {
       fontSize: '80px',
     }).setOrigin(0.5).setScale(0);
@@ -38,16 +38,16 @@ export class ResultScene extends Phaser.Scene {
     });
 
     // 결과 텍스트
-    this.add.text(width / 2, height * 0.5, success ? '성공!' : '실패...', {
+    this.add.text(width / 2, height * 0.5, success ? '성공!' : 'GAME OVER', {
       fontFamily: 'sans-serif', fontSize: '48px',
       color: success ? '#00b894' : '#e94560',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // 서브 텍스트 — 실패해도 하루는 계속된다
+    // 서브 텍스트
     const subMsg = success
       ? '그래, 이 정도면...'
-      : '어쨌든 하루는 계속된다...';
+      : '처음부터 다시...';
     this.add.text(width / 2, height * 0.62, subMsg, {
       fontFamily: 'sans-serif', fontSize: '18px', color: '#aaaaaa',
     }).setOrigin(0.5);
@@ -60,18 +60,24 @@ export class ResultScene extends Phaser.Scene {
     }).setOrigin(0.5).setAlpha(0);
     this.tweens.add({ targets: stressText, alpha: 1, duration: 300, delay: 400 });
 
-    // 자동 진행 (2초 후)
-    this.time.delayedCall(2000, () => {
-      GameManager.advanceStage();
+    if (success) {
+      // 성공 → 다음 스테이지로
+      this.time.delayedCall(2000, () => {
+        GameManager.advanceStage();
 
-      if (GameManager.currentStageIndex >= 10) {
-        // 모든 스테이지 완료 → 엔딩
-        this.scene.start('EndingScene');
-      } else {
-        // 다음 내러티브로
-        this.scene.start('NarrativeScene');
-      }
-    });
+        if (GameManager.currentStageIndex >= 10) {
+          this.scene.start('EndingScene');
+        } else {
+          this.scene.start('NarrativeScene');
+        }
+      });
+    } else {
+      // 실패 → 처음부터 재시작
+      this.time.delayedCall(2500, () => {
+        GameManager.reset();
+        this.scene.start('BootScene');
+      });
+    }
 
     const stage = GameManager.getCurrentStage();
     emitGameState({
