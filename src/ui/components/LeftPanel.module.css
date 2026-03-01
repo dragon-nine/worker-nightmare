@@ -26,7 +26,15 @@
 }
 
 .description {
-  font-size: 13px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.descriptionSub {
+  font-size: 12px;
   color: var(--color-text-secondary);
   line-height: 1.6;
 }
@@ -42,7 +50,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
@@ -54,6 +62,8 @@
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
+  min-width: 56px;
+  text-align: center;
 }
 
 .timeDisplay {
@@ -91,4 +101,82 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-primary);
+}
+
+/* 미션 박스 */
+.missionBox {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(233, 69, 96, 0.06);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-accent);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.missionLabel {
+  font-size: 10px;
+  color: var(--color-accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.missionName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.missionDesc {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+/* 디자인 필요 요소 */
+.designReqs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.designGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.designCategory {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-accent);
+  padding: 2px 6px;
+  background: rgba(233, 69, 96, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.designItems {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 4px;
+}
+
+.designItem {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  padding-left: 10px;
+  position: relative;
+}
+
+.designItem::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--color-text-muted);
 }
