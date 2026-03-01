@@ -17,7 +17,7 @@ export const NARRATIVES: NarrativeDef[] = [
     ],
   },
 
-  // ── 08:30 사무실 도착 (부팅 전) ──
+  // ── 08:30 사무실 도착 (메신저 오타 전) ──
   {
     stageIndex: 1,
     time: '08:30', period: 'AM',
@@ -26,27 +26,25 @@ export const NARRATIVES: NarrativeDef[] = [
       { type: 'system', text: '사무실 도착' },
       { type: 'left', sender: '동료', text: '헐 오늘도 이 시간에?' },
       { type: 'right', text: '응... (하품)' },
-      { type: 'left', sender: '팀장님', text: '어, 왔어? PC 켜고 바로 시작해' },
-      { type: 'thought', text: '아직 커피도 못 마셨는데...' },
+      { type: 'system', text: '💬 메신저 알림' },
+      { type: 'thought', text: '...잠깐, 어젯밤에 뭘 보냈지?' },
     ],
   },
 
-  // ── 12:00 점심시간 (메뉴 전) ──
+  // ── 12:00 점심시간 (가위바위보 전) ──
   {
     stageIndex: 2,
     time: '12:00', period: 'PM',
     bgColor: '#f5e6d0',
     messages: [
       { type: 'system', text: '점심시간' },
-      { type: 'left', sender: '동료1', text: '밥 먹으러 가자~' },
-      { type: 'left', sender: '동료2', text: '뭐 먹지' },
-      { type: 'left', sender: '동료1', text: '아무거나' },
-      { type: 'left', sender: '동료2', text: '아무거나 말고' },
-      { type: 'thought', text: '매일 반복되는 이 대화...' },
+      { type: 'left', sender: '부장님', text: '오늘 점심은 내가 쏜다~' },
+      { type: 'left', sender: '부장님', text: '대신 가위바위보 진 사람이 주문!' },
+      { type: 'thought', text: '어떻게 하면 자연스럽게 지지...' },
     ],
   },
 
-  // ── 13:30 회의 (졸음 전) ──
+  // ── 13:30 회의 (빈말 퍼레이드 전) ──
   {
     stageIndex: 3,
     time: '13:30', period: 'PM',
@@ -55,11 +53,11 @@ export const NARRATIVES: NarrativeDef[] = [
       { type: 'left', sender: '팀장님', text: '다들 회의실 집합~' },
       { type: 'right', text: '네...' },
       { type: 'thought', text: '점심 먹고 바로 회의라니...' },
-      { type: 'thought', text: 'PPT 100장이라며...' },
+      { type: 'thought', text: '적당히 맞장구만 치자...' },
     ],
   },
 
-  // ── 15:00 보고서 (파일 전) ──
+  // ── 15:00 보고서 (파일 저장 전) ──
   {
     stageIndex: 4,
     time: '15:00', period: 'PM',
@@ -70,7 +68,7 @@ export const NARRATIVES: NarrativeDef[] = [
       { type: 'left', sender: '팀장님', text: '최종' },
       { type: 'right', text: '최종이 5개인데요' },
       { type: 'left', sender: '팀장님', text: '진짜 최종' },
-      { type: 'thought', text: '진짜 최종이 3개야...' },
+      { type: 'thought', text: '이번엔 절대 수정 못하게...' },
     ],
   },
 
@@ -87,7 +85,7 @@ export const NARRATIVES: NarrativeDef[] = [
     ],
   },
 
-  // ── 18:00 야근 시작 (충전 전) ──
+  // ── 18:00 야근 시작 (다리 떠는 빌런 전) ──
   {
     stageIndex: 6,
     time: '18:00', period: 'PM',
@@ -97,36 +95,36 @@ export const NARRATIVES: NarrativeDef[] = [
       { type: 'left', sender: '팀장님', text: '미안한데 오늘 야근 가능?' },
       { type: 'right', text: '네... 가능합니다 😊' },
       { type: 'thought', text: '😊→😭' },
-      { type: 'system', text: '🔋 노트북 배터리: 8%' },
-      { type: 'thought', text: '충전기 어디갔어?!' },
+      { type: 'system', text: '📱 스마트폰 배터리: 1%' },
+      { type: 'thought', text: '옆자리 그놈은 또 다리를 떤다...' },
     ],
   },
 
-  // ── 20:00 야근 중 (모기 전) ──
+  // ── 20:00 야근 중 (가족 거짓말 전) ──
   {
     stageIndex: 7,
     time: '20:00', period: 'PM',
     bgColor: '#12121e',
     messages: [
-      { type: 'system', text: '사무실에 혼자 남았다' },
-      { type: 'thought', text: '나만 야근이네...' },
-      { type: 'system', text: '💡 형광등이 깜빡인다' },
-      { type: 'system', text: '윙~~' },
-      { type: 'thought', text: '...설마' },
+      { type: 'system', text: '야근 중...' },
+      { type: 'system', text: '📱 카카오톡 12건' },
+      { type: 'left', sender: '여보', text: '언제 와?' },
+      { type: 'left', sender: '여보', text: '오늘 밥은 먹고 와?' },
+      { type: 'thought', text: '뭐라고 답해야 하지...' },
     ],
   },
 
-  // ── 21:30 회식 (소맥 전) ──
+  // ── 21:30 회식 (술자리 탈출 전) ──
   {
     stageIndex: 8,
     time: '21:30', period: 'PM',
     bgColor: '#2d1810',
     messages: [
-      { type: 'left', sender: '팀장님', text: '고생했어~ 한 잔 하자' },
+      { type: 'left', sender: '부장님', text: '고생했어~ 한잔 하자' },
       { type: 'thought', text: '거절 불가...' },
-      { type: 'left', sender: '팀장님', text: '소맥 비율은 내가 정한다' },
-      { type: 'right', text: '네 알겠습니다...' },
-      { type: 'thought', text: '제발 빨리 끝나라...' },
+      { type: 'system', text: '회식 2시간째...' },
+      { type: 'left', sender: '부장님', text: '한 잔 더!' },
+      { type: 'thought', text: '화장실... 탈출구가 있을지도' },
     ],
   },
 
