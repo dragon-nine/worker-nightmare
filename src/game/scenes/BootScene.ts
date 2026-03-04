@@ -87,7 +87,7 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // ── Debug: 스테이지 바로가기 버튼 ──
-    if (import.meta.env.DEV) {
+    {
       const stages = GameManager.getAllStages();
       const debugY = height * 0.84;
       const totalW = stages.length * 56;
