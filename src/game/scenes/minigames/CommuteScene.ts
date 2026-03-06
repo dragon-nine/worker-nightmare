@@ -369,7 +369,7 @@ export class CommuteScene extends Phaser.Scene {
   }
 
   private scrollToPlayer(plat: Platform) {
-    const { width, height } = this.scale;
+    const { height } = this.scale;
     const screenX = this.laneX[plat.lane];
     const screenY = height * 0.45;
 
