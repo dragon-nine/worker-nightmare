@@ -19,9 +19,15 @@ export class BootScene extends Phaser.Scene {
       ['tile-corner-br', 'map/corner-br.png'],
       ['building1', 'obstacles/building1.png'],
       ['building2', 'obstacles/building2.png'],
+      ['building3', 'obstacles/building3.png'],
+      ['building4', 'obstacles/building4.png'],
+      ['building5', 'obstacles/building5.png'],
       ['rabbit', 'character/rabbit.png'],
       ['btn-forward', 'ui/btn-forward.png'],
       ['btn-switch', 'ui/btn-switch.png'],
+      ['btn-pause', 'ui/btn-pause.png'],
+      ['gauge-empty', 'ui/gauge-empty.png'],
+      ['gauge-full', 'ui/gauge-full.png'],
     ];
     for (const [key, path] of assets) {
       if (!this.textures.exists(key)) this.load.image(key, path);
@@ -71,15 +77,15 @@ export class BootScene extends Phaser.Scene {
 
     // Title
     const title1 = this.add.text(width / 2, height * 0.25, '직장인', {
-      fontFamily: 'sans-serif', fontSize: '52px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '52px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0);
 
     const title2 = this.add.text(width / 2, height * 0.4, '잔혹사', {
-      fontFamily: 'sans-serif', fontSize: '68px', color: '#e94560', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '68px', color: '#e94560', fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0);
 
     const sub = this.add.text(width / 2, height * 0.54, '당신의 하루를 견뎌내세요', {
-      fontFamily: 'sans-serif', fontSize: '18px', color: '#555577',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '18px', color: '#555577',
     }).setOrigin(0.5).setAlpha(0);
 
     this.tweens.add({ targets: title1, alpha: 1, y: height * 0.23, duration: 800, delay: 300, ease: 'Power2' });
@@ -95,7 +101,7 @@ export class BootScene extends Phaser.Scene {
     const btn = this.add.rectangle(width / 2, height * 0.72, 280, 60, 0xe94560)
       .setInteractive({ useHandCursor: true }).setAlpha(0);
     const btnText = this.add.text(width / 2, height * 0.72, '출근하기', {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0);
 
     this.tweens.add({
@@ -118,7 +124,7 @@ export class BootScene extends Phaser.Scene {
 
     // 홈화면 추가 버튼
     const homeBtn = this.add.text(width / 2, height * 0.82, '홈 화면에 추가', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#6666aa',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '14px', color: '#6666aa',
     }).setOrigin(0.5).setAlpha(0).setInteractive({ useHandCursor: true });
 
     homeBtn.on('pointerover', () => homeBtn.setColor('#8888cc'));
@@ -133,11 +139,11 @@ export class BootScene extends Phaser.Scene {
 
     // Credits
     this.add.text(width / 2, height * 0.90, 'DragonNine Studio', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#333344',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '12px', color: '#333344',
     }).setOrigin(0.5);
 
     this.add.text(width / 2, height * 0.93, 'Music by CodeManu (OpenGameArt.org) · SFX by Kenney.nl', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#222233',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '9px', color: '#222233',
     }).setOrigin(0.5);
   }
 
@@ -152,27 +158,27 @@ export class BootScene extends Phaser.Scene {
 
     // 닫기 버튼
     const closeBtn = this.add.text(width - 20, 20, '✕', {
-      fontFamily: 'sans-serif', fontSize: '28px', color: '#888888',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '28px', color: '#888888',
     }).setOrigin(1, 0).setDepth(601).setInteractive({ useHandCursor: true });
     items.push(closeBtn);
 
     // 앱 아이콘 (D9 로고)
     const iconBg = this.add.circle(width / 2, height * 0.15, 40, 0xe94560).setDepth(601);
     const iconText = this.add.text(width / 2, height * 0.15, 'D9', {
-      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(602);
     items.push(iconBg, iconText);
 
     // 타이틀
     const guideTitle = this.add.text(width / 2, height * 0.24, '직장인 잔혹사를\n홈 화면에 추가해보세요', {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
       align: 'center', lineSpacing: 8,
     }).setOrigin(0.5).setDepth(601);
     items.push(guideTitle);
 
     // 스텝 가이드
-    const stepStyle = { fontFamily: 'sans-serif', fontSize: '16px', color: '#ccccdd', lineSpacing: 6 };
-    const numStyle = { fontFamily: 'sans-serif', fontSize: '22px', color: '#e94560', fontStyle: 'bold' as const };
+    const stepStyle = { fontFamily: 'GMarketSans, sans-serif', fontSize: '16px', color: '#ccccdd', lineSpacing: 6 };
+    const numStyle = { fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color: '#e94560', fontStyle: 'bold' as const };
 
     const stepY = height * 0.38;
     const stepGap = height * 0.09;
@@ -195,7 +201,7 @@ export class BootScene extends Phaser.Scene {
 
     // 장점 안내
     const benefit = this.add.text(width / 2, height * 0.72, '앱처럼 빠르게 실행할 수 있어요!', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#8888aa',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '14px', color: '#8888aa',
     }).setOrigin(0.5).setDepth(601);
     items.push(benefit);
 
@@ -203,7 +209,7 @@ export class BootScene extends Phaser.Scene {
     const okBtn = this.add.rectangle(width / 2, height * 0.82, 200, 50, 0xe94560)
       .setInteractive({ useHandCursor: true }).setDepth(601);
     const okText = this.add.text(width / 2, height * 0.82, '확인', {
-      fontFamily: 'sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(602);
     items.push(okBtn, okText);
 

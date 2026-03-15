@@ -53,7 +53,7 @@ export class CommuteScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#000000');
+    this.cameras.main.setBackgroundColor('#2d8a4e');
 
     this.padding = PADDING;
     const roadW = width - this.padding * 2;
@@ -77,10 +77,11 @@ export class CommuteScene extends Phaser.Scene {
     this.createButtons(width, height);
   }
 
-  update() {
+  update(_time: number, delta: number) {
     if (!this.gameOver) {
       const { width, height } = this.scale;
       this.drawGrid(width, height);
+      this.hud.update(delta);
     }
   }
 
@@ -283,22 +284,22 @@ export class CommuteScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
     const title = this.add.text(width / 2, height * 0.38, '부활하시겠습니까?', {
-      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
     const desc = this.add.text(width / 2, height * 0.44, '광고를 보고 이어서 플레이하세요!', {
-      fontFamily: 'sans-serif', fontSize: '15px', color: '#aaaacc',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '15px', color: '#aaaacc',
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
     const chance = this.add.text(width / 2, height * 0.48, '(1회만 가능)', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#777799',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '13px', color: '#777799',
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
     // 광고 보기 버튼
     const adBtn = this.add.rectangle(width / 2, height * 0.57, 250, 56, 0x44aa44)
       .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
     const adText = this.add.text(width / 2, height * 0.57, '▶  광고 보고 부활', {
-      fontFamily: 'sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(402).setAlpha(0);
 
     adBtn.on('pointerover', () => adBtn.setFillStyle(0x339933));
@@ -313,7 +314,7 @@ export class CommuteScene extends Phaser.Scene {
     const skipBtn = this.add.rectangle(width / 2, height * 0.66, 250, 48, 0x555555)
       .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
     const skipText = this.add.text(width / 2, height * 0.66, '건너뛰기', {
-      fontFamily: 'sans-serif', fontSize: '18px', color: '#999999',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '18px', color: '#999999',
     }).setOrigin(0.5).setDepth(402).setAlpha(0);
 
     skipBtn.on('pointerover', () => skipBtn.setFillStyle(0x666666));
@@ -401,14 +402,14 @@ export class CommuteScene extends Phaser.Scene {
 
     // 상단 라벨
     adItems.push(this.add.text(width / 2, height * 0.05, 'AD', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#666688',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '12px', color: '#666688',
     }).setOrigin(0.5).setDepth(451));
 
     // 앱 아이콘
     const iconBg = this.add.circle(width / 2, height * 0.15, 40, 0xe94560).setDepth(451);
     adItems.push(iconBg);
     adItems.push(this.add.text(width / 2, height * 0.15, 'D9', {
-      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(452));
 
     // 로고 펄스
@@ -419,7 +420,7 @@ export class CommuteScene extends Phaser.Scene {
 
     // 타이틀
     adItems.push(this.add.text(width / 2, height * 0.25, '직장인 잔혹사를\n홈 화면에 추가해보세요!', {
-      fontFamily: 'sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
       align: 'center', lineSpacing: 8,
     }).setOrigin(0.5).setDepth(451));
 
@@ -427,8 +428,8 @@ export class CommuteScene extends Phaser.Scene {
     const stepY = height * 0.38;
     const stepGap = height * 0.08;
     const leftX = 36;
-    const numStyle = { fontFamily: 'sans-serif', fontSize: '22px', color: '#e94560', fontStyle: 'bold' as const };
-    const stepStyle = { fontFamily: 'sans-serif', fontSize: '15px', color: '#ccccdd' };
+    const numStyle = { fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color: '#e94560', fontStyle: 'bold' as const };
+    const stepStyle = { fontFamily: 'GMarketSans, sans-serif', fontSize: '15px', color: '#ccccdd' };
 
     adItems.push(this.add.text(leftX, stepY, '1', numStyle).setDepth(451));
     adItems.push(this.add.text(leftX + 30, stepY, '오른쪽 아래  ⬆  아이콘을 누르고,', stepStyle).setDepth(451));
@@ -441,24 +442,24 @@ export class CommuteScene extends Phaser.Scene {
 
     // 장점
     adItems.push(this.add.text(width / 2, height * 0.66, '앱처럼 바로 실행할 수 있어요!', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#8888aa',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '14px', color: '#8888aa',
     }).setOrigin(0.5).setDepth(451));
 
     // 카운트다운
     let countdown = 3;
     const countText = this.add.text(width / 2, height * 0.78, `${countdown}`, {
-      fontFamily: 'sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(451);
     adItems.push(countText);
 
     const countLabel = this.add.text(width / 2, height * 0.84, '잠시 후 부활합니다', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#666688',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '14px', color: '#666688',
     }).setOrigin(0.5).setDepth(451);
     adItems.push(countLabel);
 
     // 하단
     adItems.push(this.add.text(width / 2, height * 0.93, 'DragonNine Studio', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#444466',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '11px', color: '#444466',
     }).setOrigin(0.5).setDepth(451));
 
     safeAnalytics(() => eventLog({ log_name: 'homescreen_guide_impression', log_type: 'impression', params: { from: 'house_ad' } }));
@@ -508,7 +509,7 @@ export class CommuteScene extends Phaser.Scene {
   private showPopup(message: string, color: string) {
     const { width } = this.scale;
     const popup = this.add.text(width / 2, 70, message, {
-      fontFamily: 'sans-serif', fontSize: '22px', color, fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color, fontStyle: 'bold',
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(300);
 
@@ -541,11 +542,11 @@ export class CommuteScene extends Phaser.Scene {
     this.tweens.add({ targets: overlay, fillAlpha: 0.7, duration: 500 });
 
     const resultText = this.add.text(width / 2, height * 0.30, `점수: ${this.score}`, {
-      fontFamily: 'sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
     const comboText = this.add.text(width / 2, height * 0.40, `최대 콤보: ${this.bestCombo}`, {
-      fontFamily: 'sans-serif', fontSize: '22px', color: '#aaaacc',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color: '#aaaacc',
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
     this.time.delayedCall(500, () => {
@@ -557,7 +558,7 @@ export class CommuteScene extends Phaser.Scene {
     const lbBtn = this.add.rectangle(width / 2, height * 0.52, 220, 56, 0x3182f6)
       .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
     const lbText = this.add.text(width / 2, height * 0.52, '랭킹 보기', {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(402).setAlpha(0);
 
     lbBtn.on('pointerover', () => lbBtn.setFillStyle(0x1b6ce5));
@@ -572,7 +573,7 @@ export class CommuteScene extends Phaser.Scene {
     const retryBtn = this.add.rectangle(width / 2, height * 0.62, 220, 56, 0xe94560)
       .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
     const retryText = this.add.text(width / 2, height * 0.62, '다시하기', {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(402).setAlpha(0);
 
     retryBtn.on('pointerover', () => retryBtn.setFillStyle(0xd63651));

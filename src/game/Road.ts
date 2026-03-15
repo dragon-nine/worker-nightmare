@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import type { RoadRow, RoadType, LanePositions } from './constants';
 import {
-  OBSTACLE_CHANCE, OBSTACLE_SIZE_RATIO, BUILDING2_OFFSET_Y,
+  OBSTACLE_CHANCE, OBSTACLE_SIZE_RATIO,
 } from './constants';
+
+const OBSTACLE_KEYS = ['building1', 'building2', 'building3', 'building4', 'building5'];
 
 export class Road {
   private scene: Phaser.Scene;
@@ -94,10 +96,9 @@ export class Road {
 
   private placeObstacle(row: RoadRow, type: RoadType, y: number) {
     const emptyX = type === 'left' ? this.laneX.right : this.laneX.left;
-    const key = Math.random() < 0.5 ? 'building1' : 'building2';
+    const key = OBSTACLE_KEYS[Math.floor(Math.random() * OBSTACLE_KEYS.length)];
     const size = this.laneW * OBSTACLE_SIZE_RATIO;
-    const offsetY = key === 'building2' ? BUILDING2_OFFSET_Y : 0;
-    const obstacle = this.scene.add.image(emptyX, y + offsetY, key)
+    const obstacle = this.scene.add.image(emptyX, y, key)
       .setDisplaySize(size, size)
       .setOrigin(0.5, 0.5)
       .setDepth(6);
