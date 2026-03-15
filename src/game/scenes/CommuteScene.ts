@@ -219,7 +219,6 @@ export class CommuteScene extends Phaser.Scene {
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       this.playSfx('sfx-combo', 0.7);
-      this.showPopup(`${this.comboCount} 콤보!`, '#ffd700');
     }
 
     this.currentRowIdx = this.road.cleanupOldRows(this.currentRowIdx);

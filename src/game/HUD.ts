@@ -84,6 +84,28 @@ export class HUD {
 
   updateScore(score: number) {
     this.scoreText.setText(`${score}`);
+    this.pulseScore();
+  }
+
+  hideScore() {
+    this.scoreText.setAlpha(0);
+  }
+
+  showScore() {
+    this.scoreText.setAlpha(1);
+  }
+
+  getScoreY() {
+    return this.scoreText.y + this.scoreText.height * 0.4;
+  }
+
+  pulseScore() {
+    this.scene.tweens.killTweensOf(this.scoreText);
+    this.scoreText.setScale(1.25);
+    this.scene.tweens.add({
+      targets: this.scoreText, scale: 1,
+      duration: 200, ease: 'Quad.easeOut',
+    });
   }
 
   addTime(sec: number) {
