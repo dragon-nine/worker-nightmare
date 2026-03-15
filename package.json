@@ -4,8 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "granite dev",
-    "build": "ait build",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:toss": "ait build",
+    "dev:toss": "granite dev",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy": "ait deploy"
