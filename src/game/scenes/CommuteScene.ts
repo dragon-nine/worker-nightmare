@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Lane } from '../constants';
 import {
-  PADDING, ACTION_BONUS,
+  PADDING, ACTION_BONUS, START_TIME,
   BTN_SIZE, BTN_MARGIN, BTN_BOTTOM_OFFSET, BTN_PRESS_SCALE, BTN_PRESS_DURATION,
 } from '../constants';
 import { Road } from '../Road';
@@ -22,6 +22,7 @@ export class CommuteScene extends Phaser.Scene {
   private bestCombo = 0;
   private justSwitched = false;
   private gameStarted = false;
+  private hasRevived = false;
   private bgm?: Phaser.Sound.BaseSound;
 
   private laneX = { left: 0, right: 0 };
@@ -43,6 +44,7 @@ export class CommuteScene extends Phaser.Scene {
     this.bestCombo = 0;
     this.justSwitched = false;
     this.gameStarted = false;
+    this.hasRevived = false;
   }
 
   create() {
@@ -70,7 +72,7 @@ export class CommuteScene extends Phaser.Scene {
     this.player = new Player(this, this.laneX, this.laneW, height - 200);
 
     // HUD
-    this.hud = new HUD(this, () => this.endGame());
+    this.hud = new HUD(this, () => this.onDeath());
     this.hud.create(width);
 
     // Buttons
@@ -157,6 +159,7 @@ export class CommuteScene extends Phaser.Scene {
 
     // Gameplay BGM
     this.bgm = this.sound.add('bgm-gameplay', { loop: true, volume: 0.35 });
+    if (this.hud.isBgmMuted()) (this.bgm as Phaser.Sound.WebAudioSound).setMute(true);
     this.bgm.play();
 
     // Analytics: 게임 시작
@@ -247,14 +250,179 @@ export class CommuteScene extends Phaser.Scene {
     this.player.setHurt(true);
     this.playSfx('sfx-crash', 0.7);
     this.cameras.main.shake(200, 0.015);
-    this.player.animateForwardCrash(() => this.endGame());
+    this.player.animateForwardCrash(() => this.onDeath());
   }
 
   private onCrash() {
     this.isFalling = true;
     this.player.setHurt(true);
     this.cameras.main.shake(200, 0.015);
-    this.endGame();
+    this.onDeath();
+  }
+
+  /* ── Death → Revive or Game Over ── */
+
+  private onDeath() {
+    this.gameOver = true;
+    this.hud.stopTimer();
+
+    if (!this.hasRevived) {
+      this.showReviveScreen();
+    } else {
+      this.endGame();
+    }
+  }
+
+  private showReviveScreen() {
+    const { width, height } = this.scale;
+
+    // BGM 일시정지
+    this.bgm?.pause();
+
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0)
+      .setDepth(400);
+    this.tweens.add({ targets: overlay, fillAlpha: 0.8, duration: 400 });
+
+    const reviveItems: Phaser.GameObjects.GameObject[] = [];
+
+    // 부활 아이콘
+    const icon = this.add.text(width / 2, height * 0.28, '💀', {
+      fontSize: '64px',
+    }).setOrigin(0.5).setDepth(401).setAlpha(0);
+
+    const title = this.add.text(width / 2, height * 0.38, '부활하시겠습니까?', {
+      fontFamily: 'sans-serif', fontSize: '28px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(401).setAlpha(0);
+
+    const desc = this.add.text(width / 2, height * 0.44, '광고를 보고 이어서 플레이하세요!', {
+      fontFamily: 'sans-serif', fontSize: '15px', color: '#aaaacc',
+    }).setOrigin(0.5).setDepth(401).setAlpha(0);
+
+    const chance = this.add.text(width / 2, height * 0.48, '(1회만 가능)', {
+      fontFamily: 'sans-serif', fontSize: '13px', color: '#777799',
+    }).setOrigin(0.5).setDepth(401).setAlpha(0);
+
+    // 광고 보기 버튼
+    const adBtn = this.add.rectangle(width / 2, height * 0.57, 250, 56, 0x44aa44)
+      .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
+    const adText = this.add.text(width / 2, height * 0.57, '▶  광고 보고 부활', {
+      fontFamily: 'sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(402).setAlpha(0);
+
+    adBtn.on('pointerover', () => adBtn.setFillStyle(0x339933));
+    adBtn.on('pointerout', () => adBtn.setFillStyle(0x44aa44));
+    adBtn.on('pointerdown', () => {
+      this.playSfx('sfx-click', 0.6);
+      // Analytics: 광고 시청
+      eventLog({ log_name: 'ad_watch_revive', log_type: 'event', params: { score: this.score } });
+      Analytics.click({ log_name: 'ad_watch_revive' });
+
+      // 임시 광고 시뮬레이션
+      this.showFakeAd(reviveItems, overlay, () => this.revive());
+    });
+
+    // 건너뛰기 버튼
+    const skipBtn = this.add.rectangle(width / 2, height * 0.66, 250, 48, 0x555555)
+      .setInteractive({ useHandCursor: true }).setDepth(401).setAlpha(0);
+    const skipText = this.add.text(width / 2, height * 0.66, '건너뛰기', {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#999999',
+    }).setOrigin(0.5).setDepth(402).setAlpha(0);
+
+    skipBtn.on('pointerover', () => skipBtn.setFillStyle(0x666666));
+    skipBtn.on('pointerout', () => skipBtn.setFillStyle(0x555555));
+    skipBtn.on('pointerdown', () => {
+      this.playSfx('sfx-click', 0.6);
+      eventLog({ log_name: 'ad_skip_revive', log_type: 'event', params: { score: this.score } });
+      // 부활 화면 제거 → 게임 오버
+      reviveItems.forEach(item => item.destroy());
+      overlay.destroy();
+      this.endGame();
+    });
+
+    reviveItems.push(overlay, icon, title, desc, chance, adBtn, adText, skipBtn, skipText);
+
+    // 페이드 인
+    this.time.delayedCall(300, () => {
+      this.tweens.add({ targets: icon, alpha: 1, duration: 300 });
+      this.tweens.add({ targets: [title, desc, chance], alpha: 1, duration: 300, delay: 100 });
+      this.tweens.add({ targets: [adBtn, adText], alpha: 1, duration: 300, delay: 250 });
+      this.tweens.add({ targets: [skipBtn, skipText], alpha: 1, duration: 300, delay: 400 });
+    });
+  }
+
+  private showFakeAd(
+    reviveItems: Phaser.GameObjects.GameObject[],
+    overlay: Phaser.GameObjects.Rectangle,
+    onComplete: () => void,
+  ) {
+    const { width, height } = this.scale;
+
+    // 부활 UI 숨기기
+    reviveItems.forEach(item => {
+      if (item !== overlay && 'setVisible' in item) {
+        (item as Phaser.GameObjects.Components.Visible & Phaser.GameObjects.GameObject).setVisible(false);
+      }
+    });
+
+    // 임시 광고 화면
+    const adBg = this.add.rectangle(width / 2, height / 2, width * 0.85, height * 0.5, 0x222222)
+      .setStrokeStyle(3, 0xffaa00).setDepth(450);
+    const adLabel = this.add.text(width / 2, height * 0.35, '[ 광고 영역 ]', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#ffaa00', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(451);
+    const adSub = this.add.text(width / 2, height * 0.42, '실제 광고가 연결되면\n이 화면이 대체됩니다', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#888888', align: 'center',
+    }).setOrigin(0.5).setDepth(451);
+
+    // 카운트다운 (3초)
+    let countdown = 3;
+    const countText = this.add.text(width / 2, height * 0.55, `${countdown}초 후 부활...`, {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(451);
+
+    const adItems: Phaser.GameObjects.GameObject[] = [adBg, adLabel, adSub, countText];
+
+    this.time.addEvent({
+      delay: 1000,
+      repeat: 2,
+      callback: () => {
+        countdown--;
+        if (countdown > 0) {
+          countText.setText(`${countdown}초 후 부활...`);
+        } else {
+          countText.setText('부활!');
+          this.time.delayedCall(500, () => {
+            adItems.forEach(item => item.destroy());
+            reviveItems.forEach(item => item.destroy());
+            overlay.destroy();
+            onComplete();
+          });
+        }
+      },
+    });
+  }
+
+  private revive() {
+    this.hasRevived = true;
+    this.gameOver = false;
+    this.isFalling = false;
+    this.comboCount = 0;
+
+    // 플레이어 상태 복구
+    this.player.setHurt(false);
+
+    // 시간 복구
+    this.hud.timeLeft = START_TIME;
+    this.hud.addTime(0); // 타이머 바 갱신
+    this.hud.startTimer();
+
+    // BGM 재개
+    if (this.bgm) {
+      (this.bgm as Phaser.Sound.WebAudioSound).resume();
+    }
+
+    this.playSfx('sfx-combo', 0.7);
+    this.showPopup('부활!', '#44ff44');
   }
 
   /* ── Popup ── */
@@ -284,7 +452,7 @@ export class CommuteScene extends Phaser.Scene {
     eventLog({
       log_name: 'game_over',
       log_type: 'event',
-      params: { score: this.score, best_combo: this.bestCombo },
+      params: { score: this.score, best_combo: this.bestCombo, revived: this.hasRevived },
     });
 
     // 리더보드에 점수 제출

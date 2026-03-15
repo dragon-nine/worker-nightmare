@@ -79,6 +79,16 @@ export class HUD {
     this.tickTimer?.remove();
   }
 
+  /** BGM 뮤트 상태 확인 */
+  isBgmMuted() {
+    return this.bgmMuted;
+  }
+
+  /** 효과음이 뮤트 상태인지 확인 */
+  isSfxMuted() {
+    return this.sfxMuted;
+  }
+
   private updateTimerBar() {
     const pct = this.timeLeft / MAX_TIME;
     const fillW = (this.barW - 6) * pct;
@@ -109,18 +119,13 @@ export class HUD {
   }
 
   togglePause() {
-    this.scene.sound.play('sfx-click', { volume: 0.5 });
+    if (!this.sfxMuted) this.scene.sound.play('sfx-click', { volume: 0.5 });
     const { width, height } = this.scene.scale;
 
     if (!this.paused) {
       this.paused = true;
       this.scene.time.paused = true;
       this.scene.tweens.pauseAll();
-
-      // BGM 일시정지
-      this.scene.sound.getAll('bgm-gameplay').forEach(s => {
-        if (s.isPlaying) (s as Phaser.Sound.WebAudioSound).pause();
-      });
 
       this.pauseOverlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6)
         .setDepth(500).setInteractive();
@@ -146,7 +151,7 @@ export class HUD {
         });
         bgmLabel.setText(`배경음악  ${this.bgmMuted ? 'OFF' : 'ON'}`);
         bgmLabel.setColor(this.bgmMuted ? '#ff6666' : '#66ff66');
-        this.scene.sound.play('sfx-click', { volume: 0.5 });
+        if (!this.sfxMuted) this.scene.sound.play('sfx-click', { volume: 0.5 });
       });
 
       // ── 효과음 토글 ──
@@ -163,9 +168,7 @@ export class HUD {
         this.sfxMuted = !this.sfxMuted;
         sfxLabel.setText(`효과음  ${this.sfxMuted ? 'OFF' : 'ON'}`);
         sfxLabel.setColor(this.sfxMuted ? '#ff6666' : '#66ff66');
-        if (!this.sfxMuted) {
-          this.scene.sound.play('sfx-click', { volume: 0.5 });
-        }
+        if (!this.sfxMuted) this.scene.sound.play('sfx-click', { volume: 0.5 });
       });
 
       // ── 계속하기 안내 ──
@@ -182,11 +185,6 @@ export class HUD {
       this.scene.time.paused = false;
       this.scene.tweens.resumeAll();
 
-      // BGM 재개 (뮤트 아닐 때)
-      this.scene.sound.getAll('bgm-gameplay').forEach(s => {
-        if ((s as Phaser.Sound.WebAudioSound).isPaused) (s as Phaser.Sound.WebAudioSound).resume();
-      });
-
       this.pauseOverlay?.destroy();
       this.pauseText?.destroy();
       this.pauseMenuItems.forEach(item => item.destroy());
@@ -195,10 +193,5 @@ export class HUD {
       this.pauseText = undefined;
       this.pauseIcon.setText('⏸');
     }
-  }
-
-  /** 효과음이 뮤트 상태인지 확인 */
-  isSfxMuted() {
-    return this.sfxMuted;
   }
 }
