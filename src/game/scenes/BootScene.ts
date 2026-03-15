@@ -21,11 +21,28 @@ export class BootScene extends Phaser.Scene {
     for (const [key, path] of assets) {
       if (!this.textures.exists(key)) this.load.image(key, path);
     }
+
+    // Audio
+    this.load.audio('bgm-menu', 'audio/bgm/menu.mp3');
+    this.load.audio('bgm-gameplay', 'audio/bgm/gameplay.mp3');
+    this.load.audio('sfx-click', 'audio/sfx/click.ogg');
+    this.load.audio('sfx-switch', 'audio/sfx/switch.ogg');
+    this.load.audio('sfx-forward', 'audio/sfx/forward.ogg');
+    this.load.audio('sfx-crash', 'audio/sfx/crash.ogg');
+    this.load.audio('sfx-combo', 'audio/sfx/combo.ogg');
+    this.load.audio('sfx-time-bonus', 'audio/sfx/time-bonus.ogg');
+    this.load.audio('sfx-timer-warning', 'audio/sfx/timer-warning.ogg');
+    this.load.audio('sfx-game-over', 'audio/sfx/game-over.ogg');
   }
 
   create() {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#0a0a14');
+
+    // Menu BGM
+    if (!this.sound.get('bgm-menu')) {
+      this.sound.add('bgm-menu', { loop: true, volume: 0.4 }).play();
+    }
 
     // Particles
     for (let i = 0; i < 20; i++) {
@@ -82,6 +99,8 @@ export class BootScene extends Phaser.Scene {
     btn.on('pointerover', () => btn.setFillStyle(0xd63651));
     btn.on('pointerout', () => btn.setFillStyle(0xe94560));
     btn.on('pointerdown', () => {
+      this.sound.play('sfx-click', { volume: 0.6 });
+      this.sound.get('bgm-menu')?.stop();
       this.cameras.main.fadeOut(500, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('CommuteScene');
@@ -89,8 +108,12 @@ export class BootScene extends Phaser.Scene {
     });
 
     // Credits
-    this.add.text(width / 2, height * 0.92, 'DragonNine Studio', {
+    this.add.text(width / 2, height * 0.90, 'DragonNine Studio', {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#333344',
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, height * 0.93, 'Music by CodeManu (OpenGameArt.org) · SFX by Kenney.nl', {
+      fontFamily: 'sans-serif', fontSize: '9px', color: '#222233',
     }).setOrigin(0.5);
   }
 }

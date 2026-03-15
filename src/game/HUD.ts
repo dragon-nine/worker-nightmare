@@ -17,6 +17,7 @@ export class HUD {
   paused = false;
 
   private onTimeUp: () => void;
+  private warningPlayed = false;
 
   constructor(scene: Phaser.Scene, onTimeUp: () => void) {
     this.scene = scene;
@@ -80,6 +81,14 @@ export class HUD {
     this.timerFill.setDisplaySize(Math.max(0, fillW), 18);
     this.timerFill.x = 14 + 3 + Math.max(0, fillW) / 2;
     this.timerFill.setFillStyle(this.timeLeft <= 3 ? 0xff4444 : 0x44cc44);
+
+    // Timer warning sound
+    if (this.timeLeft <= 3 && this.timeLeft > 0 && !this.warningPlayed) {
+      this.warningPlayed = true;
+      this.scene.sound.play('sfx-timer-warning', { volume: 0.5 });
+    } else if (this.timeLeft > 3) {
+      this.warningPlayed = false;
+    }
   }
 
   private scheduleNextTick() {
@@ -96,6 +105,7 @@ export class HUD {
   }
 
   togglePause() {
+    this.scene.sound.play('sfx-click', { volume: 0.5 });
     const { width, height } = this.scene.scale;
 
     if (!this.paused) {
