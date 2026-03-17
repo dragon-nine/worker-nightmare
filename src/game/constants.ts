@@ -22,6 +22,7 @@ export interface RoadRow {
   leftTile?: Phaser.GameObjects.Image;
   rightTile?: Phaser.GameObjects.Image;
   decoration?: Phaser.GameObjects.Container;
+  bgTile?: Phaser.GameObjects.Image;
 }
 
 export interface LanePositions {

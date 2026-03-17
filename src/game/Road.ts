@@ -4,7 +4,7 @@ import {
   OBSTACLE_SIZE_RATIO,
 } from './constants';
 
-const OBSTACLE_KEYS = ['building1', 'building2', 'building3', 'building4', 'building5'];
+const OBSTACLE_KEYS = ['building1', 'building2', 'building3', 'building4', 'building5', 'building6'];
 const EMPTY = '__empty__';
 
 export class Road {
@@ -54,6 +54,7 @@ export class Road {
       old.leftTile?.destroy();
       old.rightTile?.destroy();
       old.decoration?.destroy();
+      old.bgTile?.destroy();
       currentRowIdx--;
     }
     return currentRowIdx;
@@ -76,9 +77,13 @@ export class Road {
       this.container.add(row.rightTile);
     } else if (type === 'left') {
       row.leftTile = this.createTile(this.laneX.left, y, 'tile-straight');
+      row.bgTile = this.createTile(this.laneX.right, y, 'tile-bg');
+      this.container.add(row.bgTile);
       this.container.add(row.leftTile);
     } else {
       row.rightTile = this.createTile(this.laneX.right, y, 'tile-straight', true);
+      row.bgTile = this.createTile(this.laneX.left, y, 'tile-bg');
+      this.container.add(row.bgTile);
       this.container.add(row.rightTile);
     }
 
