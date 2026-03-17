@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
-import type { Lane } from '../constants';
 import {
-  PADDING, START_TIME,
+  START_TIME,
   BTN_MARGIN, BTN_BOTTOM_OFFSET, BTN_PRESS_SCALE, BTN_PRESS_DURATION,
 } from '../constants';
 import { Road } from '../Road';
@@ -31,7 +30,6 @@ export class CommuteScene extends Phaser.Scene {
   private laneH = 0;
   private tileW = 0;
   private playerScreenX = 0;
-  private padding = 0;
   private gridGfx!: Phaser.GameObjects.Graphics;
 
   constructor() {
@@ -54,7 +52,6 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#000000');
 
-    this.padding = PADDING;
     this.laneH = Math.floor(width / 5);
     this.tileW = this.laneH;
 
