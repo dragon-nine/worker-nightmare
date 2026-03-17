@@ -54,7 +54,6 @@ export class Road {
       old.leftTile?.destroy();
       old.rightTile?.destroy();
       old.decoration?.destroy();
-      old.bgTile?.destroy();
       currentRowIdx--;
     }
     return currentRowIdx;
@@ -64,6 +63,12 @@ export class Road {
     const prev = this.rows.length > 0 ? this.rows[this.rows.length - 1] : null;
     const isTurn = prev !== null && prev.type !== type;
     const row: RoadRow = { type, y, isTurn };
+
+    // 양쪽 모두 bg-tile 먼저 깔기
+    const bgLeft = this.createTile(this.laneX.left, y, 'tile-bg');
+    const bgRight = this.createTile(this.laneX.right, y, 'tile-bg');
+    this.container.add(bgLeft);
+    this.container.add(bgRight);
 
     if (isTurn) {
       if (prev!.type === 'left' && type === 'right') {
@@ -77,13 +82,9 @@ export class Road {
       this.container.add(row.rightTile);
     } else if (type === 'left') {
       row.leftTile = this.createTile(this.laneX.left, y, 'tile-straight');
-      row.bgTile = this.createTile(this.laneX.right, y, 'tile-bg');
-      this.container.add(row.bgTile);
       this.container.add(row.leftTile);
     } else {
       row.rightTile = this.createTile(this.laneX.right, y, 'tile-straight', true);
-      row.bgTile = this.createTile(this.laneX.left, y, 'tile-bg');
-      this.container.add(row.bgTile);
       this.container.add(row.rightTile);
     }
 

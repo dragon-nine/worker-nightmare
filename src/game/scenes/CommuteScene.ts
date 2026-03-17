@@ -51,7 +51,7 @@ export class CommuteScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#2d8a4e');
+    this.cameras.main.setBackgroundColor('#000000');
 
     this.padding = PADDING;
     const roadW = width - this.padding * 2;
