@@ -31,7 +31,6 @@ export class CommuteScene extends Phaser.Scene {
   private laneW = 0;
   private tileH = 0;
   private viewLeft = 0;
-  private gridGfx!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super({ key: 'CommuteScene' });
@@ -67,8 +66,6 @@ export class CommuteScene extends Phaser.Scene {
     const startLane = 0;
     this.viewLeft = 0;
 
-    this.gridGfx = this.add.graphics().setDepth(10);
-
     this.road = new Road(this, this.laneWorldX, this.laneW, this.tileH, NUM_LANES);
     this.road.generateInitial(height, startLane);
 
@@ -86,8 +83,6 @@ export class CommuteScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     if (!this.gameOver) {
-      const { width, height } = this.scale;
-      this.drawGrid(width, height);
       this.hud.update(delta);
     }
   }
@@ -116,30 +111,6 @@ export class CommuteScene extends Phaser.Scene {
       x: -(this.viewLeft * this.laneW),
       duration: 120, ease: 'Quad.easeOut',
     });
-  }
-
-  /* ── Grid ── */
-
-  private drawGrid(_w: number, h: number) {
-    this.gridGfx.clear();
-    this.gridGfx.lineStyle(2, 0xffffff, 0.3);
-
-    const p = PADDING;
-    const visibleW = VISIBLE_LANES * this.laneW;
-
-    // 세로 레인 구분선
-    for (let i = 0; i <= VISIBLE_LANES; i++) {
-      const x = p + i * this.laneW;
-      this.gridGfx.lineBetween(Math.round(x), 0, Math.round(x), h);
-    }
-
-    // 가로 행 구분선
-    const containerY = this.road.getContainer().y;
-    const tileTopBase = this.road.startY - this.tileH / 2 + containerY;
-    const offsetY = ((tileTopBase % this.tileH) + this.tileH) % this.tileH;
-    for (let y = offsetY; y <= h + this.tileH; y += this.tileH) {
-      this.gridGfx.lineBetween(Math.round(p), Math.round(y), Math.round(p + visibleW), Math.round(y));
-    }
   }
 
   /* ── Buttons ── */
