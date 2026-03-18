@@ -99,24 +99,53 @@ export class Player {
     });
   }
 
-  /** 공통 낙하: 정면 전환 → 잠깐 멈춤 → 제자리에서 축소 (탑다운 깊이감 낙하) */
+  /** 공통 낙하: 정면 전환 → 후들후들 → 쏙! 빨려들어감 */
   private animateFall(onDone: () => void) {
     this.sprite.setTexture('rabbit-front');
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
+    this.sprite.setAngle(0);
 
-    // 잠깐 멈춤 (발 밑이 없다는 걸 깨달은 순간)
-    this.scene.time.delayedCall(200, () => {
-      // 제자리에서 축소 + 살짝 아래로 (깊이감) + 페이드아웃
+    const baseX = this.sprite.x;
+
+    // 1단계: 후들후들 떨림 (허우적대는 느낌)
+    let shakeCount = 0;
+    const shakeEvent = this.scene.time.addEvent({
+      delay: 40,
+      repeat: 7,
+      callback: () => {
+        shakeCount++;
+        const offset = (shakeCount % 2 === 0 ? 1 : -1) * 5;
+        this.sprite.setX(baseX + offset);
+        this.sprite.setAngle(offset * 0.8);
+      },
+    });
+
+    // 2단계: 쏙! 빨려들어감
+    this.scene.time.delayedCall(350, () => {
+      shakeEvent.destroy();
+      this.sprite.setX(baseX);
+      this.sprite.setAngle(0);
+
+      // 살짝 커졌다가 (으악!) → 쏙 빨려들어감
       this.scene.tweens.add({
         targets: this.sprite,
-        scaleX: 0,
-        scaleY: 0,
-        y: this.sprite.y + 30,
-        alpha: 0.3,
-        duration: 400,
-        ease: 'Cubic.easeIn',
-        onComplete: onDone,
+        scaleX: 1.3,
+        scaleY: 1.3,
+        duration: 80,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.scene.tweens.add({
+            targets: this.sprite,
+            scaleX: 0,
+            scaleY: 0,
+            y: this.sprite.y + 20,
+            alpha: 0,
+            duration: 250,
+            ease: 'Back.easeIn',
+            onComplete: onDone,
+          });
+        },
       });
     });
   }
