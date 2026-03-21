@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm run build --prefix games/game01",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/game01/(.*)", "destination": "/game01/$1" },
+    { "source": "/game01", "destination": "/game01/index.html" }
+  ],
+  "redirects": [
+    { "source": "/", "destination": "/game01", "statusCode": 302 }
+  ]
+}
