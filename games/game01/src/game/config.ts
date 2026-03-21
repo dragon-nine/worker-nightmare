@@ -14,6 +14,9 @@ export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
+    loader: {
+      baseURL: import.meta.env.BASE_URL,
+    },
     scene: [BootScene, CommuteScene],
   };
 }
