@@ -94,12 +94,14 @@ function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props[
   const addRef = useRef<HTMLInputElement>(null)
   const [blobs, setBlobs] = useState<BlobItem[]>([])
   const [collapsed, setCollapsed] = useState(false)
+  const [apiAvailable, setApiAvailable] = useState(false)
   const localAssets = getLocalAssetsByCategory(cat.key)
 
   const refresh = useCallback(async () => {
     try {
       const items = await listBlobs(cat.prefix)
       setBlobs(items)
+      setApiAvailable(true)
     } catch {
       // API not available (local dev)
     }
@@ -131,7 +133,10 @@ function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props[
     }
   }, [onBanner, refresh])
 
-  const totalCount = localAssets.length + blobs.length
+  // 로컬 에셋은 API 없을 때(로컬 dev)만 표시
+  const showLocal = !apiAvailable
+  const visibleLocal = showLocal ? localAssets : []
+  const totalCount = visibleLocal.length + blobs.length
 
   return (
     <div className="card">
@@ -157,7 +162,7 @@ function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props[
       </div>
       {!collapsed && (
         <div className="asset-grid">
-          {localAssets.map((a) => (
+          {visibleLocal.map((a) => (
             <LocalAssetCard
               key={a.path}
               asset={a}
