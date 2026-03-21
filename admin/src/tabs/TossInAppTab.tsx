@@ -1,116 +1,105 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { BlobItem } from '../types'
 import { listBlobs, uploadBlob, deleteBlob } from '../api'
-import UploadZone from '../components/UploadZone'
 import AssetCard from '../components/AssetCard'
 
-const SECTIONS = [
-  {
-    key: 'icon',
-    label: '앱 아이콘',
-    prefix: 'store/toss/icon/',
-    hint: '토스 인앱 등록용 아이콘',
-    maxCount: 1,
-  },
-  {
-    key: 'screenshots',
-    label: '스크린샷',
-    prefix: 'store/toss/screenshots/',
-    hint: '토스 인앱 등록용 스크린샷',
-    maxCount: 8,
-  },
-  {
-    key: 'etc',
-    label: '기타 이미지',
-    prefix: 'store/toss/etc/',
-    hint: '배너, 프로모션 이미지 등',
-    maxCount: 10,
-  },
-]
+interface Spec {
+  key: string
+  label: string
+  desc: string
+  accept: string
+  prefix: string
+  maxCount: number
+}
+
+function buildSpecs(gameId: string): Spec[] {
+  return [
+    { key: 'icon', label: '앱 아이콘', desc: '1024x1024 PNG', accept: 'image/png', prefix: `store/${gameId}/toss/icon/`, maxCount: 1 },
+    { key: 'screenshots', label: '스크린샷', desc: '최대 8장', accept: 'image/png,image/jpeg', prefix: `store/${gameId}/toss/screenshots/`, maxCount: 8 },
+  ]
+}
 
 interface Props {
+  gameId: string
+  gameName: string
   onBanner: (type: 'success' | 'error', message: string) => void
 }
 
-function TossSection({ section, onBanner }: { section: typeof SECTIONS[number]; onBanner: Props['onBanner'] }) {
+function StoreCategory({ spec, onBanner }: { spec: Spec; onBanner: Props['onBanner'] }) {
+  const addRef = useRef<HTMLInputElement>(null)
   const [blobs, setBlobs] = useState<BlobItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
 
   const refresh = useCallback(async () => {
-    try {
-      setBlobs(await listBlobs(section.prefix))
-    } catch (err) {
-      onBanner('error', `${section.label} 로드 실패: ${(err as Error).message}`)
-    } finally {
-      setLoading(false)
-    }
-  }, [section, onBanner])
+    try { setBlobs(await listBlobs(spec.prefix)) } catch { /* local */ }
+  }, [spec.prefix])
 
   useEffect(() => { refresh() }, [refresh])
 
   const handleUpload = useCallback(async (files: File[]) => {
-    if (blobs.length + files.length > section.maxCount) {
-      onBanner('error', `최대 ${section.maxCount}개까지 업로드 가능`)
+    if (blobs.length + files.length > spec.maxCount) {
+      onBanner('error', `최대 ${spec.maxCount}개까지 (현재 ${blobs.length}개)`)
       return
     }
     for (const file of files) {
-      try {
-        await uploadBlob(file, section.prefix)
-      } catch (err) {
-        onBanner('error', `"${file.name}" 업로드 실패: ${(err as Error).message}`)
-        return
-      }
+      try { await uploadBlob(file, spec.prefix) }
+      catch (err) { onBanner('error', `업로드 실패: ${(err as Error).message}`); return }
     }
     onBanner('success', `${files.length}개 파일 업로드 완료`)
     refresh()
-  }, [blobs.length, section, onBanner, refresh])
+  }, [blobs.length, spec, onBanner, refresh])
 
   const handleDelete = useCallback(async (url: string) => {
-    try {
-      await deleteBlob(url)
-      onBanner('success', '삭제 완료')
-      refresh()
-    } catch (err) {
-      onBanner('error', `삭제 실패: ${(err as Error).message}`)
-    }
+    if (!confirm('삭제하시겠습니까?')) return
+    try { await deleteBlob(url); onBanner('success', '삭제 완료'); refresh() }
+    catch (err) { onBanner('error', `삭제 실패: ${(err as Error).message}`) }
   }, [onBanner, refresh])
 
   return (
     <div className="card">
-      <div className="section-header">
-        <div className="card-title">{section.label}</div>
-        <span className="section-count">{blobs.length} / {section.maxCount}</span>
+      <div className="category-header">
+        <button className="category-toggle" onClick={() => setCollapsed(!collapsed)}>
+          <span className={`sidebar-chevron${collapsed ? '' : ' open'}`}>&#9656;</span>
+          <span className="card-title" style={{ marginBottom: 0 }}>{spec.label}</span>
+          <span className="spec-badge">{spec.desc}</span>
+          <span className="section-count">{blobs.length} / {spec.maxCount}</span>
+        </button>
+        {blobs.length < spec.maxCount && (
+          <>
+            <button className="category-add-btn" onClick={(e) => { e.stopPropagation(); addRef.current?.click() }} title="추가">+</button>
+            <input ref={addRef} type="file" accept={spec.accept} multiple={spec.maxCount > 1} style={{ display: 'none' }}
+              onChange={(e) => { if (e.target.files) handleUpload(Array.from(e.target.files)); e.target.value = '' }} />
+          </>
+        )}
       </div>
-      {blobs.length < section.maxCount && (
-        <UploadZone accept="image/*" multiple={section.maxCount > 1} onUpload={handleUpload} hint={section.hint} />
-      )}
-      {loading ? (
-        <div className="loading">로딩 중...</div>
-      ) : blobs.length === 0 ? (
-        <div className="empty" style={{ marginTop: 12 }}>업로드된 파일이 없습니다</div>
-      ) : (
-        <div className="asset-grid" style={{ marginTop: 16 }}>
-          {blobs.map((b) => (
-            <AssetCard key={b.url} blob={b} onDelete={handleDelete} />
-          ))}
-        </div>
+      {!collapsed && (
+        blobs.length === 0 ? (
+          <div className="empty">업로드된 파일이 없습니다</div>
+        ) : (
+          <div className="asset-grid">
+            {blobs.map((b) => (
+              <AssetCard key={b.url} blob={b} onDelete={handleDelete}
+                onReplace={async (file, pathname) => {
+                  const pfx = pathname.substring(0, pathname.lastIndexOf('/') + 1)
+                  try { await uploadBlob(file, pfx); onBanner('success', '교체 완료'); refresh() }
+                  catch (err) { onBanner('error', `교체 실패: ${(err as Error).message}`) }
+                }}
+              />
+            ))}
+          </div>
+        )
       )}
     </div>
   )
 }
 
-export default function TossInAppTab({ onBanner }: Props) {
+export default function TossInAppTab({ gameId, gameName, onBanner }: Props) {
+  const specs = buildSpecs(gameId)
   return (
     <div>
-      <div className="card" style={{ marginBottom: 16, background: 'var(--accent-light)' }}>
-        <div style={{ fontSize: 14, color: 'var(--accent-dark)' }}>
-          토스 인앱 스토어 등록에 필요한 이미지를 관리합니다.
-          스펙이 확정되면 크기 검증이 추가됩니다.
-        </div>
-      </div>
-      {SECTIONS.map((s) => (
-        <TossSection key={s.key} section={s} onBanner={onBanner} />
-      ))}
+      <h1 className="page-title">토스 인앱 스토어</h1>
+      <p className="page-subtitle">{gameName} — 스토어 등록 필수 이미지</p>
+      {specs.map((s) => <StoreCategory key={s.key} spec={s} onBanner={onBanner} />)}
     </div>
   )
 }

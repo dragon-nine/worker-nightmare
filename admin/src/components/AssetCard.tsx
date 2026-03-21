@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { BlobItem } from '../types'
 
 interface Props {
   blob: BlobItem
   onDelete: (url: string) => void
+  onReplace?: (file: File, pathname: string) => void
 }
 
 function formatSize(bytes: number): string {
@@ -20,8 +21,9 @@ function isAudio(pathname: string): boolean {
   return /\.(mp3|ogg|wav|m4a)$/i.test(pathname)
 }
 
-export default function AssetCard({ blob, onDelete }: Props) {
+export default function AssetCard({ blob, onDelete, onReplace }: Props) {
   const [dims, setDims] = useState<string>('')
+  const fileRef = useRef<HTMLInputElement>(null)
   const audio = isAudio(blob.pathname)
   const filename = getFilename(blob.pathname)
 
@@ -39,22 +41,29 @@ export default function AssetCard({ blob, onDelete }: Props) {
     }
   }
 
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !onReplace) return
+    onReplace(file, blob.pathname)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   return (
-    <div className="asset-card">
+    <div className={`asset-card${onReplace ? ' clickable' : ''}`} onClick={() => onReplace && fileRef.current?.click()}>
       <div className={`asset-card-preview${audio ? ' audio' : ''}`}>
         {audio ? (
           <span>&#9835;</span>
         ) : (
           <img src={blob.url} alt={filename} loading="lazy" />
         )}
+        {onReplace && <div className="asset-card-overlay">클릭하여 교체</div>}
       </div>
+      {onReplace && <input ref={fileRef} type="file" accept="image/*,audio/*" style={{ display: 'none' }} onChange={handleFile} />}
       <div className="asset-card-info">
         <div className="asset-card-name" title={filename}>{filename}</div>
         <div className="asset-card-meta">
           <span>{dims ? `${dims} / ` : ''}{formatSize(blob.size)}</span>
-          <button className="asset-card-delete" onClick={handleDelete} title="삭제">
-            &#x2715;
-          </button>
+          <button className="asset-card-delete" onClick={handleDelete} title="삭제">&#x2715;</button>
         </div>
       </div>
     </div>

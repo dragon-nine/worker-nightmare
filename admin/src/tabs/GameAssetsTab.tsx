@@ -1,29 +1,203 @@
-import type { AssetCategory } from '../types'
-import CategorySection from '../components/CategorySection'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import type { BlobItem } from '../types'
+import { listBlobs, uploadBlob, deleteBlob } from '../api'
+import { getLocalAssetsByCategory, getLocalAssetUrl } from '../local-assets'
+import AssetCard from '../components/AssetCard'
 
-const CATEGORIES: AssetCategory[] = [
-  { key: 'character', label: '캐릭터', prefix: 'game01/character/', accept: 'image/*' },
-  { key: 'map', label: '맵 타일', prefix: 'game01/map/', accept: 'image/*' },
-  { key: 'obstacles', label: '장애물', prefix: 'game01/obstacles/', accept: 'image/*' },
-  { key: 'ui', label: 'UI', prefix: 'game01/ui/', accept: 'image/*' },
-  { key: 'audio', label: '오디오', prefix: 'game01/audio/', accept: 'audio/*' },
+interface CategoryDef {
+  key: string
+  label: string
+  prefix: string
+  accept: string
+  darkBg?: boolean
+}
+
+const CATEGORY_DEFS = [
+  { key: 'character', label: '캐릭터', accept: 'image/*', darkBg: true },
+  { key: 'map', label: '맵 타일', accept: 'image/*', darkBg: true },
+  { key: 'obstacles', label: '장애물', accept: 'image/*', darkBg: true },
+  { key: 'ui', label: 'UI', accept: 'image/*' },
+
+  { key: 'audio', label: '오디오', accept: 'audio/*' },
 ]
 
+function buildCategories(gameId: string): CategoryDef[] {
+  return CATEGORY_DEFS.map((c) => ({ ...c, prefix: `${gameId}/${c.key}/` }))
+}
+
 interface Props {
+  gameId: string
+  gameName: string
   onBanner: (type: 'success' | 'error', message: string) => void
 }
 
-export default function GameAssetsTab({ onBanner }: Props) {
+function isAudio(name: string) {
+  return /\.(mp3|ogg|wav|m4a)$/i.test(name)
+}
+
+
+function LocalAssetCard({ asset, darkBg, prefix, onBanner, onReplaced }: {
+  asset: { path: string; filename: string }
+  darkBg?: boolean
+  prefix: string
+  onBanner: Props['onBanner']
+  onReplaced: () => void
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [dims, setDims] = useState('')
+  const url = getLocalAssetUrl(asset.path)
+  const audio = isAudio(asset.filename)
+
+  const handleReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      await uploadBlob(file, prefix)
+      onBanner('success', `"${asset.filename}" 교체 업로드 완료`)
+      onReplaced()
+    } catch (err) {
+      onBanner('error', `교체 실패: ${(err as Error).message}`)
+    }
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  return (
+    <div className="asset-card clickable" onClick={() => fileRef.current?.click()}>
+      <div className={`asset-card-preview${darkBg ? ' dark-bg' : ''}${audio ? ' audio' : ''}`}>
+        {audio ? (
+          <span>&#9835;</span>
+        ) : (
+          <img
+            src={url}
+            alt={asset.filename}
+            loading="lazy"
+            onLoad={(e) => {
+              const img = e.currentTarget
+              setDims(`${img.naturalWidth}x${img.naturalHeight}`)
+            }}
+          />
+        )}
+        <div className="asset-card-overlay">클릭하여 교체</div>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*,audio/*" style={{ display: 'none' }} onChange={handleReplace} />
+      <div className="asset-card-info">
+        <div className="asset-card-name" title={asset.path}>{asset.filename}</div>
+        <div className="asset-card-meta">
+          <span>{dims || ''}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props['onBanner'] }) {
+  const addRef = useRef<HTMLInputElement>(null)
+  const [blobs, setBlobs] = useState<BlobItem[]>([])
+  const [collapsed, setCollapsed] = useState(false)
+  const localAssets = getLocalAssetsByCategory(cat.key)
+
+  const refresh = useCallback(async () => {
+    try {
+      const items = await listBlobs(cat.prefix)
+      setBlobs(items)
+    } catch {
+      // API not available (local dev)
+    }
+  }, [cat.prefix])
+
+  useEffect(() => { refresh() }, [refresh])
+
+  const handleUpload = useCallback(async (files: File[]) => {
+    for (const file of files) {
+      try {
+        await uploadBlob(file, cat.prefix)
+      } catch (err) {
+        onBanner('error', `"${file.name}" 업로드 실패: ${(err as Error).message}`)
+        return
+      }
+    }
+    onBanner('success', `${files.length}개 파일 업로드 완료`)
+    refresh()
+  }, [cat.prefix, onBanner, refresh])
+
+  const handleDelete = useCallback(async (url: string) => {
+    if (!confirm('삭제하시겠습니까?')) return
+    try {
+      await deleteBlob(url)
+      onBanner('success', '삭제 완료')
+      refresh()
+    } catch (err) {
+      onBanner('error', `삭제 실패: ${(err as Error).message}`)
+    }
+  }, [onBanner, refresh])
+
+  const totalCount = localAssets.length + blobs.length
+
+  return (
+    <div className="card">
+      <div className="category-header">
+        <button className="category-toggle" onClick={() => setCollapsed(!collapsed)}>
+          <span className={`sidebar-chevron${collapsed ? '' : ' open'}`}>&#9656;</span>
+          <span className="card-title" style={{ marginBottom: 0 }}>{cat.label}</span>
+          <span className="section-count">{totalCount}개</span>
+        </button>
+        <button
+          className="category-add-btn"
+          onClick={(e) => { e.stopPropagation(); addRef.current?.click() }}
+          title="새 에셋 추가"
+        >+</button>
+        <input
+          ref={addRef}
+          type="file"
+          accept={cat.accept}
+          multiple
+          style={{ display: 'none' }}
+          onChange={(e) => { if (e.target.files) handleUpload(Array.from(e.target.files)); e.target.value = '' }}
+        />
+      </div>
+      {!collapsed && (
+        <div className="asset-grid">
+          {localAssets.map((a) => (
+            <LocalAssetCard
+              key={a.path}
+              asset={a}
+              darkBg={cat.darkBg}
+              prefix={cat.prefix}
+              onBanner={onBanner}
+              onReplaced={refresh}
+            />
+          ))}
+          {blobs.map((b) => (
+            <AssetCard
+              key={b.url}
+              blob={b}
+              onDelete={handleDelete}
+              onReplace={async (file, pathname) => {
+                const prefix = pathname.substring(0, pathname.lastIndexOf('/') + 1)
+                try {
+                  await uploadBlob(file, prefix)
+                  onBanner('success', `"${file.name}" 교체 완료`)
+                  refresh()
+                } catch (err) {
+                  onBanner('error', `교체 실패: ${(err as Error).message}`)
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function GameAssetsTab({ gameId, gameName, onBanner }: Props) {
+  const categories = buildCategories(gameId)
   return (
     <div>
-      {CATEGORIES.map((cat) => (
-        <CategorySection
-          key={cat.key}
-          label={cat.label}
-          prefix={cat.prefix}
-          accept={cat.accept}
-          onBanner={onBanner}
-        />
+      <h1 className="page-title">{gameId} 에셋 관리</h1>
+      <p className="page-subtitle">{gameName} — 게임 에셋을 업로드하고 관리합니다</p>
+      {categories.map((cat) => (
+        <CategorySection key={cat.key} cat={cat} onBanner={onBanner} />
       ))}
     </div>
   )
