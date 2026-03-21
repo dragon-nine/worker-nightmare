@@ -375,7 +375,7 @@ export class CommuteScene extends Phaser.Scene {
       yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
 
-    adItems.push(this.add.text(width / 2, height * 0.25, '직장인 잔혹사를\n홈 화면에 추가해보세요!', {
+    adItems.push(this.add.text(width / 2, height * 0.25, '직장인 잔혹시를\n홈 화면에 추가해보세요!', {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
       align: 'center', lineSpacing: 8,
     }).setOrigin(0.5).setDepth(451));

@@ -83,7 +83,7 @@ export class BootScene extends Phaser.Scene {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '52px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0);
 
-    const title2 = this.add.text(width / 2, height * 0.4, '잔혹사', {
+    const title2 = this.add.text(width / 2, height * 0.4, '잔혹시', {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '68px', color: '#e94560', fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0);
 
@@ -223,7 +223,7 @@ export class BootScene extends Phaser.Scene {
     ov.addText(width / 2, height * 0.15, 'D9', { fontSize: '28px', color: '#ffffff', fontStyle: 'bold' });
 
     // 타이틀
-    ov.addText(width / 2, height * 0.24, '직장인 잔혹사를\n홈 화면에 추가해보세요', {
+    ov.addText(width / 2, height * 0.24, '직장인 잔혹시를\n홈 화면에 추가해보세요', {
       fontSize: '24px', color: '#ffffff', fontStyle: 'bold', align: 'center',
     });
 
