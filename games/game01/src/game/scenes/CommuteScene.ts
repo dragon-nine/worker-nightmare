@@ -78,8 +78,9 @@ export class CommuteScene extends Phaser.Scene {
     this.viewLeft = 0;
 
     this.road = new Road(this, this.laneWorldX, this.laneW, this.tileH, NUM_LANES);
-    const playerScreenY = height * 0.5 - this.tileH / 2;
-    this.road.generateInitial(height, startLane, height * 0.5);
+    const PLAYER_Y_RATIO = 1.5 / 4; // 화면 위에서 37.5% 위치
+    const playerScreenY = height * PLAYER_Y_RATIO - this.tileH / 2;
+    this.road.generateInitial(height, startLane, height * PLAYER_Y_RATIO);
 
     // 컨테이너 X 오프셋으로 뷰 위치 설정
     this.road.getContainer().setX(-(this.viewLeft * this.laneW));
@@ -258,8 +259,9 @@ export class CommuteScene extends Phaser.Scene {
   private scrollToCurrentRow() {
     const { height } = this.scale;
     const row = this.road.rows[this.currentRowIdx];
-    const screenY = height * 0.5;
-    const playerOffsetY = this.tileH / 2; // 타일 높이의 1/3 위로
+    const PLAYER_Y_RATIO = 1.5 / 4;
+    const screenY = height * PLAYER_Y_RATIO;
+    const playerOffsetY = this.tileH / 2;
     const targetContainerY = -(row.y - screenY);
 
     const scrollDelta = targetContainerY - this.road.getContainer().y;
