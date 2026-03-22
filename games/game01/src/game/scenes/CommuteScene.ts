@@ -26,7 +26,7 @@ export class CommuteScene extends Phaser.Scene {
   private gameStarted = false;
   private hasRevived = false;
   private bgm?: Phaser.Sound.BaseSound;
-
+  private bgTile?: Phaser.GameObjects.TileSprite;
 
   private laneWorldX: number[] = [];
   private laneW = 0;
@@ -59,7 +59,7 @@ export class CommuteScene extends Phaser.Scene {
       const scale = width / bgFrame.width;
       const scaledH = bgFrame.height * scale;
       const offsetY = scaledH - (height % scaledH);
-      this.add.tileSprite(0, 0, width, height, 'bg-game')
+      this.bgTile = this.add.tileSprite(0, 0, width, height, 'bg-game')
         .setOrigin(0, 0)
         .setTileScale(scale, scale)
         .setTilePosition(0, offsetY)
@@ -266,11 +266,22 @@ export class CommuteScene extends Phaser.Scene {
     const screenY = height * PLAYER_Y_RATIO;
     const targetContainerY = -(row.y - screenY);
 
+    const scrollDelta = targetContainerY - this.road.getContainer().y;
+
     this.tweens.add({
       targets: this.road.getContainer(),
       y: targetContainerY,
       duration: 100, ease: 'Quad.easeOut',
     });
+
+    // 배경도 같이 스크롤 (도로와 동일한 속도)
+    if (this.bgTile) {
+      this.tweens.add({
+        targets: this.bgTile,
+        tilePositionY: this.bgTile.tilePositionY - scrollDelta,
+        duration: 100, ease: 'Quad.easeOut',
+      });
+    }
 
     // 토끼 X만 업데이트 (Y는 고정)
     const playerScreenX = this.laneScreenX(this.player.currentLane);
