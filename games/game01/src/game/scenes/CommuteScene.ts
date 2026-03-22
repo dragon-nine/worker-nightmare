@@ -538,35 +538,42 @@ export class CommuteScene extends Phaser.Scene {
     const btnW = width * 0.85;
     const smallBtnW = width * 0.40;
 
+    // 버튼 배치 (동일 간격)
+    const btnGap = height * 0.09;
+    const btnStartY = height * 0.57;
+    let btnIdx = 0;
+
     // 부활 버튼 (1회만)
     if (canRevive) {
-      const reviveBtn = addImgBtn('go-btn-revive', width / 2, height * 0.57, btnW, () => {
+      const reviveBtn = addImgBtn('go-btn-revive', width / 2, btnStartY + btnGap * btnIdx, btnW, () => {
         this.playSfx('sfx-click', 0.6);
         logEvent('revive_ad_click', { score: this.score });
         this.showAd(ov.getItems(), ov.getItems()[0] as Phaser.GameObjects.Rectangle, () => this.revive());
       });
       fadeTargets.push({ obj: reviveBtn, delay: 0 });
+      btnIdx++;
     }
 
     // 다시하기 버튼
-    const retryY = canRevive ? height * 0.66 : height * 0.57;
-    const retryBtn = addImgBtn('go-btn-retry', width / 2, retryY, btnW, () => {
+    const retryBtn = addImgBtn('go-btn-retry', width / 2, btnStartY + btnGap * btnIdx, btnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('game_retry');
       this.scene.start('CommuteScene');
     });
     fadeTargets.push({ obj: retryBtn, delay: canRevive ? 150 : 0 });
+    btnIdx++;
 
-    // 하단 작은 버튼 2개
-    const bottomY = canRevive ? height * 0.76 : height * 0.67;
-    const challengeBtn = addImgBtn('go-btn-challenge', width * 0.27, bottomY, smallBtnW, () => {
+    // 하단 작은 버튼 2개 (좌우 간격은 상하 간격보다 약간 작게)
+    const bottomY = btnStartY + btnGap * btnIdx;
+    const smallGap = btnGap * 0.6;
+    const challengeBtn = addImgBtn('go-btn-challenge', width / 2 - smallGap, bottomY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('challenge_send');
       // TODO: 도전장 보내기 기능
     });
     fadeTargets.push({ obj: challengeBtn, delay: canRevive ? 300 : 150 });
 
-    const rankingBtn = addImgBtn('go-btn-ranking', width * 0.73, bottomY, smallBtnW, () => {
+    const rankingBtn = addImgBtn('go-btn-ranking', width / 2 + smallGap, bottomY, smallBtnW, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('leaderboard_open');
       openLeaderboard();
