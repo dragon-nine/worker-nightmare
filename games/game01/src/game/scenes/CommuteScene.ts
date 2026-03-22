@@ -26,7 +26,7 @@ export class CommuteScene extends Phaser.Scene {
   private gameStarted = false;
   private hasRevived = false;
   private bgm?: Phaser.Sound.BaseSound;
-  private bgTile?: Phaser.GameObjects.TileSprite;
+
 
   private laneWorldX: number[] = [];
   private laneW = 0;
@@ -59,7 +59,7 @@ export class CommuteScene extends Phaser.Scene {
       const scale = width / bgFrame.width;
       const scaledH = bgFrame.height * scale;
       const offsetY = scaledH - (height % scaledH);
-      this.bgTile = this.add.tileSprite(0, 0, width, height, 'bg-game')
+      this.add.tileSprite(0, 0, width, height, 'bg-game')
         .setOrigin(0, 0)
         .setTileScale(scale, scale)
         .setTilePosition(0, offsetY)
