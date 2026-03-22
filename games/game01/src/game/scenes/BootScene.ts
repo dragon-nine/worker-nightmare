@@ -171,10 +171,9 @@ export class BootScene extends Phaser.Scene {
       ov.close();
     });
 
-    // 컨텐츠 영역 시작 Y
+    // 컨텐츠 영역
     const contentTop = panelY - panelH / 2 + barH;
     const contentH = panelH - barH;
-    const rowH = contentH * 0.35;
 
     // 토글 크기
     const toggleW = panelW * 0.28;
@@ -183,8 +182,10 @@ export class BootScene extends Phaser.Scene {
     const iconSize = panelW * 0.07;
     const labelX = width / 2 + panelW * 0.12;
 
-    // ── 음악 토글 ──
-    const musicY = contentTop + contentH * 0.35;
+    // 2개 행을 컨텐츠 영역 내 상하 중앙 정렬
+    const rowGap = contentH * 0.30;
+    const totalRowsH = rowGap; // 2개 행 사이 간격
+    const musicY = contentTop + (contentH - totalRowsH) / 2;
     let bgmMuted = localStorage.getItem('bgmMuted') !== 'false';
 
     const bgmToggle = ov.add(
@@ -213,7 +214,7 @@ export class BootScene extends Phaser.Scene {
     });
 
     // ── 사운드 토글 ──
-    const sfxY = musicY + rowH;
+    const sfxY = musicY + rowGap;
     let sfxMuted = localStorage.getItem('sfxMuted') !== 'false';
 
     const sfxToggle = ov.add(
