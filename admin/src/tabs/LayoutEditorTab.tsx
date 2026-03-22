@@ -267,19 +267,19 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
         if (layoutBlob) {
           const res = await fetch(layoutBlob.url + '?v=' + Date.now())
           const data: ScreenLayout = await res.json()
-          // Merge labels + migrate old fontSizePx to textStyle
           const defaults = SCREEN_DEFAULTS[screen] || []
-          const els = data.elements.map((el) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const els = data.elements.map((el: any) => {
             const def = defaults.find((d) => d.id === el.id)
-            const merged = { ...el, label: def?.label ?? el.label } as LayoutElement & { fontSizePx?: number }
+            const merged = { ...(def || {}), ...el, label: def?.label ?? el.label }
             // Migrate old fontSizePx → textStyle
             if (merged.fontSizePx && !merged.textStyle) {
-              merged.textStyle = { fontSizePx: merged.fontSizePx, ...(def?.textStyle || {}) }
-              delete merged.fontSizePx
+              merged.textStyle = { fontSizePx: merged.fontSizePx }
             }
             if (!merged.textStyle && def?.textStyle) {
               merged.textStyle = { ...def.textStyle }
             }
+            delete merged.fontSizePx
             return merged as LayoutElement
           })
           setElements(els)
