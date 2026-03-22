@@ -314,7 +314,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
       if (el.positioning === 'group') {
         // Vertical drag changes gapPx
         const deltaPx = dy / previewScale
-        const newGap = Math.max(0, (dragRef.current.startGapPx ?? 0) + deltaPx)
+        const newGap = (dragRef.current.startGapPx ?? 0) + deltaPx
         updateEl(el.id, { gapPx: Math.round(newGap) })
       } else {
         // Anchor drag changes offsets
@@ -379,10 +379,10 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
         <div className="le-toolbar-group">
           <span className="le-toolbar-label">간격</span>
           <button className="le-btn" onClick={() => {
-            setElements((prev) => prev.map((el) => el.positioning === 'group' && el.order > 0 ? { ...el, gapPx: Math.max(0, el.gapPx + 4) } : el))
+            setElements((prev) => prev.map((el) => el.positioning === 'group' && el.order > 0 ? { ...el, gapPx: el.gapPx + 4 } : el))
           }}>+ 4px</button>
           <button className="le-btn" onClick={() => {
-            setElements((prev) => prev.map((el) => el.positioning === 'group' && el.order > 0 ? { ...el, gapPx: Math.max(0, el.gapPx - 4) } : el))
+            setElements((prev) => prev.map((el) => el.positioning === 'group' && el.order > 0 ? { ...el, gapPx: el.gapPx - 4 } : el))
           }}>- 4px</button>
         </div>
         <div className="le-toolbar-group le-toolbar-actions">
@@ -501,7 +501,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                   <div className="le-field">
                     <label>위 간격</label>
                     <div className="le-field-row">
-                      <input type="number" min={0} max={200} step={1}
+                      <input type="number" min={-200} max={200} step={1}
                         value={selected.gapPx}
                         onChange={(e) => updateEl(selected.id, { gapPx: parseInt(e.target.value) || 0 })}
                       />
