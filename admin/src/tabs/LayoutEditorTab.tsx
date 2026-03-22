@@ -84,7 +84,7 @@ function computePreviewLayout(
   for (let i = 0; i < rowOrders.length; i++) {
     const order = rowOrders[i]
     const rowEls = rowMap.get(order)!
-    const gapPx = i === 0 ? 0 : rowEls[0].gapPx
+    const gapPx = rowEls[0].gapPx
     let maxH = 0
     for (const el of rowEls) {
       const elW = el.widthPx * scale
@@ -99,11 +99,13 @@ function computePreviewLayout(
     rows.push({ elements: rowEls, height: maxH, gapPx })
   }
 
+  const firstGap = rows.length > 0 ? rows[0].gapPx * scale : 0
   const totalH = rows.reduce((sum, r, i) => sum + r.height + (i > 0 ? r.gapPx * scale : 0), 0)
-  let curY = (screenH - totalH) / 2
+  let curY = (screenH - totalH) / 2 + firstGap
 
-  for (const row of rows) {
-    if (row !== rows[0]) curY += row.gapPx * scale
+  for (let ri = 0; ri < rows.length; ri++) {
+    const row = rows[ri]
+    if (ri > 0) curY += row.gapPx * scale
     const cy = curY + row.height / 2
 
     if (row.elements.length === 1) {
@@ -186,6 +188,23 @@ const SCREEN_ASSET_PREFIXES: Record<string, string[]> = {
   'game-over': ['game01/game-over-screen/'],
 }
 
+// Local asset paths (served from game public/ via /game-assets)
+const LOCAL_ASSET_PATHS: Record<string, Record<string, string>> = {
+  'main-screen': {
+    'main-text': '/game-assets/main-screen/main-text.png',
+    'main-char': '/game-assets/main-screen/main-char.png',
+    'main-btn': '/game-assets/main-screen/main-btn.png',
+    'btn-settings': '/game-assets/ui/btn-settings.png',
+  },
+  'game-over': {
+    'go-rabbit': '/game-assets/game-over-screen/gameover-rabbit.png',
+    'go-btn-revive': '/game-assets/game-over-screen/btn-revive.png',
+    'go-btn-home': '/game-assets/game-over-screen/btn-home.png',
+    'go-btn-challenge': '/game-assets/game-over-screen/btn-challenge.png',
+    'go-btn-ranking': '/game-assets/game-over-screen/btn-ranking.png',
+  },
+}
+
 const ASSET_ID_TO_PATH: Record<string, Record<string, string>> = {
   'main-screen': {
     'main-text': 'game01/main-screen/main-text.png',
@@ -232,11 +251,12 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
   const previewH = previewW * (DESIGN_H / DESIGN_W)
   const previewScale = previewW / DESIGN_W
 
-  // Load asset URLs
+  // Load asset URLs (blob first, fallback to local)
   useEffect(() => {
     async function loadAssets() {
       const prefixes = SCREEN_ASSET_PREFIXES[screen] || []
       const urls: Record<string, string> = {}
+      let blobOk = false
       try {
         for (const prefix of prefixes) {
           const blobs = await listBlobs(prefix)
@@ -246,18 +266,33 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
             if (blob) urls[id] = blob.url
           }
         }
-      } catch { /* ignore */ }
+        blobOk = Object.keys(urls).length > 0
+      } catch { /* blob unavailable */ }
+
+      // Fallback to local assets
+      if (!blobOk) {
+        const localPaths = LOCAL_ASSET_PATHS[screen] || {}
+        for (const [id, path] of Object.entries(localPaths)) {
+          urls[id] = path
+        }
+      }
       setAssetUrls(urls)
 
       // Load background image
       const bgConf = SCREEN_BG[screen]
       if (bgConf?.bgPath) {
-        try {
-          const prefix = bgConf.bgPath.substring(0, bgConf.bgPath.lastIndexOf('/') + 1)
-          const bgBlobs = await listBlobs(prefix)
-          const bgBlob = bgBlobs.find((b) => b.pathname === bgConf.bgPath)
-          setBgUrl(bgBlob?.url || null)
-        } catch { setBgUrl(null) }
+        if (blobOk) {
+          try {
+            const prefix = bgConf.bgPath.substring(0, bgConf.bgPath.lastIndexOf('/') + 1)
+            const bgBlobs = await listBlobs(prefix)
+            const bgBlob = bgBlobs.find((b) => b.pathname === bgConf.bgPath)
+            setBgUrl(bgBlob?.url || null)
+          } catch { setBgUrl(null) }
+        } else {
+          // Local fallback for background
+          const localBg = bgConf.bgPath.replace(/^game01\//, '/game-assets/')
+          setBgUrl(localBg)
+        }
       } else {
         setBgUrl(null)
       }
@@ -285,32 +320,42 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
 
   // Load layout from Blob or use defaults
   useEffect(() => {
+    const mergeWithDefaults = (data: ScreenLayout) => {
+      const defaults = SCREEN_DEFAULTS[screen] || []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return data.elements.map((el: any) => {
+        const def = defaults.find((d) => d.id === el.id)
+        const merged = { ...(def || {}), ...el, label: def?.label ?? el.label }
+        if (merged.fontSizePx && !merged.textStyle) merged.textStyle = { fontSizePx: merged.fontSizePx }
+        if (!merged.textStyle && def?.textStyle) merged.textStyle = { ...def.textStyle }
+        delete merged.fontSizePx
+        return merged as LayoutElement
+      })
+    }
+
     async function loadLayout() {
+      // Try local file first (dev)
+      try {
+        const localRes = await fetch(`/game-assets/layout/${screen}.json?v=${Date.now()}`)
+        if (localRes.ok) {
+          setElements(mergeWithDefaults(await localRes.json()))
+          return
+        }
+      } catch { /* not available */ }
+
+      // Try blob
       try {
         const blobs = await listBlobs(`${gameId}/layout/`)
         const layoutBlob = blobs.find((b) => b.pathname === `${gameId}/layout/${screen}.json`)
         if (layoutBlob) {
           const res = await fetch(layoutBlob.url + '?v=' + Date.now())
-          const data: ScreenLayout = await res.json()
-          const defaults = SCREEN_DEFAULTS[screen] || []
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const els = data.elements.map((el: any) => {
-            const def = defaults.find((d) => d.id === el.id)
-            const merged = { ...(def || {}), ...el, label: def?.label ?? el.label }
-            // Migrate old fontSizePx → textStyle
-            if (merged.fontSizePx && !merged.textStyle) {
-              merged.textStyle = { fontSizePx: merged.fontSizePx }
-            }
-            if (!merged.textStyle && def?.textStyle) {
-              merged.textStyle = { ...def.textStyle }
-            }
-            delete merged.fontSizePx
-            return merged as LayoutElement
-          })
-          setElements(els)
-          return
+          if (res.ok) {
+            setElements(mergeWithDefaults(await res.json()))
+            return
+          }
         }
       } catch { /* ignore */ }
+
       setElements([...(SCREEN_DEFAULTS[screen] || [])])
     }
     loadLayout()
@@ -393,9 +438,22 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
           return rest
         }),
       }
-      const blob = new Blob([JSON.stringify(layout, null, 2)], { type: 'application/json' })
-      const file = new File([blob], `${screen}.json`, { type: 'application/json' })
-      await uploadBlob(file, `${gameId}/layout/`, `${screen}.json`)
+      const json = JSON.stringify(layout, null, 2)
+
+      // Try local save first (dev), then blob (prod)
+      let saved = false
+      try {
+        const localRes = await fetch(`/api/save-layout?filename=${screen}.json`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json,
+        })
+        if (localRes.ok) saved = true
+      } catch { /* not in dev */ }
+
+      if (!saved) {
+        const blob = new Blob([json], { type: 'application/json' })
+        const file = new File([blob], `${screen}.json`, { type: 'application/json' })
+        await uploadBlob(file, `${gameId}/layout/`, `${screen}.json`)
+      }
       onBanner('success', '레이아웃이 저장되었습니다')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -480,7 +538,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     onPointerDown={(e) => handlePointerDown(e, pos.id)}
                   >
                     {el.type === 'image' && assetUrls[el.id] ? (
-                      <img src={assetUrls[el.id]} alt={el.id} draggable={false} />
+                      <img src={assetUrls[el.id]} alt={el.id} draggable={false} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                     ) : (
                       <div className="le-el-text" style={{
                         fontSize: `${Math.max(6, (el.textStyle?.fontSizePx || 14) * previewScale)}px`,
@@ -541,7 +599,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     </div>
                   </div>
                   <div className="le-field">
-                    <label>위 간격</label>
+                    <label>{selected.order === 0 ? '상단 여백' : '위 간격'}</label>
                     <div className="le-field-row">
                       <NumInput value={selected.gapPx} onChange={(v) => updateEl(selected.id, { gapPx: v })} />
                       <span className="le-field-px">px</span>

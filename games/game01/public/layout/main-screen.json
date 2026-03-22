@@ -1,0 +1,53 @@
+{
+  "screen": "main-screen",
+  "designWidth": 390,
+  "elements": [
+    {
+      "id": "main-text",
+      "positioning": "group",
+      "type": "image",
+      "order": 0,
+      "gapPx": 50,
+      "widthPx": 400
+    },
+    {
+      "id": "main-char",
+      "positioning": "group",
+      "type": "image",
+      "order": 1,
+      "gapPx": -18,
+      "widthPx": 175
+    },
+    {
+      "id": "bestScore",
+      "positioning": "group",
+      "type": "text",
+      "order": 2,
+      "gapPx": 37,
+      "widthPx": 200,
+      "textStyle": {
+        "fontSizePx": 22,
+        "color": "#ffffff",
+        "strokeColor": "#000000",
+        "strokeWidth": 0
+      }
+    },
+    {
+      "id": "main-btn",
+      "positioning": "group",
+      "type": "image",
+      "order": 3,
+      "gapPx": -14,
+      "widthPx": 214
+    },
+    {
+      "id": "btn-settings",
+      "positioning": "anchor",
+      "type": "image",
+      "anchor": "top-right",
+      "offsetX": 15,
+      "offsetY": 15,
+      "widthPx": 40
+    }
+  ]
+}

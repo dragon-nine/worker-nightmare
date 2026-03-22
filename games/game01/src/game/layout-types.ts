@@ -87,7 +87,7 @@ export function computeLayout(
     const rowEls = rowMap.get(order)!
     let maxH = 0
     // Gap = max gapPx of elements in this row (use first element's gap for simplicity)
-    const gapPx = i === 0 ? 0 : rowEls[0].gapPx
+    const gapPx = rowEls[0].gapPx
 
     for (const el of rowEls) {
       const elW = el.widthPx * scale
@@ -105,11 +105,13 @@ export function computeLayout(
     rows.push({ order, elements: rowEls, height: maxH, gapPx })
   }
 
+  const firstGap = rows.length > 0 ? rows[0].gapPx * scale : 0
   const totalH = rows.reduce((sum, r, i) => sum + r.height + (i > 0 ? r.gapPx * scale : 0), 0)
-  let curY = (screenH - totalH) / 2
+  let curY = (screenH - totalH) / 2 + firstGap
 
-  for (const row of rows) {
-    if (row !== rows[0]) curY += row.gapPx * scale
+  for (let ri = 0; ri < rows.length; ri++) {
+    const row = rows[ri]
+    if (ri > 0) curY += row.gapPx * scale
     const cy = curY + row.height / 2
 
     if (row.elements.length === 1) {

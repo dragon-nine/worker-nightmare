@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Overlay } from '../Overlay';
 import { logScreen } from '../services/analytics';
-import { computeLayout } from '../layout-types';
+import { computeLayout, DESIGN_W } from '../layout-types';
 import { loadLayout } from '../layout-loader';
 
 export class BootScene extends Phaser.Scene {
@@ -59,6 +59,7 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    console.log('[Layout] screen:', width, 'x', height, 'scale:', width / DESIGN_W, 'dpr:', window.devicePixelRatio);
     this.cameras.main.setBackgroundColor('#0a0a14');
 
     // Menu BGM (localStorage 뮤트 설정 반영)
@@ -72,6 +73,11 @@ export class BootScene extends Phaser.Scene {
 
     logScreen('screen_boot');
 
+    // Set LINEAR filter on all loaded textures for smooth downscaling
+    this.textures.getTextureKeys().forEach((key) => {
+      this.textures.get(key).setFilter(Phaser.Textures.LINEAR);
+    });
+
     // Background — scale to cover
     const bg = this.add.image(width / 2, height / 2, 'main-bg');
     bg.setScale(Math.max(width / bg.width, height / bg.height));
@@ -79,11 +85,12 @@ export class BootScene extends Phaser.Scene {
     // Create game objects first (position later via layout engine)
     const titleImg = this.add.image(0, 0, 'main-text').setAlpha(0);
     const charImg = this.add.image(0, 0, 'main-char').setAlpha(0);
+    const s = width / DESIGN_W;
     const best = localStorage.getItem('bestScore') || '0';
     const bestRecord = this.add.text(0, 0, `최고기록 ${best}`, {
       fontFamily: 'GMarketSans, sans-serif',
-      fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
-      stroke: '#000000', strokeThickness: 4,
+      fontSize: `${Math.round(22 * s)}px`, color: '#ffffff', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: Math.round(4 * s),
     }).setOrigin(0.5).setAlpha(0);
     const btnImg = this.add.image(0, 0, 'main-btn').setAlpha(0);
     btnImg.setInteractive({ useHandCursor: true });
@@ -94,11 +101,11 @@ export class BootScene extends Phaser.Scene {
       'main-text': titleImg, 'main-char': charImg, 'bestScore': bestRecord, 'main-btn': btnImg, 'btn-settings': settingsBtn,
     };
 
-    // Apply layout (async fetch from blob, fallback to defaults)
-    const applyLayout = (elements: import('../layout-types').LayoutElement[]) => {
+    // Apply layout then start animations
+    loadLayout('game01', 'main-screen').then((elements) => {
       const positions = computeLayout(
         elements, width, height,
-        (id) => { const t = this.textures.get(objMap[id]?.texture?.key || id); const f = t.getSourceImage(); return f ? { w: f.width, h: f.height } : null; },
+        (id) => { if (!this.textures.exists(id)) return null; const f = this.textures.get(id).getSourceImage(); return { w: f.width, h: f.height }; },
         (id) => { const obj = objMap[id]; return obj instanceof Phaser.GameObjects.Text ? { w: obj.width, h: obj.height } : null; },
       );
       for (const pos of positions) {
@@ -110,21 +117,17 @@ export class BootScene extends Phaser.Scene {
           obj.setDisplaySize(pos.displayWidth, pos.displayHeight);
         }
       }
-    };
 
-    // Load & apply (non-blocking — defaults applied first, then blob layout overwrites if available)
-    loadLayout('game01', 'main-screen').then(applyLayout);
-
-    // Fade-in animations
-    const btnScale = btnImg.scaleX || 1;
-    this.tweens.add({ targets: titleImg, alpha: 1, y: titleImg.y - height * 0.02, duration: 800, delay: 300, ease: 'Power2' });
-    this.tweens.add({ targets: charImg, alpha: 1, y: charImg.y - height * 0.02, duration: 800, delay: 600, ease: 'Power2' });
-    this.tweens.add({ targets: bestRecord, alpha: 1, duration: 600, delay: 900, ease: 'Power2' });
-    this.tweens.add({
-      targets: btnImg, alpha: 1, duration: 600, delay: 1000,
-      onComplete: () => {
-        this.tweens.add({ targets: btnImg, scaleX: btnScale * 1.03, scaleY: btnScale * 1.03, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-      },
+      // Fade-in animations (after layout applied)
+      const btnScale = btnImg.scaleX;
+      this.tweens.add({ targets: titleImg, alpha: 1, y: titleImg.y - height * 0.02, duration: 800, delay: 300, ease: 'Power2' });
+      this.tweens.add({ targets: charImg, alpha: 1, y: charImg.y - height * 0.02, duration: 800, delay: 600, ease: 'Power2' });
+      this.tweens.add({ targets: bestRecord, alpha: 1, duration: 600, delay: 900, ease: 'Power2' });
+      this.tweens.add({
+        targets: btnImg, alpha: 1, duration: 600, delay: 1000,
+        onComplete: () => {
+          this.tweens.add({ targets: btnImg, scaleX: btnScale * 1.03, scaleY: btnScale * 1.03, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        },
     });
 
     btnImg.on('pointerdown', () => {
@@ -141,7 +144,7 @@ export class BootScene extends Phaser.Scene {
       this.showSettings();
     });
 
-
+    }); // end loadLayout.then
   }
 
   private showSettings() {

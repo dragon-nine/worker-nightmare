@@ -10,7 +10,7 @@ import { HUD } from '../HUD';
 import { Overlay } from '../Overlay';
 import { submitScore as submitLeaderboardScore, openLeaderboard } from '../services/leaderboard';
 import { logEvent, logClick, logScreen } from '../services/analytics';
-import { computeLayout } from '../layout-types';
+import { computeLayout, DESIGN_W } from '../layout-types';
 import { loadLayout } from '../layout-loader';
 
 export class CommuteScene extends Phaser.Scene {
@@ -507,18 +507,21 @@ export class CommuteScene extends Phaser.Scene {
     const bestScore = Math.max(this.score, Number(localStorage.getItem('bestScore') || '0'));
     localStorage.setItem('bestScore', String(bestScore));
 
+    // Scale factor for text (match image scaling)
+    const s = width / DESIGN_W;
+
     // Create game objects at (0,0) — positioned by layout engine
     const bestText = ov.addText(width / 2, 0, `최고기록 ${bestScore}`, {
-      fontSize: '22px', color: '#ffffff',
+      fontSize: `${Math.round(22 * s)}px`, color: '#ffffff',
     }).setAlpha(0);
     const scoreText = ov.addText(width / 2, 0, `${this.score}`, {
-      fontSize: '72px', color: '#ffffff', fontStyle: 'bold',
+      fontSize: `${Math.round(72 * s)}px`, color: '#ffffff', fontStyle: 'bold',
     }).setAlpha(0);
     const rabbit = ov.add(
       this.add.image(0, 0, 'go-rabbit').setDepth(Overlay.DEPTH + 1).setAlpha(0)
     );
     const quoteText = ov.addText(width / 2, 0, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
-      fontSize: '18px', color: '#ffffff', align: 'center', lineSpacing: 6,
+      fontSize: `${Math.round(18 * s)}px`, color: '#ffffff', align: 'center', lineSpacing: Math.round(6 * s),
     }).setTint(0xe5332f, 0x771615, 0xe5332f, 0x771615).setAlpha(0);
 
     const makeImgBtn = (key: string, onClick: () => void) => {

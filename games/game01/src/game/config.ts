@@ -9,7 +9,9 @@ export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
     height: window.innerHeight,
     parent,
     backgroundColor: '#0a0a14',
-    roundPixels: true,
+    antialias: true,
+    roundPixels: false,
+    resolution: window.devicePixelRatio || 1,
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
