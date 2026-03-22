@@ -592,6 +592,134 @@ body {
   background: #1a1a4e;
 }
 
+/* ── Screen Preview (메인 화면 등) ── */
+.screen-preview {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 24px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0d0d1a;
+  aspect-ratio: 9 / 16;
+}
+
+.screen-preview-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.screen-preview-bg-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  background: #1a1a2e;
+}
+
+.screen-preview-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12%;
+  pointer-events: none;
+}
+
+.screen-preview-text {
+  width: 90%;
+  max-height: 28%;
+  object-fit: contain;
+}
+
+.screen-preview-char {
+  width: 50%;
+  max-height: 35%;
+  object-fit: contain;
+}
+
+.screen-preview-btn {
+  width: 55%;
+  max-height: 18%;
+  object-fit: contain;
+  margin-top: 8px;
+}
+
+.screen-preview-skeleton {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  aspect-ratio: 9 / 16;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Screen asset cards grid */
+.screen-assets-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.screen-asset-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.screen-asset-thumb {
+  aspect-ratio: 1;
+  background: #f8f8fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+}
+
+.screen-asset-thumb.dark-bg {
+  background: #1a1a2e;
+}
+
+.screen-asset-thumb.clickable:hover .asset-card-overlay {
+  opacity: 1;
+}
+
+.screen-asset-empty {
+  font-size: 28px;
+  color: var(--text-tertiary);
+}
+
+.screen-asset-info {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border-light);
+}
+
+.screen-asset-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+@media (max-width: 768px) {
+  .screen-assets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .screen-preview {
+    max-width: 280px;
+  }
+}
+
 /* ── Image loading states ── */
 .img-placeholder {
   background: linear-gradient(90deg, var(--border-light) 25%, var(--surface-secondary) 50%, var(--border-light) 75%);
