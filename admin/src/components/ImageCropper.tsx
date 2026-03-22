@@ -19,7 +19,7 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
 
   // Crop box in display coordinates
   const [crop, setCrop] = useState({ x: 0, y: 0, w: 0, h: 0 })
-  const dragRef = useRef<{ type: 'move' | 'resize'; startX: number; startY: number; startCrop: typeof crop } | null>(null)
+  const dragRef = useRef<{ type: 'move'; startX: number; startY: number; startCrop: typeof crop } | null>(null)
 
   const aspectRatio = targetWidth / targetHeight
 
@@ -41,7 +41,12 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
     const container = containerRef.current
     const maxW = container.clientWidth - 40
     const maxH = container.clientHeight - 40
-    const scale = Math.min(maxW / imgEl.naturalWidth, maxH / imgEl.naturalHeight)
+
+    // Always scale based on target size — target box defines the reference frame
+    const refW = Math.max(imgEl.naturalWidth, targetWidth)
+    const refH = Math.max(imgEl.naturalHeight, targetHeight)
+    const scale = Math.min(maxW / refW, maxH / refH)
+
     const iw = imgEl.naturalWidth * scale
     const ih = imgEl.naturalHeight * scale
     const ox = (container.clientWidth - iw) / 2
@@ -49,12 +54,14 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
     setDisplay({ iw, ih, scale, ox, oy })
 
     // Init crop box - fit largest possible with target aspect ratio
+    const tw = targetWidth * scale
+    const th = targetHeight * scale
     let cw: number, ch: number
     if (iw / ih > aspectRatio) {
-      ch = ih * 0.9
+      ch = Math.min(ih, th)
       cw = ch * aspectRatio
     } else {
-      cw = iw * 0.9
+      cw = Math.min(iw, tw)
       ch = cw / aspectRatio
     }
     setCrop({ x: ox + (iw - cw) / 2, y: oy + (ih - ch) / 2, w: cw, h: ch })
@@ -103,19 +110,6 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
       ctx.stroke()
     }
 
-    // Corner handles
-    const hs = 8
-    ctx.fillStyle = '#fff'
-    const corners = [
-      [crop.x, crop.y],
-      [crop.x + crop.w, crop.y],
-      [crop.x, crop.y + crop.h],
-      [crop.x + crop.w, crop.y + crop.h],
-    ]
-    for (const [cx, cy] of corners) {
-      ctx.fillRect(cx - hs / 2, cy - hs / 2, hs, hs)
-    }
-
     // Size label
     ctx.fillStyle = 'rgba(0,0,0,0.7)'
     ctx.fillRect(crop.x, crop.y + crop.h + 4, 120, 22)
@@ -131,14 +125,8 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
     const mx = e.clientX - rect.left
     const my = e.clientY - rect.top
 
-    // Check if near bottom-right corner (resize)
-    const cornerX = crop.x + crop.w
-    const cornerY = crop.y + crop.h
-    if (Math.abs(mx - cornerX) < 16 && Math.abs(my - cornerY) < 16) {
-      dragRef.current = { type: 'resize', startX: e.clientX, startY: e.clientY, startCrop: { ...crop } }
-    }
-    // Check if inside crop (move)
-    else if (mx >= crop.x && mx <= crop.x + crop.w && my >= crop.y && my <= crop.y + crop.h) {
+    // Move only — no resize
+    if (mx >= crop.x && mx <= crop.x + crop.w && my >= crop.y && my <= crop.y + crop.h) {
       dragRef.current = { type: 'move', startX: e.clientX, startY: e.clientY, startCrop: { ...crop } }
     }
 
@@ -154,21 +142,9 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
     const dy = e.clientY - dragRef.current.startY
     const sc = dragRef.current.startCrop
 
-    if (dragRef.current.type === 'move') {
-      const x = clamp(sc.x + dx, display.ox, display.ox + display.iw - sc.w)
-      const y = clamp(sc.y + dy, display.oy, display.oy + display.ih - sc.h)
-      setCrop({ ...sc, x, y })
-    } else {
-      // Resize from bottom-right, maintain aspect ratio
-      let newW = Math.max(40, sc.w + dx)
-      let newH = newW / aspectRatio
-      // Constrain to image bounds
-      newW = Math.min(newW, display.ox + display.iw - sc.x)
-      newH = newW / aspectRatio
-      newH = Math.min(newH, display.oy + display.ih - sc.y)
-      newW = newH * aspectRatio
-      setCrop({ x: sc.x, y: sc.y, w: newW, h: newH })
-    }
+    const x = clamp(sc.x + dx, display.ox, display.ox + display.iw - sc.w)
+    const y = clamp(sc.y + dy, display.oy, display.oy + display.ih - sc.h)
+    setCrop({ ...sc, x, y })
   }, [display, aspectRatio])
 
   const handlePointerUp = useCallback(() => {
@@ -222,7 +198,7 @@ export default function ImageCropper({ file, targetWidth, targetHeight, onCroppe
               이미지가 너무 작습니다 ({imgEl?.naturalWidth}x{imgEl?.naturalHeight}) — 최소 {targetWidth}x{targetHeight} 이상 필요
             </span>
           ) : (
-            <span className="cropper-hint">드래그: 이동 / 우하단 꼭짓점: 크기 조절</span>
+            <span className="cropper-hint">드래그하여 위치 조정</span>
           )}
           <div className="cropper-actions">
             <button className="le-btn le-btn-ghost" onClick={onCancel}>취소</button>

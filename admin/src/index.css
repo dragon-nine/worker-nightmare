@@ -1062,7 +1062,6 @@ body {
 
 .lp-row { display: flex; gap: 16px; }
 .lp-row > .card { flex: 1; min-width: 0; }
-.lp-label-wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .lp-info {
   padding: 10px 14px; margin-bottom: 16px;
   background: var(--accent-light); border: 1px solid rgba(49,130,246,0.15);

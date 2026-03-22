@@ -194,10 +194,8 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
       <div className="category-header">
         <button className="category-toggle" onClick={() => setCollapsed(!collapsed)}>
           <span className={`sidebar-chevron${collapsed ? '' : ' open'}`}>&#9656;</span>
-          <span className="lp-label-wrap">
-            <span className="card-title" style={{ marginBottom: 0 }}>{group.label}</span>
-            {group.desc && <span className="spec-badge">{group.desc}</span>}
-          </span>
+          <span className="card-title" style={{ marginBottom: 0 }}>{group.label}</span>
+          {group.desc && <span className="spec-badge">{group.desc}</span>}
           <span className="section-count">{blobs.length} / {group.maxCount}</span>
         </button>
         {blobs.length < group.maxCount && (
