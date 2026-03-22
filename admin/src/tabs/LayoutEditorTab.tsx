@@ -504,7 +504,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                 <div className="le-field-row">
                   <input type="number" min={10} max={390} step={1}
                     value={selected.widthPx}
-                    onChange={(e) => updateEl(selected.id, { widthPx: Number(e.target.value) || 100 })}
+                    onChange={(e) => updateEl(selected.id, { widthPx: Number(e.target.value) })}
                   />
                   <span className="le-field-px">px</span>
                 </div>
@@ -517,7 +517,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={0} max={20} step={1}
                         value={selected.order}
-                        onChange={(e) => updateEl(selected.id, { order: Number(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { order: Number(e.target.value) })}
                       />
                     </div>
                   </div>
@@ -526,7 +526,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={-200} max={200} step={1}
                         value={selected.gapPx}
-                        onChange={(e) => updateEl(selected.id, { gapPx: Number(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { gapPx: Number(e.target.value) })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
@@ -551,7 +551,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={0} max={200} step={1}
                         value={selected.offsetX}
-                        onChange={(e) => updateEl(selected.id, { offsetX: Number(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { offsetX: Number(e.target.value) })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
@@ -561,7 +561,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={0} max={200} step={1}
                         value={selected.offsetY}
-                        onChange={(e) => updateEl(selected.id, { offsetY: Number(e.target.value) || 0 })}
+                        onChange={(e) => updateEl(selected.id, { offsetY: Number(e.target.value) })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
@@ -577,7 +577,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     <div className="le-field-row">
                       <input type="number" min={8} max={120} step={1}
                         value={selected.textStyle?.fontSizePx || 14}
-                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, fontSizePx: Number(e.target.value) || 14 } })}
+                        onChange={(e) => updateEl(selected.id, { textStyle: { ...selected.textStyle, fontSizePx: Number(e.target.value) } })}
                       />
                       <span className="le-field-px">px</span>
                     </div>
