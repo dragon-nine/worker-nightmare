@@ -526,8 +526,8 @@ export class CommuteScene extends Phaser.Scene {
 
     // 멘트
     const quoteText = ov.addText(width / 2, height * 0.46, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
-      fontSize: '16px', color: '#999999', align: 'center', lineSpacing: 6,
-    }).setAlpha(0);
+      fontSize: '16px', color: '#ffffff', align: 'center', lineSpacing: 6,
+    }).setTint(0xe5332f, 0x771615, 0xe5332f, 0x771615).setAlpha(0);
 
     // 페이드인: 점수 + 토끼
     this.time.delayedCall(500, () => {
