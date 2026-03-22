@@ -16,19 +16,19 @@ export class Overlay {
   }
 
   /** 오버레이 열기 (딤 배경 생성) */
-  open(options?: { fadeIn?: boolean; onClose?: () => void; gradient?: { left: string; right: string } }): this {
+  open(options?: { fadeIn?: boolean; onClose?: () => void; gradient?: { top: string; bottom: string } }): this {
     const { width, height } = this.scene.scale;
     this.onCloseCallback = options?.onClose;
 
     if (options?.gradient) {
-      // 캔버스 그라데이션 배경
+      // 캔버스 그라데이션 배경 (위→아래, 불투명)
       const texKey = '__ov_grad__';
       if (this.scene.textures.exists(texKey)) this.scene.textures.remove(texKey);
       const canvas = this.scene.textures.createCanvas(texKey, width, height)!;
       const ctx = canvas.context;
-      const grad = ctx.createLinearGradient(0, 0, width, 0);
-      grad.addColorStop(0, options.gradient.left);
-      grad.addColorStop(1, options.gradient.right);
+      const grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, options.gradient.top);
+      grad.addColorStop(1, options.gradient.bottom);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
       canvas.refresh();
@@ -37,9 +37,9 @@ export class Overlay {
         .setDepth(OVERLAY_DEPTH).setInteractive();
       if (options.fadeIn) {
         bg.setAlpha(0);
-        this.scene.tweens.add({ targets: bg, alpha: DIM_ALPHA, duration: 400 });
+        this.scene.tweens.add({ targets: bg, alpha: 1, duration: 400 });
       } else {
-        bg.setAlpha(DIM_ALPHA);
+        bg.setAlpha(1);
       }
       this.items.push(bg);
       this.dimRect = undefined as unknown as Phaser.GameObjects.Rectangle;

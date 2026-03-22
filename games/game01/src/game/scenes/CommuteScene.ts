@@ -483,7 +483,7 @@ export class CommuteScene extends Phaser.Scene {
     this.submitScore();
 
     const { width, height } = this.scale;
-    const ov = new Overlay(this).open({ fadeIn: true, gradient: { left: '#2a0c10', right: '#000000' } });
+    const ov = new Overlay(this).open({ fadeIn: true, gradient: { top: '#2a0c10', bottom: '#000000' } });
 
     const bestScore = Math.max(this.score, Number(localStorage.getItem('bestScore') || '0'));
     localStorage.setItem('bestScore', String(bestScore));
