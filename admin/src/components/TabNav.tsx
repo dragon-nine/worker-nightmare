@@ -44,8 +44,6 @@ const GAMES: GameSection[] = [
     items: [
       { id: 'game01-assets', icon: '🎨', label: '에셋 관리' },
       { id: 'game01-preview', icon: '👁', label: '에셋 프리뷰' },
-      { id: 'game01-google-play', icon: '▶', label: 'Google Play' },
-      { id: 'game01-toss', icon: '💙', label: '토스 인앱' },
       { id: 'game01-layout', icon: '📐', label: '레이아웃 편집' },
       { id: 'game01-launch', icon: '🚀', label: '출시 준비' },
     ],
@@ -57,8 +55,6 @@ const GAMES: GameSection[] = [
     items: [
       { id: 'game02-assets', icon: '🎨', label: '에셋 관리' },
       { id: 'game02-preview', icon: '👁', label: '에셋 프리뷰' },
-      { id: 'game02-google-play', icon: '▶', label: 'Google Play' },
-      { id: 'game02-toss', icon: '💙', label: '토스 인앱' },
     ],
   },
 ]

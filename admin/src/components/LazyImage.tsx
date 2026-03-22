@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Props {
   src: string
@@ -9,6 +9,11 @@ interface Props {
 
 export default function LazyImage({ src, alt, style, className }: Props) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+
+  // Reset status when src changes (handles cache-busted URLs)
+  useEffect(() => {
+    setStatus('loading')
+  }, [src])
 
   return (
     <>

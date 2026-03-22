@@ -2,8 +2,6 @@ import { useState, useCallback } from 'react'
 import TabNav from './components/TabNav'
 import GameAssetsTab from './tabs/GameAssetsTab'
 import AssetPreviewTab from './tabs/AssetPreviewTab'
-import GooglePlayTab from './tabs/GooglePlayTab'
-import TossInAppTab from './tabs/TossInAppTab'
 import PlaceholderTab from './tabs/PlaceholderTab'
 import SharedFilesTab from './tabs/SharedFilesTab'
 import LayoutEditorTab from './tabs/LayoutEditorTab'
@@ -13,12 +11,8 @@ import Banner from './components/Banner'
 export type PageId =
   | 'game01-assets'
   | 'game01-preview'
-  | 'game01-google-play'
-  | 'game01-toss'
   | 'game02-assets'
   | 'game02-preview'
-  | 'game02-google-play'
-  | 'game02-toss'
   | 'game01-layout'
   | 'game01-launch'
   | 'shared-files'
@@ -55,12 +49,8 @@ export default function App() {
       <main className="admin-content">
         {page === 'game01-assets' && <GameAssetsTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'game01-preview' && <AssetPreviewTab gameId="game01" />}
-        {page === 'game01-google-play' && <GooglePlayTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
-        {page === 'game01-toss' && <TossInAppTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'game02-assets' && <PlaceholderTab title="game02 에셋 관리" message="game02 프로젝트가 생성되면 활성화됩니다." />}
         {page === 'game02-preview' && <PlaceholderTab title="game02 에셋 프리뷰" message="game02 프로젝트가 생성되면 활성화됩니다." />}
-        {page === 'game02-google-play' && <PlaceholderTab title="game02 Google Play" message="game02 프로젝트가 생성되면 활성화됩니다." />}
-        {page === 'game02-toss' && <PlaceholderTab title="game02 토스 인앱" message="game02 프로젝트가 생성되면 활성화됩니다." />}
         {page === 'game01-layout' && <LayoutEditorTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'game01-launch' && <LaunchPrepTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'shared-files' && <SharedFilesTab onBanner={showBanner} />}

@@ -69,9 +69,7 @@ function buildGroups(gameId: string): AssetGroup[] {
       maxCount: 8,
       storeWidth: 636, storeHeight: 1048,
       prefix: `launch/${gameId}/screenshots/`,
-      downloads: [
-        { platform: '토스', width: 636, height: 1048, mode: 'resize' },
-      ],
+      downloads: [],
     },
   ]
 }
@@ -141,11 +139,12 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
   const addRef = useRef<HTMLInputElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [blobs, setBlobs] = useState<BlobItem[]>([])
+  const [cacheBust, setCacheBust] = useState(0)
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [downloadCropUrl, setDownloadCropUrl] = useState<{ url: string; filename: string; opt: DownloadOption } | null>(null)
 
   const refresh = useCallback(async () => {
-    try { setBlobs(await listBlobs(group.prefix)) } catch { setBlobs([]) }
+    try { setBlobs(await listBlobs(group.prefix)); setCacheBust(Date.now()) } catch { setBlobs([]) }
   }, [group.prefix])
 
   useEffect(() => { refresh() }, [refresh])
@@ -168,6 +167,8 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
           return
         }
         try {
+          // Delete existing files first (replace)
+          for (const b of blobs) await deleteBlob(b.url)
           const ext = file.name.match(/\.\w+$/)?.[0] || '.png'
           const renamed = new File([file], `${group.fileBaseName}${ext}`, { type: file.type })
           await uploadBlob(renamed, group.prefix)
@@ -181,18 +182,23 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
     } else {
       setCropFile(file)
     }
-  }, [blobs.length, group.maxCount, group.exactOnly, group.storeWidth, group.storeHeight, group.prefix, onBanner, refresh])
+  }, [blobs, group.maxCount, group.exactOnly, group.storeWidth, group.storeHeight, group.prefix, group.fileBaseName, onBanner, refresh])
 
   const handleCropped = useCallback(async (croppedFile: File) => {
     setCropFile(null)
     try {
-      await uploadBlob(croppedFile, group.prefix)
+      // Get current count from server to avoid duplicate names
+      const current = await listBlobs(group.prefix)
+      const ext = croppedFile.name.match(/\.\w+$/)?.[0] || '.png'
+      const num = String(current.length + 1).padStart(2, '0')
+      const named = new File([croppedFile], `${group.fileBaseName}_${num}${ext}`, { type: croppedFile.type })
+      await uploadBlob(named, group.prefix)
       onBanner('success', '업로드 완료')
       refresh()
     } catch (err) {
       onBanner('error', `업로드 실패: ${(err as Error).message}`)
     }
-  }, [group.prefix, onBanner, refresh])
+  }, [group.prefix, group.fileBaseName, onBanner, refresh])
 
   const handleDelete = useCallback(async (url: string) => {
     if (!confirm('삭제하시겠습니까?')) return
@@ -250,7 +256,7 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
               return (
                 <div key={b.url} className="lp-card">
                   <div className="lp-card-preview">
-                    <LazyImage src={b.url} alt={fname}
+                    <LazyImage src={`${b.url}?v=${cacheBust}`} alt={fname}
                       style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     <button className="lp-delete-corner" onClick={() => handleDelete(b.url)} title="삭제">&times;</button>
                   </div>
@@ -262,7 +268,7 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
                       </div>
                     )}
                     <div className="lp-card-downloads">
-                      {group.downloads.map((opt) => (
+                      {group.downloads.length > 0 ? group.downloads.map((opt) => (
                         <button key={opt.platform} className="lp-dl-btn"
                           onClick={() => handleDownload(b, opt)}
                           title={`${opt.platform} ${opt.width}x${opt.height}`}>
@@ -270,7 +276,13 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
                           <span className="lp-dl-size">{opt.width}x{opt.height}</span>
                           {opt.mode === 'crop' && <span className="lp-dl-crop">위치 조정</span>}
                         </button>
-                      ))}
+                      )) : (
+                        <button className="lp-dl-btn"
+                          onClick={() => downloadOriginal(b.url, fname)}
+                          title="다운로드">
+                          <span className="lp-dl-platform">다운로드</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
