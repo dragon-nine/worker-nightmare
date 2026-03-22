@@ -93,7 +93,7 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5).setAlpha(0);
 
     // Start button
-    const btnImg = this.add.image(width / 2, height * 0.82, 'main-btn').setAlpha(0);
+    const btnImg = this.add.image(width / 2, height * 0.79, 'main-btn').setAlpha(0);
     const btnScale = (width * 0.55) / btnImg.width;
     btnImg.setScale(btnScale);
     btnImg.setInteractive({ useHandCursor: true });
