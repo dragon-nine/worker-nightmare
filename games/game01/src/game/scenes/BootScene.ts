@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Overlay } from '../Overlay';
-import { logScreen, logEvent } from '../services/analytics';
+import { logScreen } from '../services/analytics';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
