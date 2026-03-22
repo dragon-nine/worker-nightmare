@@ -27,13 +27,15 @@ export default function AssetCard({ blob, onDelete, onReplace }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const audio = isAudio(blob.pathname)
   const filename = getFilename(blob.pathname)
+  const cacheBust = blob.uploadedAt ? `?t=${new Date(blob.uploadedAt).getTime()}` : ''
+  const imgUrl = blob.url + cacheBust
 
   useEffect(() => {
     if (audio) return
     const img = new Image()
     img.onload = () => setDims(`${img.naturalWidth}x${img.naturalHeight}`)
-    img.src = blob.url
-  }, [blob.url, audio])
+    img.src = imgUrl
+  }, [imgUrl, audio])
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -55,7 +57,7 @@ export default function AssetCard({ blob, onDelete, onReplace }: Props) {
         {audio ? (
           <span>&#9835;</span>
         ) : (
-          <LazyImage src={blob.url} alt={filename} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <LazyImage src={imgUrl} alt={filename} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
         )}
         {onReplace && <div className="asset-card-overlay">클릭하여 교체</div>}
       </div>
