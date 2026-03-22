@@ -16,11 +16,34 @@ export class Overlay {
   }
 
   /** 오버레이 열기 (딤 배경 생성) */
-  open(options?: { fadeIn?: boolean; onClose?: () => void }): this {
+  open(options?: { fadeIn?: boolean; onClose?: () => void; gradient?: { left: string; right: string } }): this {
     const { width, height } = this.scene.scale;
     this.onCloseCallback = options?.onClose;
 
-    if (options?.fadeIn) {
+    if (options?.gradient) {
+      // 캔버스 그라데이션 배경
+      const texKey = '__ov_grad__';
+      if (this.scene.textures.exists(texKey)) this.scene.textures.remove(texKey);
+      const canvas = this.scene.textures.createCanvas(texKey, width, height)!;
+      const ctx = canvas.context;
+      const grad = ctx.createLinearGradient(0, 0, width, 0);
+      grad.addColorStop(0, options.gradient.left);
+      grad.addColorStop(1, options.gradient.right);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+      canvas.refresh();
+
+      const bg = this.scene.add.image(width / 2, height / 2, texKey)
+        .setDepth(OVERLAY_DEPTH).setInteractive();
+      if (options.fadeIn) {
+        bg.setAlpha(0);
+        this.scene.tweens.add({ targets: bg, alpha: DIM_ALPHA, duration: 400 });
+      } else {
+        bg.setAlpha(DIM_ALPHA);
+      }
+      this.items.push(bg);
+      this.dimRect = undefined as unknown as Phaser.GameObjects.Rectangle;
+    } else if (options?.fadeIn) {
       this.dimRect = this.scene.add.rectangle(width / 2, height / 2, width, height, DIM_COLOR, 0)
         .setDepth(OVERLAY_DEPTH).setInteractive();
       this.scene.tweens.add({ targets: this.dimRect, fillAlpha: DIM_ALPHA, duration: 400 });
@@ -29,7 +52,7 @@ export class Overlay {
         .setDepth(OVERLAY_DEPTH).setInteractive();
     }
 
-    this.items.push(this.dimRect);
+    if (this.dimRect) this.items.push(this.dimRect);
     return this;
   }
 
