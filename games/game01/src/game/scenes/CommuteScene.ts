@@ -515,7 +515,7 @@ export class CommuteScene extends Phaser.Scene {
 
     // 쓰러진 토끼
     const rabbitImg = this.textures.get('go-rabbit').getSourceImage();
-    const rabbitW = width * 0.35;
+    const rabbitW = width * 0.5;
     const rabbitScale = rabbitW / rabbitImg.width;
     const rabbit = ov.add(
       this.add.image(width / 2, height * 0.36, 'go-rabbit')
