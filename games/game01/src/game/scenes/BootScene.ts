@@ -23,6 +23,10 @@ export class BootScene extends Phaser.Scene {
       ['btn-pause', 'ui/btn-pause.png'],
       ['gauge-empty', 'ui/gauge-empty.png'],
       ['gauge-full', 'ui/gauge-full.png'],
+      ['main-bg', 'main-screen/main-bg.png'],
+      ['main-text', 'main-screen/main-text.png'],
+      ['main-char', 'main-screen/main-char.png'],
+      ['main-btn', 'main-screen/main-btn.png'],
     ];
     for (const [key, path] of assets) {
       if (!this.textures.exists(key)) this.load.image(key, path);
@@ -56,61 +60,38 @@ export class BootScene extends Phaser.Scene {
 
     logScreen('screen_boot');
 
-    // Particles
-    for (let i = 0; i < 20; i++) {
-      const x = Phaser.Math.Between(0, width);
-      const y = Phaser.Math.Between(0, height);
-      const size = Phaser.Math.FloatBetween(1, 3);
-      const particle = this.add.circle(x, y, size, 0xffffff, 0.15);
-      this.tweens.add({
-        targets: particle,
-        y: y - Phaser.Math.Between(30, 80),
-        alpha: 0,
-        duration: Phaser.Math.Between(3000, 6000),
-        repeat: -1,
-        delay: Phaser.Math.Between(0, 3000),
-      });
-    }
+    // Background — 가로 맞춤
+    const bg = this.add.image(width / 2, height / 2, 'main-bg');
+    const bgScale = width / bg.width;
+    bg.setScale(bgScale);
 
-    // Title
-    const title1 = this.add.text(width / 2, height * 0.25, '직장인', {
-      fontFamily: 'GMarketSans, sans-serif', fontSize: '52px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5).setAlpha(0);
+    // Title text
+    const titleImg = this.add.image(width / 2, height * 0.28, 'main-text').setAlpha(0);
+    const titleScale = (width * 0.85) / titleImg.width;
+    titleImg.setScale(titleScale);
 
-    const title2 = this.add.text(width / 2, height * 0.4, '잔혹시', {
-      fontFamily: 'GMarketSans, sans-serif', fontSize: '68px', color: '#e94560', fontStyle: 'bold',
-    }).setOrigin(0.5).setAlpha(0);
-
-    const sub = this.add.text(width / 2, height * 0.54, '당신의 하루를 견뎌내세요', {
-      fontFamily: 'GMarketSans, sans-serif', fontSize: '18px', color: '#555577',
-    }).setOrigin(0.5).setAlpha(0);
-
-    this.tweens.add({ targets: title1, alpha: 1, y: height * 0.23, duration: 800, delay: 300, ease: 'Power2' });
-    this.tweens.add({ targets: title2, alpha: 1, y: height * 0.38, duration: 800, delay: 600, ease: 'Power2' });
-    this.tweens.add({
-      targets: sub, alpha: 1, duration: 800, delay: 1000,
-      onComplete: () => {
-        this.tweens.add({ targets: sub, alpha: 0.3, duration: 1500, yoyo: true, repeat: -1 });
-      },
-    });
+    // Character
+    const charImg = this.add.image(width / 2, height * 0.52, 'main-char').setAlpha(0);
+    const charScale = (width * 0.45) / charImg.width;
+    charImg.setScale(charScale);
 
     // Start button
-    const btn = this.add.rectangle(width / 2, height * 0.72, 280, 60, 0xe94560)
-      .setInteractive({ useHandCursor: true }).setAlpha(0);
-    const btnText = this.add.text(width / 2, height * 0.72, '출근하기', {
-      fontFamily: 'GMarketSans, sans-serif', fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5).setAlpha(0);
+    const btnImg = this.add.image(width / 2, height * 0.76, 'main-btn').setAlpha(0);
+    const btnScale = (width * 0.55) / btnImg.width;
+    btnImg.setScale(btnScale);
+    btnImg.setInteractive({ useHandCursor: true });
 
+    // Fade-in animations
+    this.tweens.add({ targets: titleImg, alpha: 1, y: height * 0.26, duration: 800, delay: 300, ease: 'Power2' });
+    this.tweens.add({ targets: charImg, alpha: 1, y: height * 0.50, duration: 800, delay: 600, ease: 'Power2' });
     this.tweens.add({
-      targets: [btn, btnText], alpha: 1, duration: 600, delay: 1400,
+      targets: btnImg, alpha: 1, duration: 600, delay: 1000,
       onComplete: () => {
-        this.tweens.add({ targets: btn, scaleX: 1.03, scaleY: 1.03, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.tweens.add({ targets: btnImg, scaleX: btnScale * 1.03, scaleY: btnScale * 1.03, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       },
     });
 
-    btn.on('pointerover', () => btn.setFillStyle(0xd63651));
-    btn.on('pointerout', () => btn.setFillStyle(0xe94560));
-    btn.on('pointerdown', () => {
+    btnImg.on('pointerdown', () => {
       if (localStorage.getItem('sfxMuted') === 'false') try { this.sound.play('sfx-click', { volume: 0.6 }); } catch { /* 무시 */ }
       this.sound.get('bgm-menu')?.stop();
       this.cameras.main.fadeOut(500, 0, 0, 0);
@@ -140,8 +121,8 @@ export class BootScene extends Phaser.Scene {
     });
 
     // Credits
-    this.add.text(width / 2, height * 0.90, 'DragonNine Studio', {
-      fontFamily: 'GMarketSans, sans-serif', fontSize: '12px', color: '#333344',
+    this.add.text(width / 2, height * 0.92, 'DragonNine Studio', {
+      fontFamily: 'GMarketSans, sans-serif', fontSize: '12px', color: '#ffffff44',
     }).setOrigin(0.5);
 
   }
