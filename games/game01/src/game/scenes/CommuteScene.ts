@@ -54,7 +54,7 @@ export class CommuteScene extends Phaser.Scene {
 
     // 배경 이미지
     if (this.textures.exists('bg-game')) {
-      const bg = this.add.image(width / 2, height / 2, 'bg-game')
+      this.add.image(width / 2, height / 2, 'bg-game')
         .setDisplaySize(width, height)
         .setDepth(0)
         .setScrollFactor(0);
