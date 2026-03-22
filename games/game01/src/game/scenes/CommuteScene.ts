@@ -52,6 +52,14 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#000000');
 
+    // 배경 이미지
+    if (this.textures.exists('bg-game')) {
+      const bg = this.add.image(width / 2, height / 2, 'bg-game')
+        .setDisplaySize(width, height)
+        .setDepth(0)
+        .setScrollFactor(0);
+    }
+
     // 화면에 보이는 2레인 기준으로 크기 계산
     this.laneW = (width - PADDING * 2) / VISIBLE_LANES;
     this.tileH = this.laneW;
