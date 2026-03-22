@@ -9,9 +9,10 @@ export async function listBlobs(prefix: string): Promise<BlobItem[]> {
   return data.blobs;
 }
 
-export async function uploadBlob(file: File, prefix: string): Promise<BlobItem> {
+export async function uploadBlob(file: File, prefix: string, filename?: string): Promise<BlobItem> {
+  const name = filename || file.name;
   const res = await fetch(
-    `${API_BASE}/blob-upload?prefix=${encodeURIComponent(prefix)}&filename=${encodeURIComponent(file.name)}`,
+    `${API_BASE}/blob-upload?prefix=${encodeURIComponent(prefix)}&filename=${encodeURIComponent(name)}`,
     {
       method: 'POST',
       headers: { 'Content-Type': file.type },
