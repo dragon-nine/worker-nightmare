@@ -22,6 +22,16 @@ function isAudio(pathname: string): boolean {
   return /\.(mp3|ogg|wav|m4a)$/i.test(pathname)
 }
 
+async function downloadFile(url: string, filename: string) {
+  const res = await fetch(url)
+  const data = await res.blob()
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(data)
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
 export default function AssetCard({ blob, onDelete, onReplace }: Props) {
   const [dims, setDims] = useState<string>('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -66,6 +76,7 @@ export default function AssetCard({ blob, onDelete, onReplace }: Props) {
         <div className="asset-card-name" title={filename}>{filename}</div>
         <div className="asset-card-meta">
           <span>{dims ? `${dims} / ` : ''}{formatSize(blob.size)}</span>
+          <button className="asset-card-download" onClick={(e) => { e.stopPropagation(); downloadFile(blob.url, filename) }} title="다운로드">&#8681;</button>
           <button className="asset-card-delete" onClick={handleDelete} title="삭제">&#x2715;</button>
         </div>
       </div>

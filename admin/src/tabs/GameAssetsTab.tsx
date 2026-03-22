@@ -92,6 +92,27 @@ function LocalAssetCard({ asset, darkBg, prefix, onBanner, onReplaced }: {
   )
 }
 
+async function downloadFile(url: string, filename: string) {
+  const res = await fetch(url)
+  const data = await res.blob()
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(data)
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+async function downloadAll(blobs: BlobItem[], onBanner: Props['onBanner']) {
+  if (blobs.length === 0) return
+  onBanner('success', `${blobs.length}개 파일 다운로드 시작...`)
+  for (const b of blobs) {
+    const filename = b.pathname.split('/').pop() || 'file'
+    await downloadFile(b.url, filename)
+    // Small delay to avoid browser blocking multiple downloads
+    await new Promise((r) => setTimeout(r, 300))
+  }
+}
+
 function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props['onBanner'] }) {
   const addRef = useRef<HTMLInputElement>(null)
   const [blobs, setBlobs] = useState<BlobItem[]>([])
@@ -151,6 +172,13 @@ function CategorySection({ cat, onBanner }: { cat: CategoryDef; onBanner: Props[
           <span className="card-title" style={{ marginBottom: 0 }}>{cat.label}</span>
           <span className="section-count">{totalCount}개</span>
         </button>
+        {blobs.length > 0 && (
+          <button
+            className="category-download-btn"
+            onClick={(e) => { e.stopPropagation(); downloadAll(blobs, onBanner) }}
+            title="전체 다운로드"
+          >↓</button>
+        )}
         <button
           className="category-add-btn"
           onClick={(e) => { e.stopPropagation(); addRef.current?.click() }}
