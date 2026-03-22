@@ -305,44 +305,7 @@ export class CommuteScene extends Phaser.Scene {
   private onDeath() {
     this.gameOver = true;
     this.hud.stopTimer();
-
-    if (!this.hasRevived) {
-      this.showReviveScreen();
-    } else {
-      this.endGame();
-    }
-  }
-
-  private showReviveScreen() {
-    const { width, height } = this.scale;
-    this.bgm?.pause();
-
-    const ov = new Overlay(this).open({ fadeIn: true });
-
-    const icon = ov.addText(width / 2, height * 0.28, '💀', { fontSize: '64px' }).setAlpha(0);
-    const title = ov.addText(width / 2, height * 0.38, '부활하시겠습니까?', { fontSize: '28px', color: '#ffffff', fontStyle: 'bold' }).setAlpha(0).setTint(0xff3333, 0xff6600, 0xff6600, 0xffaa00);
-    const desc = ov.addText(width / 2, height * 0.44, '광고를 보고 이어서 플레이하세요!', { fontSize: '15px', color: '#aaaacc' }).setAlpha(0);
-    const chance = ov.addText(width / 2, height * 0.48, '(1회만 가능)', { fontSize: '13px', color: '#777799' }).setAlpha(0);
-
-    const ad = ov.addButton(width / 2, height * 0.57, 250, 56, '▶  광고 보고 부활', 0x44aa44, () => {
-      this.playSfx('sfx-click', 0.6);
-      logEvent('revive_ad_click', { score: this.score });
-      this.showAd(ov.getItems(), ov.getItems()[0] as Phaser.GameObjects.Rectangle, () => this.revive());
-    });
-
-    const skip = ov.addButton(width / 2, height * 0.66, 250, 48, '건너뛰기', 0x555555, () => {
-      this.playSfx('sfx-click', 0.6);
-      logEvent('revive_skip', { score: this.score });
-      ov.close();
-      this.endGame();
-    }, { color: '#999999' });
-
-    this.time.delayedCall(300, () => {
-      ov.fadeInItems([icon], 0);
-      ov.fadeInItems([title, desc, chance], 100);
-      ov.fadeInItems([ad.bg, ad.text], 250);
-      ov.fadeInItems([skip.bg, skip.text], 400);
-    });
+    this.endGame();
   }
 
   /* ── Ad System ── */
@@ -514,18 +477,20 @@ export class CommuteScene extends Phaser.Scene {
   private endGame() {
     this.gameOver = true;
     this.hud.stopTimer();
-    this.bgm?.stop();
+    this.bgm?.pause();
     this.playSfx('sfx-game-over', 0.6);
     this.vibrate([40, 80, 50, 80]);
 
-    logEvent('game_over', { score: this.score, best_combo: this.bestCombo, revived: this.hasRevived });
+    const canRevive = !this.hasRevived;
 
+    logEvent('game_over', { score: this.score, best_combo: this.bestCombo, revived: this.hasRevived });
     this.submitScore();
 
     const { width, height } = this.scale;
     const ov = new Overlay(this).open({ fadeIn: true });
 
-    const resultText = ov.addText(width / 2, height * 0.33, `점수: ${this.score}`, {
+    // 점수
+    const resultText = ov.addText(width / 2, height * 0.28, `점수: ${this.score}`, {
       fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
     }).setAlpha(0);
 
@@ -533,27 +498,46 @@ export class CommuteScene extends Phaser.Scene {
       ov.fadeInItems([resultText]);
     });
 
-    const lb = ov.addButton(width / 2, height * 0.48, 220, 56, '랭킹 보기', 0x3182f6, () => {
+    const fadeTargets: { obj: Phaser.GameObjects.GameObject[]; delay: number }[] = [];
+
+    // 부활 버튼 (1회만)
+    if (canRevive) {
+      const reviveBtn = ov.addButton(width / 2, height * 0.42, 250, 56, '▶  광고 보고 부활', 0x44aa44, () => {
+        this.playSfx('sfx-click', 0.6);
+        logEvent('revive_ad_click', { score: this.score });
+        this.showAd(ov.getItems(), ov.getItems()[0] as Phaser.GameObjects.Rectangle, () => this.revive());
+      }, { fontSize: '20px' });
+      const reviveHint = ov.addText(width / 2, height * 0.47, '(1회만 가능)', { fontSize: '12px', color: '#777799' }).setAlpha(0);
+      fadeTargets.push({ obj: [reviveBtn.bg, reviveBtn.text, reviveHint], delay: 0 });
+    }
+
+    // 랭킹/다시하기/홈
+    const btnBaseY = canRevive ? 0.54 : 0.42;
+
+    const lb = ov.addButton(width / 2, height * btnBaseY, 220, 56, '랭킹 보기', 0x3182f6, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('leaderboard_open');
       openLeaderboard();
     }, { fontSize: '24px' });
+    fadeTargets.push({ obj: [lb.bg, lb.text], delay: canRevive ? 150 : 0 });
 
-    const retry = ov.addButton(width / 2, height * 0.58, 220, 56, '다시하기', 0xe94560, () => {
+    const retry = ov.addButton(width / 2, height * (btnBaseY + 0.10), 220, 56, '다시하기', 0xe94560, () => {
       this.playSfx('sfx-click', 0.6);
       logClick('game_retry');
       this.scene.start('CommuteScene');
     }, { fontSize: '24px' });
+    fadeTargets.push({ obj: [retry.bg, retry.text], delay: canRevive ? 300 : 150 });
 
-    const home = ov.addButton(width / 2, height * 0.68, 220, 48, '홈으로', 0x555555, () => {
+    const home = ov.addButton(width / 2, height * (btnBaseY + 0.20), 220, 48, '홈으로', 0x555555, () => {
       this.playSfx('sfx-click', 0.6);
       this.scene.start('BootScene');
     }, { color: '#cccccc' });
+    fadeTargets.push({ obj: [home.bg, home.text], delay: canRevive ? 450 : 300 });
 
     this.time.delayedCall(800, () => {
-      ov.fadeInItems([lb.bg, lb.text]);
-      ov.fadeInItems([retry.bg, retry.text], 150);
-      ov.fadeInItems([home.bg, home.text], 300);
+      for (const { obj, delay } of fadeTargets) {
+        ov.fadeInItems(obj, delay);
+      }
     });
   }
 
