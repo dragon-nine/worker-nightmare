@@ -1055,3 +1055,56 @@ body {
 }
 .cropper-hint { font-size: 12px; color: var(--text-tertiary); }
 .cropper-actions { display: flex; gap: 8px; }
+
+/* ══════════════════════════════════════════
+   Launch Prep Tab
+   ══════════════════════════════════════════ */
+
+.lp-info {
+  padding: 10px 14px; margin-bottom: 16px;
+  background: var(--accent-light); border: 1px solid rgba(49,130,246,0.15);
+  border-radius: var(--radius-sm); font-size: 13px; color: var(--accent-dark);
+}
+.lp-processing {
+  padding: 12px 16px; text-align: center;
+  font-size: 13px; color: var(--accent); font-weight: 600;
+  background: var(--accent-light); border-radius: 8px; margin: 8px 0;
+}
+.lp-platforms {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px; padding: 4px 0;
+}
+.lp-platform {
+  border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+  padding: 10px; background: var(--surface-secondary);
+}
+.lp-platform-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border-light);
+}
+.lp-platform-name { font-size: 13px; font-weight: 700; }
+.lp-platform-size {
+  font-size: 11px; font-family: monospace; color: var(--text-secondary);
+  background: var(--bg); padding: 2px 6px; border-radius: 4px;
+}
+.lp-empty { font-size: 12px; color: var(--text-tertiary); padding: 8px 0; }
+.lp-items { display: flex; flex-direction: column; gap: 8px; }
+.lp-item {
+  display: flex; gap: 10px; align-items: center;
+  background: var(--surface); border: 1px solid var(--border-light);
+  border-radius: 8px; padding: 6px; overflow: hidden;
+}
+.lp-item-preview {
+  width: 60px; height: 60px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border-radius: 6px; overflow: hidden;
+}
+.lp-item-info {
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  min-width: 0;
+}
+.lp-item-name {
+  flex: 1; font-size: 12px; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lp-item-size { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }

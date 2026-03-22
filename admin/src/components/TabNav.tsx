@@ -25,6 +25,7 @@ const GAMES: GameSection[] = [
       { id: 'game01-google-play', icon: '▶', label: 'Google Play' },
       { id: 'game01-toss', icon: '💙', label: '토스 인앱' },
       { id: 'game01-layout', icon: '📐', label: '레이아웃 편집' },
+      { id: 'game01-launch', icon: '🚀', label: '출시 준비' },
     ],
   },
   {

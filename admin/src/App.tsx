@@ -7,6 +7,7 @@ import TossInAppTab from './tabs/TossInAppTab'
 import PlaceholderTab from './tabs/PlaceholderTab'
 import SharedFilesTab from './tabs/SharedFilesTab'
 import LayoutEditorTab from './tabs/LayoutEditorTab'
+import LaunchPrepTab from './tabs/LaunchPrepTab'
 import Banner from './components/Banner'
 
 export type PageId =
@@ -19,6 +20,7 @@ export type PageId =
   | 'game02-google-play'
   | 'game02-toss'
   | 'game01-layout'
+  | 'game01-launch'
   | 'shared-files'
 
 function getInitialPage(): PageId {
@@ -60,6 +62,7 @@ export default function App() {
         {page === 'game02-google-play' && <PlaceholderTab title="game02 Google Play" message="game02 프로젝트가 생성되면 활성화됩니다." />}
         {page === 'game02-toss' && <PlaceholderTab title="game02 토스 인앱" message="game02 프로젝트가 생성되면 활성화됩니다." />}
         {page === 'game01-layout' && <LayoutEditorTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
+        {page === 'game01-launch' && <LaunchPrepTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'shared-files' && <SharedFilesTab onBanner={showBanner} />}
       </main>
       {banner && (
