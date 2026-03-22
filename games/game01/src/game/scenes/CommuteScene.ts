@@ -505,12 +505,12 @@ export class CommuteScene extends Phaser.Scene {
 
     // 최고기록 텍스트
     const bestText = ov.addText(width / 2, height * 0.15, `최고기록 ${bestScore}`, {
-      fontSize: '18px', color: '#999999',
+      fontSize: '26px', color: '#999999',
     }).setAlpha(0);
 
     // 큰 점수
     const scoreText = ov.addText(width / 2, height * 0.22, `${this.score}`, {
-      fontSize: '64px', color: '#ffffff', fontStyle: 'bold',
+      fontSize: '80px', color: '#ffffff', fontStyle: 'bold',
     }).setAlpha(0);
 
     // 쓰러진 토끼
@@ -526,7 +526,7 @@ export class CommuteScene extends Phaser.Scene {
 
     // 멘트
     const quoteText = ov.addText(width / 2, height * 0.46, '퇴근은 쉬운게 아니야...\n인생이 원래 그래', {
-      fontSize: '16px', color: '#ffffff', align: 'center', lineSpacing: 6,
+      fontSize: '22px', color: '#ffffff', align: 'center', lineSpacing: 8,
     }).setTint(0xe5332f, 0x771615, 0xe5332f, 0x771615).setAlpha(0);
 
     // 페이드인: 점수 + 토끼
