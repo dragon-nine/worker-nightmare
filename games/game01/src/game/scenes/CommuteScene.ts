@@ -463,9 +463,22 @@ export class CommuteScene extends Phaser.Scene {
     this.gameOver = false;
     this.isFalling = false;
     this.comboCount = 0;
+    this.justSwitched = false;
 
     this.player.setHurt(false);
     this.player.resetSprite();
+
+    // 현재 도로 행의 올바른 레인으로 복원
+    const row = this.road.rows[this.currentRowIdx];
+    if (row) {
+      const correctLane = row.isTurn ? row.type : this.player.currentLane;
+      // 레인이 현재 행에서 유효하지 않으면 행의 레인으로 강제 이동
+      if (row.isTurn && this.player.currentLane !== row.type) {
+        this.player.switchTo(correctLane);
+      }
+      this.panViewTo(this.calcViewLeft(this.player.currentLane));
+      this.scrollToCurrentRow();
+    }
 
     this.hud.timeLeft = START_TIME;
     this.hud.elapsed = 30;
