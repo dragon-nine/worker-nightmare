@@ -407,7 +407,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerLeave={handlePointerUp}
-              onClick={() => setSelectedId(null)}
+              onClick={() => { /* keep selection */ }}
             >
               {bgUrl && (
                 <img src={bgUrl} alt="bg" style={{
@@ -441,6 +441,16 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     {el.positioning === 'group' && el.gapPx > 0 && (
                       <div className="le-el-gap" data-gap={`${el.gapPx}px`}
                         style={{ top: -el.gapPx * previewScale, height: el.gapPx * previewScale }} />
+                    )}
+                    {el.positioning === 'anchor' && (
+                      <>
+                        {/* Vertical offset line */}
+                        <div className="le-el-offset-v" style={{ height: el.offsetY * previewScale }}
+                          data-offset={`${el.offsetY}px`} />
+                        {/* Horizontal offset line */}
+                        <div className="le-el-offset-h" style={{ width: el.offsetX * previewScale }}
+                          data-offset={`${el.offsetX}px`} />
+                      </>
                     )}
                   </div>
                 )
