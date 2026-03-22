@@ -977,6 +977,9 @@ body {
   text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 .le-el-anchor { border-style: dashed !important; }
+.le-el-no-guide { border-color: transparent !important; }
+.le-el-no-guide.le-el-selected { border-color: var(--accent) !important; }
+.le-btn-active { background: var(--accent); color: #fff; }
 .le-el-gap {
   position: absolute; left: 50%; transform: translateX(-50%);
   width: 1px; background: rgba(255,255,255,0.3);

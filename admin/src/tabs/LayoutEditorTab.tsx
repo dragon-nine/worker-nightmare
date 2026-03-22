@@ -188,6 +188,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
   const [bgUrl, setBgUrl] = useState<string | null>(null)
   const [imageSizes, setImageSizes] = useState<Record<string, { w: number; h: number }>>({})
   const [saving, setSaving] = useState(false)
+  const [showGuides, setShowGuides] = useState(true)
   const phoneRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
     id: string; startX: number; startY: number
@@ -385,6 +386,9 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
           }}>- 4px</button>
         </div>
         <div className="le-toolbar-group le-toolbar-actions">
+          <button className={`le-btn${showGuides ? ' le-btn-active' : ''}`} onClick={() => setShowGuides(!showGuides)}>
+            {showGuides ? '가이드 ON' : '가이드 OFF'}
+          </button>
           <button className="le-btn le-btn-ghost" onClick={resetDefaults}>↺ 초기화</button>
           <button className="le-btn le-btn-save" onClick={handleSave} disabled={saving}>
             {saving ? '저장 중...' : '저장'}
@@ -429,7 +433,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                 return (
                   <div
                     key={pos.id}
-                    className={`le-el${pos.id === selectedId ? ' le-el-selected' : ''}${el.positioning === 'anchor' ? ' le-el-anchor' : ''}`}
+                    className={`le-el${pos.id === selectedId ? ' le-el-selected' : ''}${el.positioning === 'anchor' ? ' le-el-anchor' : ''}${!showGuides ? ' le-el-no-guide' : ''}`}
                     style={{ position: 'absolute', left, top, width: pos.w, height: pos.h }}
                     onPointerDown={(e) => handlePointerDown(e, pos.id)}
                   >
@@ -438,16 +442,14 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
                     ) : (
                       <div className="le-el-text" style={{ fontSize: `${Math.max(6, (el.fontSizePx || 14) * previewScale)}px` }}>{el.label || el.id}</div>
                     )}
-                    {el.positioning === 'group' && el.gapPx > 0 && (
+                    {showGuides && el.positioning === 'group' && el.gapPx > 0 && (
                       <div className="le-el-gap" data-gap={`${el.gapPx}px`}
                         style={{ top: -el.gapPx * previewScale, height: el.gapPx * previewScale }} />
                     )}
-                    {el.positioning === 'anchor' && (
+                    {showGuides && el.positioning === 'anchor' && (
                       <>
-                        {/* Vertical offset line */}
                         <div className="le-el-offset-v" style={{ height: el.offsetY * previewScale }}
                           data-offset={`${el.offsetY}px`} />
-                        {/* Horizontal offset line */}
                         <div className="le-el-offset-h" style={{ width: el.offsetX * previewScale }}
                           data-offset={`${el.offsetX}px`} />
                       </>
