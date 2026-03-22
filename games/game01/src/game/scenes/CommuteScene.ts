@@ -320,7 +320,7 @@ export class CommuteScene extends Phaser.Scene {
     const ov = new Overlay(this).open({ fadeIn: true });
 
     const icon = ov.addText(width / 2, height * 0.28, '💀', { fontSize: '64px' }).setAlpha(0);
-    const title = ov.addText(width / 2, height * 0.38, '부활하시겠습니까?', { fontSize: '28px', color: '#ffffff', fontStyle: 'bold' }).setAlpha(0);
+    const title = ov.addText(width / 2, height * 0.38, '부활하시겠습니까?', { fontSize: '28px', color: '#ffffff', fontStyle: 'bold' }).setAlpha(0).setTint(0xff3333, 0xff6600, 0xff6600, 0xffaa00);
     const desc = ov.addText(width / 2, height * 0.44, '광고를 보고 이어서 플레이하세요!', { fontSize: '15px', color: '#aaaacc' }).setAlpha(0);
     const chance = ov.addText(width / 2, height * 0.48, '(1회만 가능)', { fontSize: '13px', color: '#777799' }).setAlpha(0);
 
