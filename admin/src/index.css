@@ -105,6 +105,14 @@ body {
   transition: all 0.15s;
   border: none;
   background: none;
+}
+
+.sidebar-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
   width: 100%;
   text-align: left;
   font-family: inherit;
@@ -217,9 +225,8 @@ body {
 }
 
 .sidebar-game-group {
-  border-bottom: 1px solid var(--border-light);
-  padding-bottom: 4px;
-  margin-bottom: 4px;
+  padding-bottom: 2px;
+  margin-bottom: 2px;
 }
 
 .sidebar-link {

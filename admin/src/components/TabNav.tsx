@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import type { PageId } from '../App'
+import {
+  CheckSquare, StickyNote, FolderOpen,
+  Palette, LayoutGrid, Rocket, Gamepad2, ExternalLink,
+} from 'lucide-react'
 
 declare const __BUILD_TIME__: string
+
+const ICON_SIZE = 16
 
 function formatRelativeTime(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime()
@@ -25,7 +31,7 @@ function formatDateTime(isoString: string): string {
 
 interface NavItem {
   id: PageId
-  icon: string
+  icon: ReactNode
   label: string
 }
 
@@ -42,9 +48,9 @@ const GAMES: GameSection[] = [
     title: 'game01 - 직장인 잔혹시',
     gameUrl: '/game01/',
     items: [
-      { id: 'game01-assets', icon: '🎨', label: '에셋 관리' },
-      { id: 'game01-layout', icon: '📐', label: '레이아웃 편집' },
-      { id: 'game01-launch', icon: '🚀', label: '출시 준비' },
+      { id: 'game01-assets', icon: <Palette size={ICON_SIZE} />, label: '에셋 관리' },
+      { id: 'game01-layout', icon: <LayoutGrid size={ICON_SIZE} />, label: '레이아웃 편집' },
+      { id: 'game01-launch', icon: <Rocket size={ICON_SIZE} />, label: '출시 준비' },
     ],
   },
   {
@@ -52,9 +58,15 @@ const GAMES: GameSection[] = [
     title: 'game02 - (준비중)',
     gameUrl: '/game02/',
     items: [
-      { id: 'game02-assets', icon: '🎨', label: '에셋 관리' },
+      { id: 'game02-assets', icon: <Palette size={ICON_SIZE} />, label: '에셋 관리' },
     ],
   },
+]
+
+const COMMON_ITEMS: { id: PageId; icon: ReactNode; label: string }[] = [
+  { id: 'checklist', icon: <CheckSquare size={ICON_SIZE} />, label: '체크리스트' },
+  { id: 'memo', icon: <StickyNote size={ICON_SIZE} />, label: '메모' },
+  { id: 'shared-files', icon: <FolderOpen size={ICON_SIZE} />, label: '공유 파일' },
 ]
 
 interface Props {
@@ -67,20 +79,19 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
   const [, setTick] = useState(0)
   const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : null
 
-  // Update relative time every minute
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60000)
     return () => clearInterval(id)
   }, [])
 
-  const companyPages = ['checklist', 'memo', 'shared-files']
+  const commonPageIds = COMMON_ITEMS.map((i) => i.id as string)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {}
     GAMES.forEach((g) => {
       const isActive = g.items.some((item) => item.id === activePage)
       init[g.key] = !isActive
     })
-    init['common'] = !companyPages.includes(activePage)
+    init['common'] = !commonPageIds.includes(activePage)
     return init
   })
 
@@ -101,31 +112,16 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
             <span className={`sidebar-chevron${collapsed['common'] ? '' : ' open'}`}>&#9656;</span>
             <span>Common</span>
           </button>
-          {!collapsed['common'] && (
-            <>
-              <button
-                className={`sidebar-item${activePage === 'checklist' ? ' active' : ''}`}
-                onClick={() => onPageChange('checklist' as PageId)}
-              >
-                <span>✅</span>
-                <span>체크리스트</span>
-              </button>
-              <button
-                className={`sidebar-item${activePage === 'memo' ? ' active' : ''}`}
-                onClick={() => onPageChange('memo' as PageId)}
-              >
-                <span>📝</span>
-                <span>메모</span>
-              </button>
-              <button
-                className={`sidebar-item${activePage === 'shared-files' ? ' active' : ''}`}
-                onClick={() => onPageChange('shared-files' as PageId)}
-              >
-                <span>📁</span>
-                <span>공유 파일</span>
-              </button>
-            </>
-          )}
+          {!collapsed['common'] && COMMON_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              className={`sidebar-item${activePage === item.id ? ' active' : ''}`}
+              onClick={() => onPageChange(item.id)}
+            >
+              <span className="sidebar-item-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
 
         {GAMES.map((game) => (
@@ -142,13 +138,14 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
                     className={`sidebar-item${activePage === item.id ? ' active' : ''}`}
                     onClick={() => onPageChange(item.id)}
                   >
-                    <span>{item.icon}</span>
+                    <span className="sidebar-item-icon">{item.icon}</span>
                     <span>{item.label}</span>
                   </button>
                 ))}
                 <a className="sidebar-item sidebar-link" href={game.gameUrl} target="_blank" rel="noopener">
-                  <span>🎮</span>
+                  <span className="sidebar-item-icon"><Gamepad2 size={ICON_SIZE} /></span>
                   <span>게임으로 이동</span>
+                  <ExternalLink size={12} style={{ marginLeft: 'auto', opacity: 0.4 }} />
                 </a>
               </>
             )}
