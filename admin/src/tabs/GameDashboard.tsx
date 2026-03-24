@@ -45,6 +45,7 @@ interface Props {
 
 export default function GameDashboard({ onPageChange }: Props) {
   const [icons, setIcons] = useState<Record<string, string>>({})
+  const [loaded, setLoaded] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     GAMES.forEach(async (game) => {
@@ -55,6 +56,8 @@ export default function GameDashboard({ onPageChange }: Props) {
         }
       } catch {
         // no icon
+      } finally {
+        setLoaded((prev) => new Set(prev).add(game.id))
       }
     })
   }, [])
@@ -73,9 +76,9 @@ export default function GameDashboard({ onPageChange }: Props) {
             <div className="game-dashboard-icon">
               {icons[game.id] ? (
                 <img src={icons[game.id]} alt={game.name} />
-              ) : (
-                <div className="game-dashboard-icon-placeholder">🎮</div>
-              )}
+              ) : !loaded.has(game.id) ? (
+                <div className="game-dashboard-icon-shimmer" />
+              ) : null}
             </div>
             <div className="game-dashboard-info">
               <span className="game-dashboard-name">{game.name}</span>
