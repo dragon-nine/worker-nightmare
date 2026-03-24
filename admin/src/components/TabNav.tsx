@@ -112,10 +112,9 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
         </div>
 
         <div className="sidebar-game-group">
-          <button className="sidebar-section-btn" onClick={() => toggle('common')}>
-            <span className={`sidebar-chevron${collapsed['common'] ? '' : ' open'}`}>&#9656;</span>
-            <span>Common</span>
-          </button>
+          <div className="sidebar-section-btn" onClick={() => toggle('common')}>
+            <span>COMMON</span>
+          </div>
           {!collapsed['common'] && COMMON_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -130,13 +129,12 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
 
         {GAMES.map((game) => (
           <div key={game.key} className="sidebar-game-group">
-            <button className="sidebar-section-btn" onClick={() => toggle(game.key)}>
-              <span className={`sidebar-chevron${collapsed[game.key] ? '' : ' open'}`}>&#9656;</span>
+            <div className="sidebar-section-btn" onClick={() => toggle(game.key)}>
               <span className="sidebar-section-label">
                 <span className="sidebar-section-title">{game.title}</span>
                 <span className="sidebar-section-subtitle">{game.subtitle}</span>
               </span>
-            </button>
+            </div>
             {!collapsed[game.key] && (
               <>
                 {game.items.map((item) => (
