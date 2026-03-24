@@ -9,8 +9,13 @@ export async function POST(req: Request) {
       return Response.json({ error: 'url field required' }, { status: 400 });
     }
 
-    // URL에서 key 추출: PUBLIC_URL/path → path
-    const key = url.replace(`${PUBLIC_URL}/`, '');
+    // URL에서 key 추출: 프록시 URL 또는 R2 직접 URL
+    let key = url;
+    if (url.includes('blob-image?key=')) {
+      key = decodeURIComponent(new URL(url).searchParams.get('key') || '');
+    } else if (url.includes(PUBLIC_URL)) {
+      key = url.replace(`${PUBLIC_URL}/`, '');
+    }
 
     await r2.send(new DeleteObjectCommand({
       Bucket: BUCKET,

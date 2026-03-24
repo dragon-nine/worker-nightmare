@@ -41,7 +41,7 @@ export default function AssetCard({ blob, isDeleting, onDelete, onReplace }: Pro
   const fileRef = useRef<HTMLInputElement>(null)
   const audio = isAudio(blob.pathname)
   const filename = getFilename(blob.pathname)
-  const cacheBust = blob.uploadedAt ? `?t=${new Date(blob.uploadedAt).getTime()}` : ''
+  const cacheBust = blob.uploadedAt ? `&t=${new Date(blob.uploadedAt).getTime()}` : ''
   const imgUrl = blob.url + cacheBust
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function AssetCard({ blob, isDeleting, onDelete, onReplace }: Pro
         <div className="asset-card-name" title={filename}>{filename}</div>
         <div className="asset-card-meta">
           <span>{dims ? `${dims} / ` : ''}{formatSize(blob.size)}</span>
-          <button className="asset-card-download" onClick={(e) => { e.stopPropagation(); downloadFile(blob.url, filename) }} title="다운로드" disabled={isDeleting}>&#8681;</button>
+          <button className="asset-card-download" onClick={(e) => { e.stopPropagation(); downloadFile(blob.downloadUrl || blob.url, filename) }} title="다운로드" disabled={isDeleting}>&#8681;</button>
           <button className="asset-card-delete" onClick={handleDelete} title="삭제" disabled={isDeleting}>&#x2715;</button>
         </div>
       </div>
