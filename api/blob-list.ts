@@ -11,8 +11,10 @@ export async function GET(req: Request) {
       Prefix: prefix,
     }));
 
+    const origin = new URL(req.url).origin;
     const blobs = (result.Contents || []).map((obj) => ({
-      url: `${PUBLIC_URL}/${obj.Key}`,
+      url: `${origin}/api/blob-image?key=${encodeURIComponent(obj.Key!)}`,
+      downloadUrl: `${PUBLIC_URL}/${obj.Key}`,
       pathname: obj.Key!,
       size: obj.Size || 0,
       uploadedAt: obj.LastModified?.toISOString() || '',

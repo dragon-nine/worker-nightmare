@@ -110,7 +110,7 @@ async function downloadAll(blobs: BlobItem[], onBanner: Props['onBanner']) {
   onBanner('success', `${blobs.length}개 파일 다운로드 시작...`)
   for (const b of blobs) {
     const filename = b.pathname.split('/').pop() || 'file'
-    await downloadFile(b.url, filename)
+    await downloadFile(b.downloadUrl || b.url, filename)
     await new Promise((r) => setTimeout(r, 300))
   }
 }
