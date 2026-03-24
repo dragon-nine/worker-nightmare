@@ -89,7 +89,7 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
       <div className="sidebar-nav">
-        <div className="sidebar-logo">
+        <div className="sidebar-logo" onClick={() => onPageChange('dashboard' as PageId)} style={{ cursor: 'pointer' }}>
           <div className="sidebar-logo-icon">D9</div>
           <span>Dragon Nine</span>
         </div>
