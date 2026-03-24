@@ -33,12 +33,6 @@ const GAMES: GameInfo[] = [
   },
 ]
 
-const STATUS_LABEL: Record<string, string> = {
-  live: '운영중',
-  dev: '개발중',
-  planned: '준비중',
-}
-
 interface Props {
   onPageChange: (page: PageId) => void
 }
@@ -81,10 +75,10 @@ export default function GameDashboard({ onPageChange }: Props) {
               ) : null}
             </div>
             <div className="game-dashboard-info">
+              <span className="game-dashboard-id">{game.id}</span>
               <span className="game-dashboard-name">{game.name}</span>
               <span className="game-dashboard-desc">{game.desc}</span>
             </div>
-            <span className={`game-dashboard-status ${game.status}`}>{STATUS_LABEL[game.status]}</span>
           </div>
         ))}
       </div>
