@@ -95,14 +95,6 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
         </div>
 
         <button
-          className={`sidebar-item${activePage === 'dashboard' ? ' active' : ''}`}
-          onClick={() => onPageChange('dashboard' as PageId)}
-        >
-          <span>🏠</span>
-          <span>게임 목록</span>
-        </button>
-
-        <button
           className={`sidebar-item${activePage === 'shared-files' ? ' active' : ''}`}
           onClick={() => onPageChange('shared-files' as PageId)}
         >

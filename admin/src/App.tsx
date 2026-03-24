@@ -46,7 +46,7 @@ export default function App() {
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <TabNav activePage={page} onPageChange={handlePageChange} open={sidebarOpen} />
       <main className="admin-content">
-        {page === 'dashboard' && <GameDashboard onPageChange={handlePageChange} />}
+        {page === 'dashboard' && <GameDashboard />}
         {page === 'game01-assets' && <GameAssetsTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'game02-assets' && <PlaceholderTab title="game02 에셋 관리" message="game02 프로젝트가 생성되면 활성화됩니다." />}
         {page === 'game01-layout' && <LayoutEditorTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}

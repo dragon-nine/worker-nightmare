@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { listBlobs } from '../api'
-import type { PageId } from '../App'
 
 interface GameInfo {
   id: string
@@ -8,7 +7,6 @@ interface GameInfo {
   desc: string
   iconPrefix: string
   gameUrl: string
-  firstPage: PageId
   status: 'live' | 'dev' | 'planned'
 }
 
@@ -19,7 +17,6 @@ const GAMES: GameInfo[] = [
     desc: '퇴근길은 만만치 않다! 2레인 도로를 달리며 장애물을 피하는 캐주얼 러너 게임.',
     iconPrefix: 'launch/game01/icon/',
     gameUrl: '/game01/',
-    firstPage: 'game01-assets',
     status: 'live',
   },
   {
@@ -28,16 +25,11 @@ const GAMES: GameInfo[] = [
     desc: '준비중',
     iconPrefix: 'launch/game02/icon/',
     gameUrl: '/game02/',
-    firstPage: 'game02-assets',
     status: 'planned',
   },
 ]
 
-interface Props {
-  onPageChange: (page: PageId) => void
-}
-
-export default function GameDashboard({ onPageChange }: Props) {
+export default function GameDashboard() {
   const [icons, setIcons] = useState<Record<string, string>>({})
   const [loaded, setLoaded] = useState<Set<string>>(new Set())
 
