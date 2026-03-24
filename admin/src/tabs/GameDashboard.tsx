@@ -1,13 +1,10 @@
-import { useState, useEffect } from 'react'
-import { listBlobs } from '../api'
-import type { BlobItem } from '../types'
 import type { PageId } from '../App'
 
 interface GameInfo {
   id: string
   name: string
   desc: string
-  iconPrefix: string
+  icon: string | null
   gameUrl: string
   firstPage: PageId
   status: 'live' | 'dev' | 'planned'
@@ -16,9 +13,9 @@ interface GameInfo {
 const GAMES: GameInfo[] = [
   {
     id: 'game01',
-    name: '직장인 잔혹사',
+    name: '직장인 잔혹사 : 퇴근길',
     desc: '2레인 도로 러너',
-    iconPrefix: 'launch/game01/icon/',
+    icon: '/images/game01-icon.png',
     gameUrl: '/game01/',
     firstPage: 'game01-assets',
     status: 'live',
@@ -27,7 +24,7 @@ const GAMES: GameInfo[] = [
     id: 'game02',
     name: 'game02',
     desc: '준비중',
-    iconPrefix: 'launch/game02/icon/',
+    icon: null,
     gameUrl: '/game02/',
     firstPage: 'game02-assets',
     status: 'planned',
@@ -45,21 +42,6 @@ interface Props {
 }
 
 export default function GameDashboard({ onPageChange }: Props) {
-  const [icons, setIcons] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    GAMES.forEach(async (game) => {
-      try {
-        const blobs: BlobItem[] = await listBlobs(game.iconPrefix)
-        if (blobs.length > 0) {
-          setIcons((prev) => ({ ...prev, [game.id]: blobs[0].url }))
-        }
-      } catch {
-        // no icon available
-      }
-    })
-  }, [])
-
   return (
     <div>
       <h1 className="page-title">Games</h1>
@@ -72,8 +54,8 @@ export default function GameDashboard({ onPageChange }: Props) {
             onClick={() => game.status !== 'planned' && onPageChange(game.firstPage)}
           >
             <div className="game-dashboard-icon">
-              {icons[game.id] ? (
-                <img src={`/api/blob-image?url=${encodeURIComponent(icons[game.id])}`} alt={game.name} />
+              {game.icon ? (
+                <img src={game.icon} alt={game.name} />
               ) : (
                 <div className="game-dashboard-icon-placeholder">🎮</div>
               )}
