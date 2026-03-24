@@ -1785,19 +1785,15 @@ body {
 }
 
 .ct-line2 {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 14px;
+  color: var(--text-primary);
 }
 
 .ct-actions {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.1s;
 }
-
-.ct-item:hover .ct-actions { opacity: 1; }
 
 .ct-edit-btn {
   background: none;
