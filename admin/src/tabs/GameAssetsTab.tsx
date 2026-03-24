@@ -47,24 +47,28 @@ function LocalAssetCard({ asset, darkBg, prefix, onBanner, onReplaced }: {
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [dims, setDims] = useState('')
+  const [replacing, setReplacing] = useState(false)
   const url = getLocalAssetUrl(asset.path)
   const audio = isAudio(asset.filename)
 
   const handleReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setReplacing(true)
     try {
       await uploadBlob(file, prefix)
       onBanner('success', `"${asset.filename}" 교체 업로드 완료`)
       onReplaced()
     } catch (err) {
       onBanner('error', `교체 실패: ${(err as Error).message}`)
+    } finally {
+      setReplacing(false)
     }
     if (fileRef.current) fileRef.current.value = ''
   }
 
   return (
-    <div className="asset-card clickable" onClick={() => fileRef.current?.click()}>
+    <div className={`asset-card clickable${replacing ? ' busy' : ''}`} onClick={() => !replacing && fileRef.current?.click()}>
       <div className={`asset-card-preview${darkBg ? ' dark-bg' : ''}${audio ? ' audio' : ''}`}>
         {audio ? (
           <span>&#9835;</span>
@@ -79,7 +83,8 @@ function LocalAssetCard({ asset, darkBg, prefix, onBanner, onReplaced }: {
             }}
           />
         )}
-        <div className="asset-card-overlay">클릭하여 교체</div>
+        {replacing && <div className="asset-card-overlay busy-overlay"><div className="upload-spinner" />교체 중...</div>}
+        {!replacing && <div className="asset-card-overlay">클릭하여 교체</div>}
       </div>
       <input ref={fileRef} type="file" accept="image/*,audio/*" style={{ display: 'none' }} onChange={handleReplace} />
       <div className="asset-card-info">

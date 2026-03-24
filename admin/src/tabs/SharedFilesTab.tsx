@@ -37,6 +37,8 @@ export default function SharedFilesTab({ onBanner }: Props) {
   const addRef = useRef<HTMLInputElement>(null)
   const [blobs, setBlobs] = useState<BlobItem[]>([])
   const [loaded, setLoaded] = useState(false)
+  const [uploading, setUploading] = useState<string[]>([])
+  const [deleting, setDeleting] = useState<Set<string>>(new Set())
 
   const refresh = useCallback(async () => {
     try {
@@ -52,14 +54,18 @@ export default function SharedFilesTab({ onBanner }: Props) {
   useEffect(() => { refresh() }, [refresh])
 
   const handleUpload = async (files: FileList) => {
+    const names = Array.from(files).map((f) => f.name)
+    setUploading(names)
     for (const file of Array.from(files)) {
       try {
         await uploadBlob(file, prefix)
       } catch (err) {
         onBanner('error', `"${file.name}" 업로드 실패: ${(err as Error).message}`)
+        setUploading([])
         return
       }
     }
+    setUploading([])
     onBanner('success', `${files.length}개 파일 업로드 완료`)
     refresh()
   }
@@ -67,12 +73,15 @@ export default function SharedFilesTab({ onBanner }: Props) {
   const handleDelete = async (blob: BlobItem) => {
     const name = getFilename(blob.pathname)
     if (!confirm(`"${name}" 삭제하시겠습니까?`)) return
+    setDeleting((prev) => new Set(prev).add(blob.url))
     try {
       await deleteBlob(blob.url)
       onBanner('success', '삭제 완료')
       refresh()
     } catch (err) {
       onBanner('error', `삭제 실패: ${(err as Error).message}`)
+    } finally {
+      setDeleting((prev) => { const next = new Set(prev); next.delete(blob.url); return next })
     }
   }
 
@@ -89,7 +98,8 @@ export default function SharedFilesTab({ onBanner }: Props) {
             className="category-add-btn"
             onClick={() => addRef.current?.click()}
             title="파일 업로드"
-          >+</button>
+            disabled={uploading.length > 0}
+          >{uploading.length > 0 ? '...' : '+'}</button>
           <input
             ref={addRef}
             type="file"
@@ -111,24 +121,37 @@ export default function SharedFilesTab({ onBanner }: Props) {
           </div>
         )}
 
-        {loaded && blobs.length === 0 && (
+        {loaded && blobs.length === 0 && uploading.length === 0 && (
           <div className="empty">아직 업로드된 파일이 없습니다</div>
         )}
 
-        {loaded && blobs.length > 0 && (
+        {loaded && (
           <div className="asset-grid">
+            {uploading.map((name) => (
+              <div key={name} className="asset-card uploading">
+                <div className="asset-card-preview">
+                  <div className="upload-spinner" />
+                </div>
+                <div className="asset-card-info">
+                  <div className="asset-card-name">{name}</div>
+                  <div className="asset-card-meta"><span className="uploading-text">업로드 중...</span></div>
+                </div>
+              </div>
+            ))}
             {blobs.map((b) => {
               const name = getFilename(b.pathname)
               const icon = getFileIcon(name)
               const cacheBust = b.uploadedAt ? `?t=${new Date(b.uploadedAt).getTime()}` : ''
+              const isBusy = deleting.has(b.url)
               return (
-                <div key={b.url} className="asset-card">
+                <div key={b.url} className={`asset-card${isBusy ? ' busy' : ''}`}>
                   <a
                     href={b.url}
                     target="_blank"
                     rel="noopener"
                     className="asset-card-preview"
-                    style={{ textDecoration: 'none', cursor: 'pointer' }}
+                    style={{ textDecoration: 'none', cursor: isBusy ? 'default' : 'pointer' }}
+                    onClick={(e) => { if (isBusy) e.preventDefault() }}
                   >
                     {isImage(name) ? (
                       <img
@@ -139,6 +162,7 @@ export default function SharedFilesTab({ onBanner }: Props) {
                     ) : (
                       <span style={{ fontSize: 40 }}>{icon}</span>
                     )}
+                    {isBusy && <div className="asset-card-overlay busy-overlay"><div className="upload-spinner" />삭제 중...</div>}
                   </a>
                   <div className="asset-card-info">
                     <div className="asset-card-name" title={name}>{name}</div>
@@ -148,6 +172,7 @@ export default function SharedFilesTab({ onBanner }: Props) {
                         className="asset-card-delete"
                         onClick={() => handleDelete(b)}
                         title="삭제"
+                        disabled={isBusy}
                       >&#x2715;</button>
                     </div>
                   </div>

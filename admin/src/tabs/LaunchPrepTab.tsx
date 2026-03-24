@@ -141,6 +141,7 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
   const [cacheBust, setCacheBust] = useState(0)
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [downloadCropUrl, setDownloadCropUrl] = useState<{ url: string; filename: string; opt: DownloadOption } | null>(null)
+  const [downloading, setDownloading] = useState<string | null>(null)
 
   // 로컬 메모리에 이미지 추가
   const addLocalBlob = useCallback((file: File) => {
@@ -200,19 +201,38 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
     onBanner('success', '삭제 완료')
   }, [onBanner])
 
-  const handleDownload = useCallback((blob: BlobItem, opt: DownloadOption) => {
-    const origName = getFilename(blob.pathname)
-    const ext = origName.match(/\.\w+$/)?.[0] || '.png'
-    const platformTag = opt.platform === '토스' ? 'toss' : 'google_play'
-    const dlName = `${group.fileBaseName}_${platformTag}${ext}`
-    if (opt.width === group.storeWidth && opt.height === group.storeHeight) {
-      downloadOriginal(blob.url, dlName)
-    } else if (opt.mode === 'resize') {
-      downloadResized(blob.url, dlName, opt.width, opt.height)
-    } else {
-      setDownloadCropUrl({ url: blob.url, filename: dlName, opt })
+  const handleDownload = useCallback(async (blob: BlobItem, opt: DownloadOption) => {
+    const key = `${blob.url}-${opt.platform}`
+    if (downloading) return
+    setDownloading(key)
+    try {
+      const origName = getFilename(blob.pathname)
+      const ext = origName.match(/\.\w+$/)?.[0] || '.png'
+      const platformTag = opt.platform === '토스' ? 'toss' : 'google_play'
+      const dlName = `${group.fileBaseName}_${platformTag}${ext}`
+      if (opt.width === group.storeWidth && opt.height === group.storeHeight) {
+        await downloadOriginal(blob.url, dlName)
+      } else if (opt.mode === 'resize') {
+        await downloadResized(blob.url, dlName, opt.width, opt.height)
+      } else {
+        setDownloadCropUrl({ url: blob.url, filename: dlName, opt })
+      }
+    } finally {
+      setDownloading(null)
     }
-  }, [group.storeWidth, group.storeHeight, group.label])
+  }, [group.storeWidth, group.storeHeight, group.fileBaseName, downloading])
+
+  const handleDownloadOriginal = useCallback(async (blob: BlobItem) => {
+    const key = `${blob.url}-original`
+    if (downloading) return
+    setDownloading(key)
+    try {
+      const fname = getFilename(blob.pathname)
+      await downloadOriginal(blob.url, fname)
+    } finally {
+      setDownloading(null)
+    }
+  }, [downloading])
 
   return (
     <div className="card">
@@ -257,19 +277,25 @@ function LaunchGroup({ group, onBanner }: { group: AssetGroup; onBanner: Props['
                       </div>
                     )}
                     <div className="lp-card-downloads">
-                      {group.downloads.length > 0 ? group.downloads.map((opt) => (
-                        <button key={opt.platform} className="lp-dl-btn"
-                          onClick={() => handleDownload(b, opt)}
-                          title={`${opt.platform} ${opt.width}x${opt.height}`}>
-                          <span className="lp-dl-platform">{opt.platform}</span>
-                          <span className="lp-dl-size">{opt.width}x{opt.height}</span>
-                          {opt.mode === 'crop' && <span className="lp-dl-crop">위치 조정</span>}
-                        </button>
-                      )) : (
+                      {group.downloads.length > 0 ? group.downloads.map((opt) => {
+                        const dlKey = `${b.url}-${opt.platform}`
+                        const isBusy = downloading === dlKey
+                        return (
+                          <button key={opt.platform} className="lp-dl-btn"
+                            onClick={() => handleDownload(b, opt)}
+                            title={`${opt.platform} ${opt.width}x${opt.height}`}
+                            disabled={!!downloading}>
+                            <span className="lp-dl-platform">{isBusy ? '...' : opt.platform}</span>
+                            <span className="lp-dl-size">{opt.width}x{opt.height}</span>
+                            {opt.mode === 'crop' && <span className="lp-dl-crop">위치 조정</span>}
+                          </button>
+                        )
+                      }) : (
                         <button className="lp-dl-btn"
-                          onClick={() => downloadOriginal(b.url, fname)}
-                          title="다운로드">
-                          <span className="lp-dl-platform">다운로드</span>
+                          onClick={() => handleDownloadOriginal(b)}
+                          title="다운로드"
+                          disabled={!!downloading}>
+                          <span className="lp-dl-platform">{downloading === `${b.url}-original` ? '...' : '다운로드'}</span>
                         </button>
                       )}
                     </div>
