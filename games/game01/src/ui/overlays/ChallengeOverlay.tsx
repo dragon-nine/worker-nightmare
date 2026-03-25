@@ -107,23 +107,9 @@ export function ChallengeOverlay({ score, onClose }: Props) {
           {score}
         </div>
 
-        {/* Challenge image with NEW badge */}
+        {/* Challenge image */}
         {currentImage && (
-          <div style={{ position: 'relative', width: '60%', maxWidth: 180 }}>
-            <span style={{
-              position: 'absolute',
-              top: -8,
-              right: -8,
-              background: '#ff3b30',
-              color: '#fff',
-              fontSize: 11,
-              fontWeight: 700,
-              padding: '2px 8px',
-              borderRadius: 10,
-              zIndex: 1,
-            }}>
-              NEW
-            </span>
+          <div style={{ width: '60%', maxWidth: 180 }}>
             <img
               src={currentImage}
               alt="challenge"
