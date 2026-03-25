@@ -143,30 +143,30 @@ function TypographySection() {
           <EffectCard
             label="No Stroke"
             desc="CTA, 본문, 라벨에 사용"
-            bg="#f0f0f0"
+            bg="#111"
             text="텍스트"
             renderText={(text) => (
-              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#333' }}>{text}</span>
+              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff' }}>{text}</span>
             )}
           />
           <EffectCard
             label="Single Stroke"
             desc="버튼 텍스트에 사용 (2-3px)"
-            bg="#f0f0f0"
+            bg="#fff"
             text="텍스트"
             renderText={(text) => (
-              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#333', WebkitTextStroke: '3px rgba(0,0,0,0.25)', paintOrder: 'stroke fill' }}>{text}</span>
+              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff', WebkitTextStroke: '3px #000', paintOrder: 'stroke fill' }}>{text}</span>
             )}
           />
           <EffectCard
             label="Double Stroke"
             desc="타이틀에 사용 — 3중 레이어 (흰색 외곽 → 검정 내곽 → 그라데이션 fill)"
-            bg="#f0f0f0"
+            bg="#111"
             text="텍스트"
             renderText={(text) => (
               <div style={{ position: 'relative', display: 'inline-block' }}>
-                <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #ccc', paintOrder: 'stroke fill' }}>{text}</div>
-                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #666', paintOrder: 'stroke fill' }}>{text}</div>
+                <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #fff', paintOrder: 'stroke fill' }}>{text}</div>
+                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #000', paintOrder: 'stroke fill' }}>{text}</div>
                 <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, background: `linear-gradient(to bottom, ${colors.blue}, ${colors.blueLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{text}</div>
               </div>
             )}
@@ -191,7 +191,7 @@ function TypographySection() {
             />
           </label>
         </div>
-        <div style={{ background: '#f0f0f0', borderRadius: 12, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+        <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
           {scaleEntries.map(([name, ts], i) => {
             const usage = typeUsage[name]
             return (
@@ -202,7 +202,7 @@ function TypographySection() {
                   gridTemplateColumns: '120px 1fr 240px',
                   alignItems: 'center',
                   padding: '16px 20px',
-                  borderBottom: i < scaleEntries.length - 1 ? '1px solid #e0e0e0' : 'none',
+                  borderBottom: i < scaleEntries.length - 1 ? '1px solid #eee' : 'none',
                   gap: 16,
                 }}
               >
@@ -221,8 +221,8 @@ function TypographySection() {
                   fontFamily: font.primary,
                   fontSize: ts.fontSize,
                   fontWeight: ts.fontWeight,
-                  color: '#333',
-                  WebkitTextStroke: ts.stroke ? `${ts.stroke}px rgba(0,0,0,0.2)` : undefined,
+                  color: '#fff',
+                  WebkitTextStroke: ts.stroke ? `${ts.stroke}px #000` : undefined,
                   paintOrder: 'stroke fill',
                   lineHeight: 1.2,
                   overflow: 'hidden',
@@ -251,11 +251,11 @@ function FontFamilyCard({ name, family, specimen, desc, weights }: {
 }) {
   return (
     <div style={{ border: '1px solid #e8e8e8', borderRadius: 12, overflow: 'hidden' }}>
-      <div style={{ background: '#f0f0f0', padding: '28px 24px', textAlign: 'center' }}>
-        <div style={{ fontFamily: family, fontWeight: 900, fontSize: 36, color: '#333', lineHeight: 1.2 }}>
+      <div style={{ background: '#111', padding: '28px 24px', textAlign: 'center' }}>
+        <div style={{ fontFamily: family, fontWeight: 900, fontSize: 36, color: '#fff', lineHeight: 1.2 }}>
           {specimen}
         </div>
-        <div style={{ fontFamily: family, fontWeight: 400, fontSize: 14, color: '#999', marginTop: 4 }}>
+        <div style={{ fontFamily: family, fontWeight: 400, fontSize: 14, color: '#888', marginTop: 4 }}>
           가나다라 ABCD 1234 !@#$
         </div>
       </div>
