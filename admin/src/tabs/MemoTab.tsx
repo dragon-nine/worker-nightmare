@@ -39,13 +39,19 @@ export default function MemoTab({ onBanner }: Props) {
   const load = useCallback(async () => {
     try {
       const data = await getJson<Memo[]>(STORE_KEY)
-      setMemos(data || [])
+      const list = data || []
+      setMemos(list)
+      if (list.length > 0 && !selectedId) {
+        setSelectedId(list[0].id)
+        setEditTitle(list[0].title)
+        setEditContent(list[0].content)
+      }
     } catch {
       // empty
     } finally {
       setLoaded(true)
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load() }, [load])
 
