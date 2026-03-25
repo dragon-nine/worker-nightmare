@@ -63,10 +63,10 @@ export function ChallengeOverlay({ score, onClose }: Props) {
         className={styles.fadeInUp}
         style={{
           position: 'relative',
-          width: 'min(340px, 92vw)',
+          width: 'min(300px, 80vw)',
           backgroundColor: '#2a292e',
           borderRadius: 20,
-          padding: '26px 20px 26px',
+          padding: '26px 14px 26px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -116,7 +116,7 @@ export function ChallengeOverlay({ score, onClose }: Props) {
 
         {/* Challenge image */}
         {currentImage && (
-          <div style={{ width: '60%', maxWidth: 180 }}>
+          <div style={{ width: '40%', maxWidth: 120 }}>
             <img
               src={currentImage}
               alt="challenge"
