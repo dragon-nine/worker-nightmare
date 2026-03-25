@@ -145,7 +145,48 @@ function TypographySection() {
         />
       </section>
 
-      {/* 1-2. Type Scale */}
+      {/* 1-2. Text Effects */}
+      <section>
+        <SectionHeader
+          title="Text Effects"
+          desc="게임 서체에 적용하는 효과. stroke(외곽선)를 통해 가독성과 임팩트를 동시에 확보."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <EffectCard
+            label="No Stroke"
+            desc="CTA, 본문, 라벨에 사용"
+            bg="#555"
+            text="텍스트"
+            renderText={(text) => (
+              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff' }}>{text}</span>
+            )}
+          />
+          <EffectCard
+            label="Single Stroke"
+            desc="버튼 텍스트에 사용 (2-3px)"
+            bg="#555"
+            text="텍스트"
+            renderText={(text) => (
+              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff', WebkitTextStroke: '3px #000', paintOrder: 'stroke fill' }}>{text}</span>
+            )}
+          />
+          <EffectCard
+            label="Double Stroke"
+            desc="타이틀에 사용 — 3중 레이어 (흰색 외곽 → 검정 내곽 → 그라데이션 fill)"
+            bg="#555"
+            text="텍스트"
+            renderText={(text) => (
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #fff', paintOrder: 'stroke fill' }}>{text}</div>
+                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #000', paintOrder: 'stroke fill' }}>{text}</div>
+                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, background: `linear-gradient(to bottom, ${colors.blue}, ${colors.blueLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{text}</div>
+              </div>
+            )}
+          />
+        </div>
+      </section>
+
+      {/* 1-3. Type Scale */}
       <section>
         <SectionHeader
           title="Type Scale"
@@ -162,7 +203,7 @@ function TypographySection() {
             />
           </label>
         </div>
-        <div style={{ background: '#6b7280', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ background: '#555', borderRadius: 12, overflow: 'hidden' }}>
           {typeScale.map((ts, i) => (
             <div
               key={ts.key}
@@ -212,46 +253,6 @@ function TypographySection() {
           ))}
         </div>
       </section>
-
-      {/* 1-3. Text Effects */}
-      <section>
-        <SectionHeader
-          title="Text Effects"
-          desc="게임 서체에 적용하는 효과. stroke(외곽선)를 통해 가독성과 임팩트를 동시에 확보."
-        />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          <EffectCard
-            label="No Stroke"
-            desc="CTA, 본문, 라벨에 사용"
-            bg="#111"
-            style={{
-              fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff',
-            }}
-            text="텍스트"
-          />
-          <EffectCard
-            label="Single Stroke"
-            desc="버튼 텍스트에 사용 (2-3px)"
-            bg="#111"
-            style={{
-              fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff',
-              WebkitTextStroke: '3px #000', paintOrder: 'stroke fill',
-            }}
-            text="텍스트"
-          />
-          <EffectCard
-            label="Double Stroke"
-            desc="타이틀에 사용 (6px + 외곽)"
-            bg="#111"
-            style={{
-              fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff',
-              WebkitTextStroke: '6px #000', paintOrder: 'stroke fill',
-              textShadow: '0 0 8px rgba(0,0,0,0.5)',
-            }}
-            text="텍스트"
-          />
-        </div>
-      </section>
     </div>
   )
 }
@@ -293,13 +294,14 @@ function FontFamilyCard({ name, family, specimen, desc, weights }: {
   )
 }
 
-function EffectCard({ label, desc, bg, style, text }: {
-  label: string; desc: string; bg: string; style: React.CSSProperties; text: string
+function EffectCard({ label, desc, bg, text, renderText }: {
+  label: string; desc: string; bg: string; text: string
+  renderText: (text: string) => React.ReactNode
 }) {
   return (
     <div style={{ border: '1px solid #e8e8e8', borderRadius: 12, overflow: 'hidden' }}>
       <div style={{ background: bg, padding: '32px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={style}>{text}</span>
+        {renderText(text)}
       </div>
       <div style={{ padding: '12px 16px' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{label}</div>
