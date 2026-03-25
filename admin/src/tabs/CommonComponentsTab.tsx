@@ -901,12 +901,30 @@ function ScaleField({ label, value, onChange }: { label: string; value: TypeScal
   )
 }
 
+const COLOR_ENTRIES = Object.entries(colors) as [string, string][]
+
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const matchedName = COLOR_ENTRIES.find(([, hex]) => hex === value)?.[0]
   return (
-    <label style={{ ...labelStyle, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <input type="color" value={value} onChange={(e) => onChange(e.target.value)} style={{ width: 28, height: 28, border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer' }} />
+    <label style={labelStyle}>
       <span>{label}</span>
-      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#999', marginLeft: 'auto' }}>{value}</span>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ width: 24, height: 24, borderRadius: 6, background: value, border: '1px solid #ddd', flexShrink: 0 }} />
+        <select
+          value={matchedName ?? '__custom'}
+          onChange={(e) => {
+            if (e.target.value === '__custom') return
+            const hex = colors[e.target.value as keyof typeof colors]
+            if (hex) onChange(hex)
+          }}
+          style={{ ...inputStyle, flex: 1 }}
+        >
+          {!matchedName && <option value="__custom">{value} (커스텀)</option>}
+          {COLOR_ENTRIES.map(([name, hex]) => (
+            <option key={name} value={name}>{name} — {hex}</option>
+          ))}
+        </select>
+      </div>
     </label>
   )
 }
