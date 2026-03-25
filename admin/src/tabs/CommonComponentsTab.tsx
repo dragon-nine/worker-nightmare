@@ -8,10 +8,12 @@ import GaugeBar from '../components/common/GaugeBar'
 import MainTitle from '../components/common/MainTitle'
 import ButtonGuide from '../components/common/ButtonGuide'
 import ChallengeModal from '../components/common/ChallengeModal'
+import { colors, radius, font } from '../components/common/design-tokens'
 
-type Tab = 'buttons' | 'ui' | 'text' | 'modal' | 'guide'
+type Tab = 'colors' | 'buttons' | 'ui' | 'text' | 'modal' | 'guide'
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'colors', label: 'Colors' },
   { id: 'buttons', label: 'Buttons' },
   { id: 'ui', label: 'UI' },
   { id: 'text', label: 'Text' },
@@ -20,7 +22,7 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 export default function CommonComponentsTab() {
-  const [tab, setTab] = useState<Tab>('buttons')
+  const [tab, setTab] = useState<Tab>('colors')
 
   return (
     <div style={{ padding: 24 }}>
@@ -48,11 +50,142 @@ export default function CommonComponentsTab() {
         ))}
       </div>
 
+      {tab === 'colors' && <ColorsTab />}
       {tab === 'buttons' && <ButtonsTab />}
       {tab === 'ui' && <UITab />}
       {tab === 'text' && <TextTab />}
       {tab === 'modal' && <ModalTab />}
       {tab === 'guide' && <GuideTab />}
+    </div>
+  )
+}
+
+/* ═══════════ Colors Tab ═══════════ */
+
+const COLOR_GROUPS: { title: string; desc: string; items: { name: string; hex: string; usage: string }[] }[] = [
+  {
+    title: '배경 (Background)',
+    desc: '버튼, 모달, 카드 배경에 사용',
+    items: [
+      { name: 'dark', hex: colors.dark, usage: 'btn-home 배경' },
+      { name: 'darker', hex: colors.darker, usage: '멘트 카드, btn-challenge/ranking' },
+      { name: 'modalBg', hex: colors.modalBg, usage: '도전장 모달 배경' },
+      { name: 'black', hex: colors.black, usage: 'CTA 버튼, 텍스트 스트로크' },
+    ],
+  },
+  {
+    title: '강조 (Accent)',
+    desc: '중요한 액션, 타이틀 하이라이트',
+    items: [
+      { name: 'red', hex: colors.red, usage: 'btn-revive 메인' },
+      { name: 'redLight', hex: colors.redLight, usage: 'btn-revive 하이라이트' },
+      { name: 'redDark', hex: colors.redDark, usage: 'btn-revive 그림자/테두리' },
+      { name: 'cyan', hex: colors.cyan, usage: '튜토리얼 글로우' },
+      { name: 'blue', hex: colors.blue, usage: '타이틀 그라데이션 시작' },
+      { name: 'blueLight', hex: colors.blueLight, usage: '타이틀 그라데이션 끝' },
+    ],
+  },
+  {
+    title: '중성 (Neutral)',
+    desc: '원형 버튼, 돌 버튼, 비활성 텍스트',
+    items: [
+      { name: 'blueGray', hex: colors.blueGray, usage: 'CircleButton/StoneButton 메인' },
+      { name: 'blueGrayLight', hex: colors.blueGrayLight, usage: '하이라이트' },
+      { name: 'blueGrayDark', hex: colors.blueGrayDark, usage: '그림자' },
+      { name: 'gray', hex: colors.gray, usage: '멘트 변경 버튼 배경' },
+      { name: 'grayText', hex: colors.grayText, usage: '비활성 텍스트' },
+      { name: 'white', hex: colors.white, usage: '텍스트, 게이지 테두리' },
+    ],
+  },
+]
+
+function ColorsTab() {
+  const [copied, setCopied] = useState('')
+
+  const handleCopy = (hex: string) => {
+    navigator.clipboard.writeText(hex)
+    setCopied(hex)
+    setTimeout(() => setCopied(''), 1500)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+      {COLOR_GROUPS.map((group) => (
+        <div key={group.title}>
+          <h3 style={sectionTitle}>{group.title}</h3>
+          <p style={{ fontSize: 13, color: '#777', marginBottom: 12 }}>{group.desc}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
+            {group.items.map((c) => (
+              <div
+                key={c.name}
+                onClick={() => handleCopy(c.hex)}
+                style={{
+                  cursor: 'pointer',
+                  borderRadius: 10,
+                  border: '1px solid #333',
+                  overflow: 'hidden',
+                  transition: 'transform 0.1s',
+                }}
+              >
+                {/* Color swatch */}
+                <div style={{
+                  height: 56,
+                  background: c.hex,
+                  borderBottom: '1px solid #333',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  {copied === c.hex && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: c.hex === '#ffffff' || c.hex === '#7ec8e3' || c.hex === '#00e5ff' ? '#000' : '#fff', background: 'rgba(0,0,0,0.4)', padding: '2px 8px', borderRadius: 4 }}>Copied!</span>
+                  )}
+                </div>
+                {/* Info */}
+                <div style={{ padding: '8px 10px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#eee', fontFamily: 'monospace' }}>{c.hex}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#aaa', marginTop: 2 }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{c.usage}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Radius & Font tokens */}
+      <div>
+        <h3 style={sectionTitle}>Border Radius</h3>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          {Object.entries(radius).map(([name, val]) => (
+            <div key={name} style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 56,
+                height: 56,
+                background: colors.blueGray,
+                borderRadius: val,
+                border: `2px solid ${colors.blueGrayLight}`,
+              }} />
+              <div style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>{name}</div>
+              <div style={{ fontSize: 11, color: '#666' }}>{val}px</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 style={sectionTitle}>Font</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontFamily: font.primary, fontWeight: font.weight.black, fontSize: 28, color: '#fff' }}>
+            Black Han Sans / GMarketSans (900)
+          </div>
+          <div style={{ fontFamily: font.primary, fontWeight: font.weight.bold, fontSize: 20, color: '#ccc' }}>
+            Bold (700) — 서브텍스트, 버튼 라벨
+          </div>
+          <div style={{ fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
+            font-family: {font.primary}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
