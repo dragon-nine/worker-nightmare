@@ -132,30 +132,17 @@ function TypographySection() {
       <section>
         <SectionHeader
           title="Font Family"
-          desc="게임 UI 전체에서 사용하는 서체. 한글은 Black Han Sans, 영문/숫자도 동일 서체로 통일."
+          desc="게임 UI 전체에서 사용하는 서체. GMarketSans Bold 하나로 통일."
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <FontFamilyCard
-            name="Primary"
-            family={font.primary}
-            specimen="Black Han Sans"
-            desc="게임 UI 전용 — 타이틀, 버튼, 점수 등 모든 인게임 텍스트"
-            weights={[
-              { label: 'Black', value: 900, isDefault: true },
-              { label: 'Bold', value: 700 },
-            ]}
-          />
-          <FontFamilyCard
-            name="Secondary"
-            family={font.secondary}
-            specimen="Pretendard"
-            desc="어드민 UI 전용 — 이 페이지의 인터페이스 서체"
-            weights={[
-              { label: 'Regular', value: 400 },
-              { label: 'Bold', value: 700 },
-            ]}
-          />
-        </div>
+        <FontFamilyCard
+          name="Primary"
+          family={font.primary}
+          specimen="GMarketSans"
+          desc="게임 UI 전용 — 타이틀, 버튼, 점수, HUD 등 모든 인게임 텍스트"
+          weights={[
+            { label: 'Bold', value: 700, isDefault: true },
+          ]}
+        />
       </section>
 
       {/* 1-2. Type Scale */}

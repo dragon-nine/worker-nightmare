@@ -48,8 +48,7 @@ export const spacing = {
 } as const
 
 export const font = {
-  primary: '"Black Han Sans", "GMarketSans", sans-serif',
-  secondary: '"Pretendard Variable", -apple-system, sans-serif',
+  primary: 'GMarketSans, sans-serif',
   weight: {
     regular: 400,
     bold: 700,
