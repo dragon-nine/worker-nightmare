@@ -116,61 +116,46 @@ function TypographySection() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
-      {/* 1-1. Font Family */}
+      {/* 1-1. Font Family & Text Effects */}
       <section>
         <SectionHeader
-          title="Font Family"
-          desc="게임 UI 전체에서 사용하는 서체. GMarketSans Bold 하나로 통일."
+          title="Font & Effects"
+          desc="게임 UI 서체와 텍스트 효과. GMarketSans Bold + stroke 외곽선으로 임팩트 확보."
         />
-        <FontFamilyCard
-          name="Primary"
-          family={font.primary}
-          specimen="GMarketSans"
-          desc="게임 UI 전용 — 타이틀, 버튼, 점수, HUD 등 모든 인게임 텍스트"
-          weights={[
-            { label: 'Bold', value: 700, isDefault: true },
-          ]}
-        />
-      </section>
-
-      {/* 1-2. Text Effects */}
-      <section>
-        <SectionHeader
-          title="Text Effects"
-          desc="게임 서체에 적용하는 효과. stroke(외곽선)를 통해 가독성과 임팩트를 동시에 확보."
-        />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          <EffectCard
-            label="No Stroke"
-            desc="CTA, 본문, 라벨에 사용"
-            bg="#111"
-            text="텍스트"
-            renderText={(text) => (
-              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff' }}>{text}</span>
-            )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <FontFamilyCard
+            name="Primary"
+            family={font.primary}
+            specimen="GMarketSans"
+            desc="게임 UI 전용 — 타이틀, 버튼, 점수 등 모든 인게임 텍스트"
+            weights={[
+              { label: 'Bold', value: 700, isDefault: true },
+            ]}
           />
-          <EffectCard
-            label="Single Stroke"
-            desc="버튼 텍스트에 사용 (2-3px)"
-            bg="#fff"
-            text="텍스트"
-            renderText={(text) => (
-              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff', WebkitTextStroke: '3px #000', paintOrder: 'stroke fill' }}>{text}</span>
-            )}
-          />
-          <EffectCard
-            label="Double Stroke"
-            desc="타이틀에 사용 — 3중 레이어 (흰색 외곽 → 검정 내곽 → 그라데이션 fill)"
-            bg="#111"
-            text="텍스트"
-            renderText={(text) => (
-              <div style={{ position: 'relative', display: 'inline-block' }}>
-                <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #fff', paintOrder: 'stroke fill' }}>{text}</div>
-                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #000', paintOrder: 'stroke fill' }}>{text}</div>
-                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, background: 'linear-gradient(to bottom, #ffffff, #c1e5ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{text}</div>
-              </div>
-            )}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <EffectCard
+              label="Single Stroke"
+              desc="버튼 텍스트에 사용 (2-3px)"
+              bg="#fff"
+              text="텍스트"
+              renderText={(text) => (
+                <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff', WebkitTextStroke: '3px #000', paintOrder: 'stroke fill' }}>{text}</span>
+              )}
+            />
+            <EffectCard
+              label="Double Stroke"
+              desc="타이틀에 사용 — 흰색 외곽 → 검정 내곽 → 그라데이션 fill"
+              bg="#111"
+              text="텍스트"
+              renderText={(text) => (
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #fff', paintOrder: 'stroke fill' }}>{text}</div>
+                  <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #000', paintOrder: 'stroke fill' }}>{text}</div>
+                  <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, background: 'linear-gradient(to bottom, #ffffff, #c1e5ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{text}</div>
+                </div>
+              )}
+            />
+          </div>
         </div>
       </section>
 
