@@ -4,6 +4,7 @@ import RedButton from '../components/common/RedButton'
 import IconButton from '../components/common/IconButton'
 import CircleButton from '../components/common/CircleButton'
 import StoneButton from '../components/common/StoneButton'
+import CloseButton from '../components/common/CloseButton'
 import GaugeBar from '../components/common/GaugeBar'
 import MainTitle from '../components/common/MainTitle'
 import ButtonGuide from '../components/common/ButtonGuide'
@@ -320,6 +321,23 @@ function ButtonsTab({ spec, update }: { spec: DesignSpec; update: UpdateFn }) {
           </div>
           <div style={controlsBox}>
             <NumField label="Size" value={cb.size} onChange={(v) => update('circleButton', { size: v })} min={40} max={120} />
+          </div>
+        </div>
+      </div>
+
+      {/* CloseButton */}
+      <div>
+        <h3 style={sectionTitle}>CloseButton</h3>
+        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 360px' }}>
+            <Preview bg="#2a292e">
+              <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                <CloseButton size={32} />
+                <CloseButton size={40} />
+                <CloseButton size={24} />
+              </div>
+            </Preview>
+            <p style={{ fontSize: 12, color: '#777', marginTop: 8 }}>검정 원형 배경 + 굵은 ✕ — 모달 우상단에 사용</p>
           </div>
         </div>
       </div>
