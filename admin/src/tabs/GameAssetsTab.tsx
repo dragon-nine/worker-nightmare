@@ -60,9 +60,9 @@ const TABS: TabDef[] = [
   },
   {
     id: 'challenge',
-    label: 'Challenge',
+    label: '도전',
     categories: [
-      { key: 'challenge', label: 'Challenge Images', accept: 'image/*', darkBg: true },
+      { key: 'challenge', label: '도전장 이미지', accept: 'image/*', darkBg: true },
     ],
   },
   {
