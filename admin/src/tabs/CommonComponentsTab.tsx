@@ -465,7 +465,7 @@ function OriginalImg({ src, maxW, bg }: { src: string; maxW?: number; bg?: strin
   return (
     <div style={{ marginTop: 8 }}>
       <span style={{ fontSize: 12, color: '#555' }}>Original</span>
-      <div style={{ background: bg || '#111', borderRadius: 8, padding: 12, marginTop: 4, display: 'inline-flex' }}>
+      <div style={{ background: bg || '#ffffff', borderRadius: 8, padding: 12, marginTop: 4, display: 'inline-flex', border: '1px solid #333' }}>
         <img src={src} alt="" style={{ maxWidth: maxW ?? '100%', height: 'auto', maxHeight: 80 }} />
       </div>
     </div>
