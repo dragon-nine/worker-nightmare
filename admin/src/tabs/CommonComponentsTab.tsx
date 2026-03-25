@@ -167,7 +167,7 @@ function TypographySection() {
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #fff', paintOrder: 'stroke fill' }}>{text}</div>
                 <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #000', paintOrder: 'stroke fill' }}>{text}</div>
-                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, background: `linear-gradient(to bottom, ${colors.blue}, ${colors.blueLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{text}</div>
+                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, background: 'linear-gradient(to bottom, #ffffff, #c1e5ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{text}</div>
               </div>
             )}
           />
