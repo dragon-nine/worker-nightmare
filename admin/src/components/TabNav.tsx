@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import type { PageId } from '../App'
 import {
-  CheckSquare, StickyNote, FolderOpen, Box,
+  CheckSquare, StickyNote, FolderOpen, SwatchBook,
   Palette, LayoutGrid, Gamepad2, ExternalLink, FileText,
 } from 'lucide-react'
 
@@ -70,7 +70,7 @@ const COMMON_ITEMS: { id: PageId; icon: ReactNode; label: string }[] = [
   { id: 'checklist', icon: <CheckSquare size={ICON_SIZE} />, label: '체크리스트' },
   { id: 'memo', icon: <StickyNote size={ICON_SIZE} />, label: '메모' },
   { id: 'shared-files', icon: <FolderOpen size={ICON_SIZE} />, label: '공유 파일' },
-  { id: 'common-components', icon: <Box size={ICON_SIZE} />, label: '컴포넌트' },
+  { id: 'common-components', icon: <SwatchBook size={ICON_SIZE} />, label: '디자인 시스템' },
 ]
 
 interface Props {
