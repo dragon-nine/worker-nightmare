@@ -143,30 +143,30 @@ function TypographySection() {
           <EffectCard
             label="No Stroke"
             desc="CTA, 본문, 라벨에 사용"
-            bg="#969696"
+            bg="#f0f0f0"
             text="텍스트"
             renderText={(text) => (
-              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff' }}>{text}</span>
+              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#333' }}>{text}</span>
             )}
           />
           <EffectCard
             label="Single Stroke"
             desc="버튼 텍스트에 사용 (2-3px)"
-            bg="#969696"
+            bg="#f0f0f0"
             text="텍스트"
             renderText={(text) => (
-              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#fff', WebkitTextStroke: '3px #000', paintOrder: 'stroke fill' }}>{text}</span>
+              <span style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: '#333', WebkitTextStroke: '3px rgba(0,0,0,0.25)', paintOrder: 'stroke fill' }}>{text}</span>
             )}
           />
           <EffectCard
             label="Double Stroke"
             desc="타이틀에 사용 — 3중 레이어 (흰색 외곽 → 검정 내곽 → 그라데이션 fill)"
-            bg="#969696"
+            bg="#f0f0f0"
             text="텍스트"
             renderText={(text) => (
               <div style={{ position: 'relative', display: 'inline-block' }}>
-                <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #fff', paintOrder: 'stroke fill' }}>{text}</div>
-                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #000', paintOrder: 'stroke fill' }}>{text}</div>
+                <div style={{ fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '12px #ccc', paintOrder: 'stroke fill' }}>{text}</div>
+                <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, color: 'transparent', WebkitTextStroke: '6px #666', paintOrder: 'stroke fill' }}>{text}</div>
                 <div style={{ position: 'absolute', inset: 0, fontFamily: font.primary, fontSize: 32, fontWeight: 900, background: `linear-gradient(to bottom, ${colors.blue}, ${colors.blueLight})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{text}</div>
               </div>
             )}
@@ -191,7 +191,7 @@ function TypographySection() {
             />
           </label>
         </div>
-        <div style={{ background: '#969696', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ background: '#f0f0f0', borderRadius: 12, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
           {scaleEntries.map(([name, ts], i) => {
             const usage = typeUsage[name]
             return (
@@ -202,13 +202,13 @@ function TypographySection() {
                   gridTemplateColumns: '120px 1fr 240px',
                   alignItems: 'center',
                   padding: '16px 20px',
-                  borderBottom: i < scaleEntries.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none',
+                  borderBottom: i < scaleEntries.length - 1 ? '1px solid #e0e0e0' : 'none',
                   gap: 16,
                 }}
               >
                 {/* Name + specs */}
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#333' }}>{name}</div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                     <Tag>{ts.fontSize}px</Tag>
                     <Tag>w{ts.fontWeight}</Tag>
@@ -221,8 +221,8 @@ function TypographySection() {
                   fontFamily: font.primary,
                   fontSize: Math.min(ts.fontSize, 72),
                   fontWeight: ts.fontWeight,
-                  color: '#fff',
-                  WebkitTextStroke: ts.stroke ? `${ts.stroke}px #000` : undefined,
+                  color: '#333',
+                  WebkitTextStroke: ts.stroke ? `${ts.stroke}px rgba(0,0,0,0.2)` : undefined,
                   paintOrder: 'stroke fill',
                   lineHeight: 1.2,
                   overflow: 'hidden',
@@ -233,7 +233,7 @@ function TypographySection() {
                 </div>
 
                 {/* Usages */}
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'right', lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: '#999', textAlign: 'right', lineHeight: 1.5 }}>
                   {usage?.usages.join(' · ')}
                 </div>
               </div>
