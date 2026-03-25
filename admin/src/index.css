@@ -1494,7 +1494,15 @@ body {
   margin-bottom: 8px;
 }
 .sf-section-icon {
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  color: var(--text-tertiary);
+}
+.sf-file-icon {
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .sf-section-label {
   font-size: 13px;

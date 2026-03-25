@@ -1,5 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Download } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import {
+  Download, Trash2, FolderPlus, Upload, X,
+  Folder, Image, FileText, FileSpreadsheet, FileIcon,
+  Film, Music, Archive, Paperclip, Presentation,
+} from 'lucide-react'
 import type { BlobItem } from '../types'
 import { listFolder, uploadBlob, deleteBlob } from '../api'
 
@@ -8,6 +12,7 @@ interface Props {
 }
 
 const ROOT = 'shared/'
+const IC = 16
 
 type FileCategory = 'image' | 'document' | 'media' | 'archive' | 'other'
 
@@ -26,16 +31,16 @@ function getFolderName(folderPath: string): string {
   return parts[parts.length - 1]
 }
 
-function getFileIcon(name: string): string {
-  if (/\.(xlsx?|csv)$/i.test(name)) return '📊'
-  if (/\.(docx?|txt)$/i.test(name)) return '📄'
-  if (/\.(pptx?|key)$/i.test(name)) return '📑'
-  if (/\.(pdf)$/i.test(name)) return '📕'
-  if (/\.(png|jpe?g|gif|webp|svg)$/i.test(name)) return '🖼'
-  if (/\.(mp3|ogg|wav|m4a)$/i.test(name)) return '🎵'
-  if (/\.(mp4|mov|avi|webm)$/i.test(name)) return '🎬'
-  if (/\.(zip|rar|7z|tar|gz)$/i.test(name)) return '📦'
-  return '📎'
+function getFileIcon(name: string): ReactNode {
+  if (/\.(xlsx?|csv)$/i.test(name)) return <FileSpreadsheet size={32} />
+  if (/\.(docx?|txt|hwp)$/i.test(name)) return <FileText size={32} />
+  if (/\.(pptx?|key)$/i.test(name)) return <Presentation size={32} />
+  if (/\.(pdf)$/i.test(name)) return <FileText size={32} />
+  if (/\.(png|jpe?g|gif|webp|svg)$/i.test(name)) return <Image size={32} />
+  if (/\.(mp3|ogg|wav|m4a)$/i.test(name)) return <Music size={32} />
+  if (/\.(mp4|mov|avi|webm)$/i.test(name)) return <Film size={32} />
+  if (/\.(zip|rar|7z|tar|gz)$/i.test(name)) return <Archive size={32} />
+  return <FileIcon size={32} />
 }
 
 function isImage(name: string): boolean {
@@ -50,12 +55,12 @@ function getFileCategory(name: string): FileCategory {
   return 'other'
 }
 
-const CATEGORY_META: Record<FileCategory, { label: string; icon: string }> = {
-  image: { label: '이미지', icon: '🖼' },
-  document: { label: '문서', icon: '📄' },
-  media: { label: '미디어', icon: '🎵' },
-  archive: { label: '압축 파일', icon: '📦' },
-  other: { label: '기타', icon: '📎' },
+const CATEGORY_META: Record<FileCategory, { label: string; icon: ReactNode }> = {
+  image: { label: '이미지', icon: <Image size={IC} /> },
+  document: { label: '문서', icon: <FileText size={IC} /> },
+  media: { label: '미디어', icon: <Music size={IC} /> },
+  archive: { label: '압축 파일', icon: <Archive size={IC} /> },
+  other: { label: '기타', icon: <Paperclip size={IC} /> },
 }
 
 const CATEGORY_ORDER: FileCategory[] = ['image', 'document', 'media', 'archive', 'other']
@@ -97,6 +102,12 @@ function getBreadcrumbs(currentPath: string): { label: string; path: string }[] 
     crumbs.push({ label: part, path: accumulated })
   }
   return crumbs
+}
+
+function cacheBustUrl(b: BlobItem): string {
+  if (!b.uploadedAt) return b.url
+  const sep = b.url.includes('?') ? '&' : '?'
+  return b.url + sep + 't=' + new Date(b.uploadedAt).getTime()
 }
 
 export default function SharedFilesTab({ onBanner }: Props) {
@@ -168,7 +179,6 @@ export default function SharedFilesTab({ onBanner }: Props) {
       setNewFolderName(null)
       return
     }
-    // R2에 빈 폴더를 만들려면 placeholder 파일을 업로드
     const placeholder = new File([''], '.folder', { type: 'application/octet-stream' })
     try {
       await uploadBlob(placeholder, `${currentPath}${folderName}/`)
@@ -199,24 +209,23 @@ export default function SharedFilesTab({ onBanner }: Props) {
   const renderFileCard = (b: BlobItem) => {
     const name = getFilename(b.pathname)
     const icon = getFileIcon(name)
-    const cacheBust = b.uploadedAt ? `?t=${new Date(b.uploadedAt).getTime()}` : ''
     const isBusy = deleting.has(b.url)
     const isDl = downloading.has(b.url)
     return (
       <div key={b.url} className={`asset-card${isBusy ? ' busy' : ''}`}>
         <div
           className="asset-card-preview"
-          style={{ cursor: isBusy ? 'default' : 'pointer' }}
+          style={{ cursor: isBusy ? 'default' : isImage(name) ? 'pointer' : 'default' }}
           onClick={() => { if (!isBusy && isImage(name)) setPreviewBlob(b) }}
         >
           {isImage(name) ? (
             <img
-              src={b.url + cacheBust}
+              src={cacheBustUrl(b)}
               alt={name}
               style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
             />
           ) : (
-            <span style={{ fontSize: 40 }}>{icon}</span>
+            <span className="sf-file-icon">{icon}</span>
           )}
           {isBusy && <div className="asset-card-overlay busy-overlay"><div className="upload-spinner" />삭제 중...</div>}
         </div>
@@ -235,7 +244,7 @@ export default function SharedFilesTab({ onBanner }: Props) {
               onClick={() => handleDelete(b)}
               title="삭제"
               disabled={isBusy}
-            >&#x2715;</button>
+            ><Trash2 size={14} /></button>
           </div>
         </div>
       </div>
@@ -244,9 +253,6 @@ export default function SharedFilesTab({ onBanner }: Props) {
 
   return (
     <div>
-      <h1 className="page-title">공유 파일</h1>
-      <p className="page-subtitle">모든 파일 형식 업로드 가능 (엑셀, 이미지, 문서 등)</p>
-
       <div className="card">
         <div className="category-header">
           <div className="sf-breadcrumbs">
@@ -268,14 +274,13 @@ export default function SharedFilesTab({ onBanner }: Props) {
             className="category-add-btn"
             onClick={() => setNewFolderName('')}
             title="새 폴더"
-            style={{ fontSize: 14 }}
-          >📁</button>
+          ><FolderPlus size={16} /></button>
           <button
             className="category-add-btn"
             onClick={() => addRef.current?.click()}
             title="파일 업로드"
             disabled={uploading.length > 0}
-          >{uploading.length > 0 ? '...' : '+'}</button>
+          >{uploading.length > 0 ? '...' : <Upload size={16} />}</button>
           <input
             ref={addRef}
             type="file"
@@ -288,7 +293,7 @@ export default function SharedFilesTab({ onBanner }: Props) {
 
         {newFolderName !== null && (
           <div className="sf-new-folder">
-            <span style={{ fontSize: 20 }}>📁</span>
+            <Folder size={20} />
             <input
               className="sf-new-folder-input"
               autoFocus
@@ -326,7 +331,7 @@ export default function SharedFilesTab({ onBanner }: Props) {
             {folders.filter((f) => getFolderName(f) !== '').length > 0 && (
               <div className="sf-section">
                 <div className="sf-section-header">
-                  <span className="sf-section-icon">📁</span>
+                  <span className="sf-section-icon"><Folder size={IC} /></span>
                   <span className="sf-section-label">폴더</span>
                   <span className="sf-section-count">{folders.filter((f) => getFolderName(f) !== '').length}</span>
                 </div>
@@ -341,7 +346,7 @@ export default function SharedFilesTab({ onBanner }: Props) {
                         onClick={() => setCurrentPath(folder)}
                       >
                         <div className="asset-card-preview" style={{ background: 'var(--surface-secondary)' }}>
-                          <span style={{ fontSize: 40 }}>📁</span>
+                          <Folder size={40} />
                         </div>
                         <div className="asset-card-info">
                           <div className="asset-card-name" title={name}>{name}</div>
@@ -395,14 +400,14 @@ export default function SharedFilesTab({ onBanner }: Props) {
         <div className="sf-preview-overlay" onClick={() => setPreviewBlob(null)}>
           <div className="sf-preview-modal" onClick={(e) => e.stopPropagation()}>
             <img
-              src={previewBlob.url + (previewBlob.uploadedAt ? `?t=${new Date(previewBlob.uploadedAt).getTime()}` : '')}
+              src={cacheBustUrl(previewBlob)}
               alt={getFilename(previewBlob.pathname)}
             />
             <div className="sf-preview-info">
               <span className="sf-preview-name">{getFilename(previewBlob.pathname)}</span>
               <span className="sf-preview-size">{formatSize(previewBlob.size)}</span>
               <button className="sf-preview-download" onClick={() => handleDownload(previewBlob)}><Download size={14} /> 다운로드</button>
-              <button className="sf-preview-close" onClick={() => setPreviewBlob(null)}>&#x2715;</button>
+              <button className="sf-preview-close" onClick={() => setPreviewBlob(null)}><X size={16} /></button>
             </div>
           </div>
         </div>
