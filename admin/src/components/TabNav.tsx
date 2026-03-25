@@ -47,7 +47,7 @@ const GAMES: GameSection[] = [
   {
     key: 'game01',
     title: 'GAME01',
-    subtitle: '직장인 잔혹사 : 퇴근길',
+    subtitle: '',
     gameUrl: '/game01/',
     items: [
       { id: 'game01-assets', icon: <Palette size={ICON_SIZE} />, label: '에셋 관리' },
@@ -95,7 +95,7 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
       const isActive = g.items.some((item) => item.id === activePage)
       init[g.key] = !isActive
     })
-    init['common'] = !commonPageIds.includes(activePage)
+    init['common'] = false
     return init
   })
 
@@ -112,10 +112,10 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
         </div>
 
         <div className="sidebar-game-group">
-          <div className="sidebar-section-btn" onClick={() => toggle('common')}>
+          <div className="sidebar-section-btn">
             <span>COMMON</span>
           </div>
-          {!collapsed['common'] && COMMON_ITEMS.map((item) => (
+          {COMMON_ITEMS.map((item) => (
             <button
               key={item.id}
               className={`sidebar-item${activePage === item.id ? ' active' : ''}`}
@@ -132,7 +132,7 @@ export default function TabNav({ activePage, onPageChange, open }: Props) {
             <div className="sidebar-section-btn" onClick={() => toggle(game.key)}>
               <span className="sidebar-section-label">
                 <span className="sidebar-section-title">{game.title}</span>
-                <span className="sidebar-section-subtitle">{game.subtitle}</span>
+                {game.subtitle && <span className="sidebar-section-subtitle">{game.subtitle}</span>}
               </span>
             </div>
             {!collapsed[game.key] && (
