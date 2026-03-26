@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutElement, ScreenLayout, LayoutIndex, GroupElement, AnchorElement } from './types'
-import { R2_LAYOUT_INDEX_KEY, DESIGN_W, DEFAULT_SCREENS } from './constants'
+import { R2_LAYOUT_INDEX_KEY, DESIGN_W, DEFAULT_SCREENS, DEFAULT_ELEMENT_WIDTH, DEFAULT_GAP } from './constants'
 import { getJson, putJson, uploadBlob } from '../../api'
 
 const R2_PUBLIC = 'https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev'
@@ -123,18 +123,20 @@ export function useLayoutEditor(gameId: string) {
       .filter((e): e is GroupElement => e.positioning === 'group')
       .reduce((max, e) => Math.max(max, e.order), -1)
 
-    const base = { id, type, widthPx: 200, visible: true, locked: false }
+    const w = type === 'image' ? 200 : DEFAULT_ELEMENT_WIDTH
+
+    const base = { id, type, widthPx: w, visible: true, locked: false }
 
     let el: LayoutElement
     if (positioning === 'group') {
-      el = { ...base, positioning: 'group', order: maxOrder + 1, gapPx: 16 } as GroupElement
+      el = { ...base, positioning: 'group', order: maxOrder + 1, gapPx: DEFAULT_GAP } as GroupElement
     } else {
       el = { ...base, positioning: 'anchor', anchor: 'top-left', offsetX: 20, offsetY: 20 } as AnchorElement
     }
 
     if (type === 'text') {
       el.label = '텍스트'
-      el.textStyle = { fontSizePx: 22, color: '#ffffff' }
+      el.textStyle = { fontSizePx: 22, color: '#ffffff', scaleKey: 'md' }
     } else if (type === 'button') {
       el.label = '버튼'
       el.buttonStyle = { styleType: 'outline', bgColor: '#24282c', scaleKey: 'lg' }

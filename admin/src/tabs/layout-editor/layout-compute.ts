@@ -2,6 +2,7 @@
 
 import type { LayoutElement, GroupElement, AnchorElement } from './types'
 import { DESIGN_W } from './constants'
+import { typeScale } from '../../components/common/design-tokens'
 
 export interface ComputedPos {
   id: string
@@ -18,6 +19,13 @@ function calcTextHeight(el: LayoutElement, scale: number): number {
   const text = el.label || el.id
   const lines = text.split('\n').length
   return fontSizePx * scale * 1.4 * lines
+}
+
+function calcButtonHeight(el: LayoutElement, scale: number): number {
+  const scaleKey = el.buttonStyle?.scaleKey || 'lg'
+  const ts = typeScale[scaleKey]
+  const fontSize = ts.fontSize * scale
+  return fontSize + 24 * scale  // font + vertical padding
 }
 
 export function computePreviewLayout(
@@ -55,6 +63,8 @@ export function computePreviewLayout(
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
       } else if (el.heightPx) {
         maxH = Math.max(maxH, el.heightPx * scale)
+      } else if (el.type === 'button') {
+        maxH = Math.max(maxH, calcButtonHeight(el, scale))
       } else {
         maxH = Math.max(maxH, calcTextHeight(el, scale))
       }
@@ -71,13 +81,17 @@ export function computePreviewLayout(
     if (ri > 0) curY += row.gapPx * scale
     const cy = curY + row.height / 2
 
+    const calcElH = (el: LayoutElement, elW: number) => {
+      if (el.type === 'image' && imageSizes[el.id]) return imageSizes[el.id].h * (elW / imageSizes[el.id].w)
+      if (el.heightPx) return el.heightPx * scale
+      if (el.type === 'button') return calcButtonHeight(el, scale)
+      return row.height
+    }
+
     if (row.elements.length === 1) {
       const el = row.elements[0]
       const elW = el.widthPx * scale
-      const elH = el.type === 'image' && imageSizes[el.id]
-        ? imageSizes[el.id].h * (elW / imageSizes[el.id].w)
-        : el.heightPx ? el.heightPx * scale : row.height
-      results.push({ id: el.id, x: screenW / 2, y: cy, w: elW, h: elH, originX: 0.5, originY: 0.5 })
+      results.push({ id: el.id, x: screenW / 2, y: cy, w: elW, h: calcElH(el, elW), originX: 0.5, originY: 0.5 })
     } else {
       const totalRowW = row.elements.reduce((s, el) => s + el.widthPx * scale, 0)
       const hGap = (row.elements[0].hGapPx ?? 8) * scale
@@ -85,10 +99,7 @@ export function computePreviewLayout(
       let cx = (screenW - totalWithGaps) / 2
       for (const el of row.elements) {
         const elW = el.widthPx * scale
-        const elH = el.type === 'image' && imageSizes[el.id]
-          ? imageSizes[el.id].h * (elW / imageSizes[el.id].w)
-          : el.heightPx ? el.heightPx * scale : row.height
-        results.push({ id: el.id, x: cx + elW / 2, y: cy, w: elW, h: elH, originX: 0.5, originY: 0.5 })
+        results.push({ id: el.id, x: cx + elW / 2, y: cy, w: elW, h: calcElH(el, elW), originX: 0.5, originY: 0.5 })
         cx += elW + hGap
       }
     }
@@ -103,9 +114,18 @@ export function computePreviewLayout(
     const elW = el.widthPx * scale
     const ox = el.offsetX * scale
     const oy = el.offsetY * scale
-    let elH = el.type === 'image' && imageSizes[el.id]
-      ? imageSizes[el.id].h * (elW / imageSizes[el.id].w)
-      : el.heightPx ? el.heightPx * scale : elW
+    let elH: number
+    if (el.type === 'image' && imageSizes[el.id]) {
+      elH = imageSizes[el.id].h * (elW / imageSizes[el.id].w)
+    } else if (el.heightPx) {
+      elH = el.heightPx * scale
+    } else if (el.type === 'button') {
+      elH = calcButtonHeight(el, scale)
+    } else if (el.type === 'text') {
+      elH = calcTextHeight(el, scale)
+    } else {
+      elH = elW
+    }
 
     let x: number, y: number, originX: number, originY: number
     switch (el.anchor) {
