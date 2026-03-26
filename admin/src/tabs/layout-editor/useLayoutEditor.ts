@@ -368,7 +368,7 @@ export function useLayoutEditor(gameId: string) {
         return el
       }) as LayoutElement[]
 
-      return { ...prev, elements, groupVAlign: 'top', dirty: true }
+      return { ...prev, elements, dirty: true }
     })
   }, [])
 
