@@ -10,6 +10,7 @@ export const colors = {
   graphite: '#24282c',
   cocoa: '#231816',
   bronze: '#4d4340',
+  steel: '#434750',
 } as const
 
 export const radius = {

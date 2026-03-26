@@ -5,6 +5,7 @@ import GaugeBar from '../components/common/GaugeBar'
 import MainTitle from '../components/common/MainTitle'
 import ButtonGuide from '../components/common/ButtonGuide'
 import ChallengeModal from '../components/common/ChallengeModal'
+import ToggleSwitch from '../components/common/ToggleSwitch'
 import { colors, radius, font, spacing, typeScale, typeUsage, buttonStyleDefaults } from '../components/common/design-tokens'
 import { DEFAULT_SPEC, R2_KEY, type DesignSpec, type TypeScaleKey, type ButtonStyleType } from '../components/common/design-spec'
 import { getJson, putJson } from '../api'
@@ -283,6 +284,7 @@ const COLOR_ITEMS: { name: string; hex: string; usage: string }[] = [
   { name: 'graphite', hex: colors.graphite, usage: '게임오버 큰 버튼' },
   { name: 'cocoa', hex: colors.cocoa, usage: '게임오버 작은 버튼' },
   { name: 'bronze', hex: colors.bronze, usage: '더블 라인' },
+  { name: 'steel', hex: colors.steel, usage: '토글 배경' },
 ]
 
 function ColorSection() {
@@ -754,6 +756,25 @@ function ComponentsSection({ spec, update }: { spec: DesignSpec; update: UpdateF
           </>
         }
         tokens={['red', 'radius.sm']}
+      />
+
+      {/* ToggleSwitch */}
+      <ComponentBlock
+        name="ToggleSwitch"
+        category="Input"
+        desc="토글 스위치. 설정 화면의 on/off 토글에 사용."
+        preview={
+          <Preview bg="#111">
+            <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+              <ToggleSwitch on={false} size={48} />
+              <ToggleSwitch on={true} size={48} />
+              <ToggleSwitch on={false} size={36} />
+              <ToggleSwitch on={true} size={36} />
+            </div>
+          </Preview>
+        }
+        controls={null}
+        tokens={['black', 'steel', 'radius.full']}
       />
     </div>
   )
