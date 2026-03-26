@@ -263,24 +263,76 @@ export function useLayoutEditor(gameId: string) {
     }))
   }, [])
 
-  // 패딩 맞춤 — 모든 요소를 패딩 기준으로 정렬
+  // 패딩 맞춤 — 모든 요소를 패딩 박스 안에 맞춤 (너비 + 높이 + 간격)
   const fitToPadding = useCallback(() => {
     setState((prev) => {
-      const contentW = DESIGN_W - prev.padding.left - prev.padding.right
-      const updated = prev.elements.map((el) => {
-        if (el.positioning === 'group') {
-          // full 모드로 전환 + 간격 초기화
-          return { ...el, widthMode: 'full' as const, widthPx: contentW, gapPx: DEFAULT_GAP }
-        }
+      const { padding, imageSizes } = prev
+      const contentW = DESIGN_W - padding.left - padding.right
+      const contentH = DESIGN_H - padding.top - padding.bottom
+
+      // 1단계: 너비 맞춤 — 모든 요소 패딩 너비 이내로
+      let elements = prev.elements.map((el) => {
         if (el.positioning === 'anchor') {
-          // fixed 요소가 패딩 밖이면 패딩 안으로 맞춤
-          const a = el as AnchorElement
-          const maxW = contentW
-          return { ...a, widthPx: Math.min(a.widthPx, maxW) }
+          return { ...el, widthPx: Math.min(el.widthPx, contentW) }
+        }
+        if (el.positioning === 'group') {
+          if (el.type === 'image') {
+            return { ...el, widthMode: 'fixed' as const, widthPx: Math.min(el.widthPx, contentW) }
+          }
+          return { ...el, widthMode: 'full' as const, widthPx: contentW }
         }
         return el
       }) as LayoutElement[]
-      return { ...prev, elements: updated, dirty: true }
+
+      // 2단계: 그룹 요소 총 높이 계산
+      const groupEls = elements.filter((e): e is GroupElement => e.positioning === 'group')
+      const rowMap = new Map<number, GroupElement[]>()
+      for (const el of groupEls) {
+        const row = rowMap.get(el.order) || []
+        row.push(el)
+        rowMap.set(el.order, row)
+      }
+      const rowOrders = [...rowMap.keys()].sort((a, b) => a - b)
+
+      const rowHeights: number[] = []
+      for (const order of rowOrders) {
+        const rowEls = rowMap.get(order)!
+        const n = rowEls.length
+        let maxH = 0
+        for (const el of rowEls) {
+          const elW = el.widthMode === 'fixed' ? el.widthPx : (contentW - (el.hGapPx ?? 8) * (n - 1)) / n
+          if (el.type === 'image' && imageSizes[el.id]) {
+            maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
+          } else if (el.type === 'button') {
+            maxH = Math.max(maxH, (el.buttonStyle?.scaleKey ? 52 : 52))
+          } else {
+            const fontSize = el.textStyle?.fontSizePx || 14
+            const lines = (el.label || el.id).split('\n').length
+            maxH = Math.max(maxH, fontSize * 1.4 * lines)
+          }
+        }
+        rowHeights.push(maxH)
+      }
+
+      const totalElementH = rowHeights.reduce((s, h) => s + h, 0)
+      const rowCount = rowHeights.length
+
+      // 3단계: 간격 자동 계산 — 남은 공간을 행 사이에 균등 배분
+      let gap = DEFAULT_GAP
+      if (rowCount > 1) {
+        const availableGap = contentH - totalElementH
+        gap = Math.max(4, Math.floor(availableGap / (rowCount - 1)))
+      }
+
+      // 4단계: 간격 적용
+      elements = elements.map((el) => {
+        if (el.positioning === 'group') {
+          return { ...el, gapPx: gap }
+        }
+        return el
+      }) as LayoutElement[]
+
+      return { ...prev, elements, dirty: true }
     })
   }, [])
 
