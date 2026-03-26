@@ -252,25 +252,15 @@ export function useLayoutEditor(gameId: string) {
     setState((prev) => ({ ...prev, padding: { ...prev.padding, ...patch }, dirty: true }))
   }, [])
 
-  // Reset all gaps
-  const resetGaps = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      dirty: true,
-      elements: prev.elements.map((el) =>
-        el.positioning === 'group' ? { ...el, gapPx: DEFAULT_GAP } : el,
-      ) as LayoutElement[],
-    }))
-  }, [])
-
-  // 패딩 맞춤 — 모든 요소를 패딩 박스 안에 맞춤 (너비 + 높이 + 간격)
-  const fitToPadding = useCallback(() => {
+  // 자동 맞춤 — 모든 요소를 패딩 박스 안에 맞춤 (너비 + 높이 + 간격)
+  const autoFit = useCallback(() => {
     setState((prev) => {
       const { padding, imageSizes } = prev
       const contentW = DESIGN_W - padding.left - padding.right
       const contentH = DESIGN_H - padding.top - padding.bottom
+      const MIN_GAP = 8
 
-      // 1단계: 너비 맞춤 — 모든 요소 패딩 너비 이내로
+      // 1단계: 너비 맞춤
       let elements = prev.elements.map((el) => {
         if (el.positioning === 'anchor') {
           return { ...el, widthPx: Math.min(el.widthPx, contentW) }
@@ -284,7 +274,7 @@ export function useLayoutEditor(gameId: string) {
         return el
       }) as LayoutElement[]
 
-      // 2단계: 그룹 요소 총 높이 계산
+      // 행 정보 수집
       const groupEls = elements.filter((e): e is GroupElement => e.positioning === 'group')
       const rowMap = new Map<number, GroupElement[]>()
       for (const el of groupEls) {
@@ -293,38 +283,63 @@ export function useLayoutEditor(gameId: string) {
         rowMap.set(el.order, row)
       }
       const rowOrders = [...rowMap.keys()].sort((a, b) => a - b)
+      const rowCount = rowOrders.length
 
-      const rowHeights: number[] = []
-      for (const order of rowOrders) {
-        const rowEls = rowMap.get(order)!
-        const n = rowEls.length
-        let maxH = 0
-        for (const el of rowEls) {
-          const elW = el.widthMode === 'fixed' ? el.widthPx : (contentW - (el.hGapPx ?? 8) * (n - 1)) / n
-          if (el.type === 'image' && imageSizes[el.id]) {
-            maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
-          } else if (el.type === 'button') {
-            maxH = Math.max(maxH, (el.buttonStyle?.scaleKey ? 52 : 52))
-          } else {
-            const fontSize = el.textStyle?.fontSizePx || 14
-            const lines = (el.label || el.id).split('\n').length
-            maxH = Math.max(maxH, fontSize * 1.4 * lines)
+      // 2단계: 행별 높이 계산 함수
+      const calcRowHeights = (els: LayoutElement[], scaleFactor = 1): number[] => {
+        const heights: number[] = []
+        for (const order of rowOrders) {
+          const rowEls = rowMap.get(order)!
+          const n = rowEls.length
+          let maxH = 0
+          for (const el of rowEls) {
+            const w = el.widthMode === 'fixed' ? el.widthPx : (contentW - (el.hGapPx ?? 8) * (n - 1)) / n
+            const found = els.find((e) => e.id === el.id) || el
+            if (found.type === 'image' && imageSizes[found.id]) {
+              const imgW = (found.widthMode === 'fixed' ? found.widthPx : w) * scaleFactor
+              maxH = Math.max(maxH, imageSizes[found.id].h * (imgW / imageSizes[found.id].w))
+            } else if (found.type === 'button') {
+              const fontSize = found.buttonStyle?.scaleKey ? 52 : 52
+              maxH = Math.max(maxH, fontSize)
+            } else {
+              const fontSize = found.textStyle?.fontSizePx || 14
+              const lines = (found.label || found.id).split('\n').length
+              maxH = Math.max(maxH, fontSize * 1.4 * lines)
+            }
           }
+          heights.push(maxH)
         }
-        rowHeights.push(maxH)
+        return heights
       }
 
-      const totalElementH = rowHeights.reduce((s, h) => s + h, 0)
-      const rowCount = rowHeights.length
+      // 3단계: 전체가 패딩 안에 들어올 때까지 이미지 축소
+      let scale = 1
+      for (let i = 0; i < 20; i++) {
+        const heights = calcRowHeights(elements, scale)
+        const totalH = heights.reduce((s, h) => s + h, 0) + Math.max(0, rowCount - 1) * MIN_GAP
+        if (totalH <= contentH) break
+        scale *= 0.9
+      }
 
-      // 3단계: 간격 자동 계산 — 남은 공간을 행 사이에 균등 배분
+      // 이미지 축소 적용
+      if (scale < 1) {
+        elements = elements.map((el) => {
+          if (el.positioning === 'group' && el.type === 'image') {
+            return { ...el, widthPx: Math.round(el.widthPx * scale) }
+          }
+          return el
+        }) as LayoutElement[]
+      }
+
+      // 4단계: 최종 높이로 간격 균등 배분
+      const finalHeights = calcRowHeights(elements, 1)
+      const totalElH = finalHeights.reduce((s, h) => s + h, 0)
       let gap = DEFAULT_GAP
       if (rowCount > 1) {
-        const availableGap = contentH - totalElementH
-        gap = Math.max(4, Math.floor(availableGap / (rowCount - 1)))
+        gap = Math.max(MIN_GAP, Math.floor((contentH - totalElH) / (rowCount - 1)))
       }
 
-      // 4단계: 간격 적용
+      // 5단계: 간격 적용
       elements = elements.map((el) => {
         if (el.positioning === 'group') {
           return { ...el, gapPx: gap }
@@ -352,8 +367,7 @@ export function useLayoutEditor(gameId: string) {
     setElementImage,
     save,
     createScreen,
-    resetGaps,
-    fitToPadding,
+    autoFit,
     updatePadding,
     updateBg,
   }

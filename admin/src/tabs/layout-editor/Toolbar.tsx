@@ -1,11 +1,10 @@
 interface Props {
   onAddElement: (type: 'text' | 'image' | 'button', positioning: 'group' | 'anchor') => void
   onOpenAssetPicker: () => void
-  onResetGaps: () => void
-  onFitToPadding: () => void
+  onAutoFit: () => void
 }
 
-export default function Toolbar({ onAddElement, onOpenAssetPicker, onResetGaps, onFitToPadding }: Props) {
+export default function Toolbar({ onAddElement, onOpenAssetPicker, onAutoFit }: Props) {
   return (
     <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
       <div style={{ fontSize: 12, color: '#999', display: 'flex', alignItems: 'center', marginRight: 4 }}>그룹</div>
@@ -17,8 +16,7 @@ export default function Toolbar({ onAddElement, onOpenAssetPicker, onResetGaps, 
       <ToolBtn label="텍스트" onClick={() => onAddElement('text', 'anchor')} />
       <ToolBtn label="이미지" onClick={() => onAddElement('image', 'anchor')} />
       <div style={{ width: 1, height: 24, background: '#e8e8e8', margin: '0 8px' }} />
-      <ToolBtn label="간격 초기화" onClick={onResetGaps} secondary />
-      <ToolBtn label="패딩 맞춤" onClick={onFitToPadding} secondary />
+      <ToolBtn label="자동 맞춤" onClick={onAutoFit} secondary />
     </div>
   )
 }
