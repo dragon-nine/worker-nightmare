@@ -204,7 +204,7 @@ export default function PhoneCanvasElement({ el, pos, scale, selected, assetUrl,
         outline: selected ? '2px solid #3182f6' : undefined,
         outlineOffset: 2,
         opacity: el.locked ? 0.5 : 1,
-        zIndex: selected ? 10 : 1,
+        zIndex: (el.type === 'card' || el.type === 'modal') ? 0 : (selected ? 10 : 1),
       }}
     >
       {renderContent()}
