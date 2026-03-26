@@ -6,7 +6,6 @@ interface Props {
   elements: LayoutElement[]
   selectedId: string | null
   onSelect: (id: string) => void
-  onUpdate: (id: string, patch: Partial<LayoutElement>) => void
   onRemove: (id: string) => void
   onDuplicate: (id: string) => void
   onReorder: (id: string, patch: Partial<LayoutElement>) => void
