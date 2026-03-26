@@ -33,12 +33,12 @@ export default function Inspector({
     return (
       <Panel>
         <PanelTitle>화면 설정</PanelTitle>
-        <Field label="패딩 (상/우/하/좌)">
+        <Field label="패딩 (상/하/좌/우)">
           <div style={{ display: 'flex', gap: 4 }}>
             <NumInput value={padding.top} onChange={(v) => onPaddingUpdate({ top: v })} />
-            <NumInput value={padding.right} onChange={(v) => onPaddingUpdate({ right: v })} />
             <NumInput value={padding.bottom} onChange={(v) => onPaddingUpdate({ bottom: v })} />
             <NumInput value={padding.left} onChange={(v) => onPaddingUpdate({ left: v })} />
+            <NumInput value={padding.right} onChange={(v) => onPaddingUpdate({ right: v })} />
           </div>
         </Field>
         <Field label="배경">
@@ -104,12 +104,12 @@ export default function Inspector({
 
       {/* Inner Padding (for card/modal) — compact */}
       {(el.type === 'card' || el.type === 'modal') && el.innerPadding && (
-        <Field label="내부 패딩 (상/우/하/좌)">
+        <Field label="내부 패딩 (상/하/좌/우)">
           <div style={{ display: 'flex', gap: 4 }}>
             <NumInput value={el.innerPadding.top} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, top: v } })} />
-            <NumInput value={el.innerPadding.right} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, right: v } })} />
             <NumInput value={el.innerPadding.bottom} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, bottom: v } })} />
             <NumInput value={el.innerPadding.left} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, left: v } })} />
+            <NumInput value={el.innerPadding.right} onChange={(v) => update({ innerPadding: { ...el.innerPadding!, right: v } })} />
           </div>
         </Field>
       )}
