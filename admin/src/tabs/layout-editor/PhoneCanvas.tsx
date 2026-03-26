@@ -29,7 +29,8 @@ export default function PhoneCanvas({
     origVal: number; origVal2?: number; field: string; field2?: string
   } | null>(null)
 
-  const positions = computePreviewLayout(elements, PHONE_PREVIEW_W, PHONE_PREVIEW_H, imageSizes, groupVAlign, padding)
+  const rootElements = elements.filter((e) => !e.parentId)
+  const positions = computePreviewLayout(rootElements, PHONE_PREVIEW_W, PHONE_PREVIEW_H, imageSizes, groupVAlign, padding, elements)
   const scale = PHONE_PREVIEW_W / DESIGN_W
 
   const getAssetUrl = (el: LayoutElement) => {

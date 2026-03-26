@@ -36,15 +36,17 @@ export function computePreviewLayout(
   imageSizes: Record<string, { w: number; h: number }>,
   groupVAlign: 'center' | 'top' = 'center',
   padding = { top: 60, right: 24, bottom: 40, left: 24 },
+  _allElements?: LayoutElement[],  // 내부 재귀용 — 전체 요소 참조
 ): ComputedPos[] {
+  const allElements = _allElements || elements
   const scale = screenW / DESIGN_W
   const results: ComputedPos[] = []
   const contentW = DESIGN_W - padding.left - padding.right
   const contentLeft = padding.left * scale
 
-  // Group elements (루트만, 자식 제외)
+  // Group elements (현재 전달된 elements만, parentId 필터 없음)
   const groupEls = elements.filter(
-    (e): e is GroupElement => e.positioning === 'group' && e.visible !== false && !e.parentId,
+    (e): e is GroupElement => e.positioning === 'group' && e.visible !== false,
   )
   const rowMap = new Map<number, GroupElement[]>()
   for (const el of groupEls) {
@@ -127,7 +129,7 @@ export function computePreviewLayout(
 
   // Anchor elements
   const anchorEls = elements.filter(
-    (e): e is AnchorElement => e.positioning === 'anchor' && e.visible !== false && !e.parentId,
+    (e): e is AnchorElement => e.positioning === 'anchor' && e.visible !== false,
   )
   for (const el of anchorEls) {
     const elW = el.widthPx * scale
@@ -156,10 +158,11 @@ export function computePreviewLayout(
     results.push({ id: el.id, x, y, w: elW, h: elH, originX, originY })
   }
 
-  // ── Pass 2: 자식 요소 (parentId가 있는 요소) ──
-  const childEls = elements.filter((e) => e.parentId && e.visible !== false)
+  // ── Pass 2: 자식 요소 ──
+  // allElements에서 현재 결과에 있는 부모의 자식을 찾음
+  const parentIds = new Set(results.map((r) => r.id))
+  const childEls = allElements.filter((e) => e.parentId && parentIds.has(e.parentId) && e.visible !== false)
   if (childEls.length > 0) {
-    // 부모별로 그룹
     const childByParent = new Map<string, LayoutElement[]>()
     for (const el of childEls) {
       const list = childByParent.get(el.parentId!) || []
@@ -169,20 +172,21 @@ export function computePreviewLayout(
 
     for (const [parentId, children] of childByParent) {
       const parentPos = results.find((p) => p.id === parentId)
-      const parentEl = elements.find((e) => e.id === parentId)
+      const parentEl = allElements.find((e) => e.id === parentId)
       if (!parentPos || !parentEl) continue
 
       const ip = parentEl.innerPadding || { top: 16, right: 16, bottom: 16, left: 16 }
       const parentLeft = parentPos.x - parentPos.w * parentPos.originX
       const parentTop = parentPos.y - parentPos.h * parentPos.originY
 
-      // 자식을 부모 영역 안에서 레이아웃
       const innerW = parentPos.w - (ip.left + ip.right) * scale
       const innerH = parentPos.h - (ip.top + ip.bottom) * scale
       const innerPadding = { top: 0, right: 0, bottom: 0, left: 0 }
 
+      // 자식에서 parentId를 일시 제거해서 재귀에서 group 필터 통과
+      const childrenClean = children.map((c) => ({ ...c, parentId: undefined }))
       const childPositions = computePreviewLayout(
-        children, innerW, innerH, imageSizes, 'top', innerPadding,
+        childrenClean, innerW, innerH, imageSizes, 'top', innerPadding, allElements,
       )
 
       // 부모 위치 기준으로 오프셋
