@@ -77,19 +77,40 @@ export function computePreviewLayout(
     for (const el of rowEls) {
       const elW = resolveElWidth(el, n)
       if ((el.type === 'card' || el.type === 'modal') && !el.heightPx) {
-        // 자식 기반 높이 자동 계산
+        // 자식 기반 높이 직접 계산 (재귀 호출 대신)
         const children = allElements.filter((e) => e.parentId === el.id && e.visible !== false)
         const ip = el.innerPadding || { top: 16, right: 16, bottom: 16, left: 16 }
-        const childDesignW = (elW / scale) - ip.left - ip.right
-        const childScreenW = childDesignW * scale
         if (children.length > 0) {
-          const cleanChildren = children.map((c) => ({ ...c, parentId: undefined }))
-          const childPos = computePreviewLayout(cleanChildren, childScreenW, 9999, imageSizes, 'top', { top: 0, right: 0, bottom: 0, left: 0 }, [], childDesignW)
-          const childBottom = childPos.length > 0 ? Math.max(...childPos.map((p) => p.y + p.h * (1 - p.originY))) : 0
-          console.log('[card-height]', el.id, { childBottom, ipTop: ip.top, ipBottom: ip.bottom, scale, result: childBottom + (ip.top + ip.bottom) * scale, childPos: childPos.map(p => ({ id: p.id, y: p.y, h: p.h, originY: p.originY })) })
-          maxH = Math.max(maxH, childBottom + (ip.top + ip.bottom) * scale)
+          const childGroups = children.filter((c): c is GroupElement => c.positioning === 'group')
+          const childRowMap = new Map<number, GroupElement[]>()
+          for (const c of childGroups) {
+            const r = childRowMap.get(c.order) || []
+            r.push(c)
+            childRowMap.set(c.order, r)
+          }
+          const childOrders = [...childRowMap.keys()].sort((a, b) => a - b)
+          let totalChildH = 0
+          for (let ci = 0; ci < childOrders.length; ci++) {
+            const crow = childRowMap.get(childOrders[ci])!
+            if (ci > 0) totalChildH += (crow[0].gapPx || 0) * scale
+            let rowH = 0
+            for (const c of crow) {
+              if (c.type === 'image' && imageSizes[c.id]) {
+                const cw = (c.widthMode === 'fixed' ? c.widthPx : 100) * scale
+                rowH = Math.max(rowH, imageSizes[c.id].h * (cw / imageSizes[c.id].w))
+              } else if (c.heightPx) {
+                rowH = Math.max(rowH, c.heightPx * scale)
+              } else if (c.type === 'button') {
+                rowH = Math.max(rowH, calcButtonHeight(c, scale))
+              } else {
+                rowH = Math.max(rowH, calcTextHeight(c, scale))
+              }
+            }
+            totalChildH += rowH
+          }
+          maxH = Math.max(maxH, totalChildH + (ip.top + ip.bottom) * scale)
         } else {
-          maxH = Math.max(maxH, (ip.top + ip.bottom + 40) * scale) // 빈 카드 최소 높이
+          maxH = Math.max(maxH, (ip.top + ip.bottom + 40) * scale)
         }
       } else if (el.type === 'image' && imageSizes[el.id]) {
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
