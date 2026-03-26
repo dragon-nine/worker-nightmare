@@ -130,11 +130,39 @@ export default function ElementList({ elements, selectedId, onSelect, onRemove, 
           const isMulti = rowEls.length > 1
           return (
             <div key={`cr-${order}`}>
+              <DropZone
+                active={dropTarget?.type === 'between' && dropTarget.order === order + 10000 * indent}
+                onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'between', order: order + 10000 * indent }) }}
+                onDragLeave={() => setDropTarget(null)}
+                onDrop={() => {
+                  const sourceId = dragRef.current
+                  if (!sourceId) { handleDragEnd(); return }
+                  // 새 order 삽입
+                  groups.filter((e) => e.id !== sourceId && e.order >= order).forEach((e) => {
+                    onReorder(e.id, { order: e.order + 1 })
+                  })
+                  onReorder(sourceId, { order })
+                  handleDragEnd()
+                }}
+              />
               {isMulti && <div style={{ padding: '2px 28px 0', fontSize: 10, color: '#3182f6', fontWeight: 600 }}>같은 행 ({rowEls.length}개)</div>}
               {rowEls.map((el) => renderRow(el, indent))}
             </div>
           )
         })}
+        {orders.length > 0 && (
+          <DropZone
+            active={dropTarget?.type === 'between' && dropTarget.order === (orders[orders.length - 1] + 1) + 10000 * indent}
+            onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'between', order: (orders[orders.length - 1] + 1) + 10000 * indent }) }}
+            onDragLeave={() => setDropTarget(null)}
+            onDrop={() => {
+              const sourceId = dragRef.current
+              if (!sourceId) { handleDragEnd(); return }
+              onReorder(sourceId, { order: orders[orders.length - 1] + 1 })
+              handleDragEnd()
+            }}
+          />
+        )}
       </div>
     )
   }
