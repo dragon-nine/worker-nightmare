@@ -1,7 +1,7 @@
 import { useRef, useCallback, type PointerEvent } from 'react'
 import type { LayoutElement } from './types'
 import type { ComputedPos } from './layout-compute'
-import { font, typeScale, buttonStyleDefaults } from '../../components/common/design-tokens'
+import { font, typeScale, buttonStyleDefaults, gradients, type GradientKey } from '../../components/common/design-tokens'
 import { RESIZE_HANDLE_SIZE } from './constants'
 
 interface Props {
@@ -54,10 +54,14 @@ export default function PhoneCanvasElement({ el, pos, scale, selected, assetUrl,
       const scaleKey = bs?.scaleKey || 'lg'
       const ts = typeScale[scaleKey]
       const bsd = buttonStyleDefaults[bs?.styleType || 'outline']
+      const bgGrad = bs?.bgGradient ? gradients[bs.bgGradient as GradientKey] : null
+      const bgStyle = bgGrad
+        ? `linear-gradient(${bgGrad.direction}, ${bgGrad.from}, ${bgGrad.to})`
+        : bs?.bgColor || '#24282c'
       return (
         <div style={{
           width: '100%', height: '100%',
-          background: bs?.bgColor || '#24282c',
+          background: bgStyle,
           borderRadius: bsd.borderRadius * scale,
           border: bsd.borderWidth > 0 ? `${bsd.borderWidth * scale}px solid ${bsd.borderColor}` : 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',

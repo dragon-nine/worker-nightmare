@@ -17,6 +17,7 @@ export interface TextStyle {
 export interface ButtonStyle {
   styleType: ButtonStyleType
   bgColor?: string
+  bgGradient?: string
   scaleKey?: TypeScaleKey
 }
 

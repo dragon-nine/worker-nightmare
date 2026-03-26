@@ -209,7 +209,24 @@ export default function Inspector({
               {SCALE_KEYS.map((k) => <option key={k} value={k}>{k} — {typeScale[k].fontSize}px</option>)}
             </select>
           </Field>
-          <Field label="배경색"><ColorSelect value={el.buttonStyle?.bgColor || '#24282c'} onChange={(v) => update({ buttonStyle: { styleType: el.buttonStyle?.styleType || 'outline', scaleKey: el.buttonStyle?.scaleKey || 'lg', bgColor: v } })} /></Field>
+          <Field label="배경색">
+            <UnifiedColorSelect
+              value={
+                el.buttonStyle?.bgGradient
+                  ? el.buttonStyle.bgGradient
+                  : COLOR_ENTRIES.find(([, hex]) => hex === (el.buttonStyle?.bgColor || '#24282c'))?.[0] || 'graphite'
+              }
+              onChange={(val, type) => {
+                const base = { styleType: el.buttonStyle?.styleType || 'outline' as const, scaleKey: el.buttonStyle?.scaleKey || 'lg' as const }
+                if (type === 'gradient') {
+                  update({ buttonStyle: { ...base, bgColor: el.buttonStyle?.bgColor || '#24282c', bgGradient: val } })
+                } else {
+                  const hex = colors[val as keyof typeof colors] || val
+                  update({ buttonStyle: { ...base, bgColor: hex, bgGradient: undefined } })
+                }
+              }}
+            />
+          </Field>
         </Section>
       )}
 
