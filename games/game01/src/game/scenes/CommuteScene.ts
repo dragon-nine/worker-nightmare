@@ -52,16 +52,27 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#000000');
 
-    // 배경 이미지 (너비 맞춤, 화면 하단 = 이미지 하단, 위로 반복)
-    if (this.textures.exists('bg-game')) {
-      const bgFrame = this.textures.get('bg-game').getSourceImage();
-      const scale = width / bgFrame.width;
-      const texH = bgFrame.height;
-      const screenHInTex = height / scale;
-      const tileY = -(screenHInTex % texH);
-      this.bgTile = this.add.tileSprite(0, 0, width, height, 'bg-game')
+    // 배경 이미지: bg-1, bg-2, bg-2 패턴으로 합성 → tileSprite 반복
+    if (this.textures.exists('bg-1') && this.textures.exists('bg-2')) {
+      const src1 = this.textures.get('bg-1').getSourceImage();
+      const src2 = this.textures.get('bg-2').getSourceImage();
+      const texW = src1.width;
+      const totalH = src1.height + src2.height * 2;
+
+      // bg-1 + bg-2 + bg-2 를 하나의 RenderTexture로 합성
+      const rt = this.add.renderTexture(0, 0, texW, totalH).setVisible(false);
+      rt.draw('bg-1', 0, 0);
+      rt.draw('bg-2', 0, src1.height);
+      rt.draw('bg-2', 0, src1.height + src2.height);
+      rt.saveTexture('bg-combined');
+      rt.destroy();
+
+      const bgScale = width / texW;
+      const screenHInTex = height / bgScale;
+      const tileY = -(screenHInTex % totalH);
+      this.bgTile = this.add.tileSprite(0, 0, width, height, 'bg-combined')
         .setOrigin(0, 0)
-        .setTileScale(scale, scale)
+        .setTileScale(bgScale, bgScale)
         .setTilePosition(0, tileY)
         .setDepth(0);
     }
