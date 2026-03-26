@@ -57,8 +57,10 @@ function calcContainerHeight(
 
     let rowH = 0
     for (const c of row) {
-      if (c.type === 'card' || c.type === 'modal') {
-        // 재귀: 중첩된 카드/모달
+      const fixedSize: Record<string, number> = { toggle: 44, close: 32, 'circle-btn': 80 }
+      if (fixedSize[c.type]) {
+        rowH = Math.max(rowH, fixedSize[c.type] * scale)
+      } else if (c.type === 'card' || c.type === 'modal') {
         rowH = Math.max(rowH, calcContainerHeight(c, allElements, imageSizes, scale))
       } else if (c.type === 'image' && imageSizes[c.id]) {
         const cw = (c.widthMode === 'fixed' ? c.widthPx : 100) * scale
@@ -132,7 +134,9 @@ export function computePreviewLayout(
     let maxH = 0
     for (const el of rowEls) {
       const elW = resolveElWidth(el, n)
-      if (el.type === 'card' || el.type === 'modal') {
+      if (COMPONENT_SIZES[el.type]) {
+        maxH = Math.max(maxH, COMPONENT_SIZES[el.type].h * scale)
+      } else if (el.type === 'card' || el.type === 'modal') {
         maxH = Math.max(maxH, calcContainerHeight(el, allElements, imageSizes, scale))
       } else if (el.type === 'image' && imageSizes[el.id]) {
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
