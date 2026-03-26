@@ -15,6 +15,6 @@ export const RESIZE_HANDLE_SIZE = 8
 
 export const DEFAULT_SCREENS = [
   { key: 'main-screen', label: '메인 화면' },
-  { key: 'game-over', label: '게임오버' },
   { key: 'gameplay', label: '게임플레이' },
+  { key: 'game-over', label: '게임오버' },
 ]
