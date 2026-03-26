@@ -148,13 +148,20 @@ export default function ElementList({ elements, selectedId, onSelect, onUpdate, 
                                   indent
                                   selected={selectedId === child.id}
                                   dragging={dragId === child.id}
-                                  dropOver={dropTarget?.type === 'nest' && dropTarget.parentId === child.id}
+                                  dropOver={
+                                    (dropTarget?.type === 'nest' && dropTarget.parentId === child.id) ||
+                                    (dropTarget?.type === 'merge' && dropTarget.targetId === child.id)
+                                  }
                                   onSelect={() => onSelect(child.id)}
                                   onDragStart={() => handleDragStart(child.id)}
                                   onDragEnd={handleDragEnd}
-                                  onDragOver={isChildContainer ? (e) => { e.preventDefault(); setDropTarget({ type: 'nest', parentId: child.id }) } : undefined}
-                                  onDragLeave={isChildContainer ? () => setDropTarget(null) : undefined}
-                                  onDrop={isChildContainer ? () => handleDropNest(child.id) : undefined}
+                                  onDragOver={(e) => {
+                                    e.preventDefault()
+                                    if (isChildContainer) setDropTarget({ type: 'nest', parentId: child.id })
+                                    else setDropTarget({ type: 'merge', targetId: child.id })
+                                  }}
+                                  onDragLeave={() => setDropTarget(null)}
+                                  onDrop={() => isChildContainer ? handleDropNest(child.id) : handleDropOnElement(child.id)}
                                   onToggleVisible={() => onUpdate(child.id, { visible: child.visible === false })}
                                   onToggleLock={() => onUpdate(child.id, { locked: !child.locked })}
                                   onDuplicate={() => onDuplicate(child.id)}
@@ -172,10 +179,13 @@ export default function ElementList({ elements, selectedId, onSelect, onUpdate, 
                                         indent
                                         selected={selectedId === gc.id}
                                         dragging={dragId === gc.id}
-                                        dropOver={false}
+                                        dropOver={dropTarget?.type === 'merge' && dropTarget.targetId === gc.id}
                                         onSelect={() => onSelect(gc.id)}
                                         onDragStart={() => handleDragStart(gc.id)}
                                         onDragEnd={handleDragEnd}
+                                        onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'merge', targetId: gc.id }) }}
+                                        onDragLeave={() => setDropTarget(null)}
+                                        onDrop={() => handleDropOnElement(gc.id)}
                                         onToggleVisible={() => onUpdate(gc.id, { visible: gc.visible === false })}
                                         onToggleLock={() => onUpdate(gc.id, { locked: !gc.locked })}
                                         onDuplicate={() => onDuplicate(gc.id)}
