@@ -3,7 +3,8 @@ import TabNav from './components/TabNav'
 import GameAssetsTab from './tabs/GameAssetsTab'
 import PlaceholderTab from './tabs/PlaceholderTab'
 import SharedFilesTab from './tabs/SharedFilesTab'
-import LayoutEditorTab from './tabs/LayoutEditorTab'
+// import LayoutEditorLegacyTab from './tabs/LayoutEditorLegacyTab'  // game02용 레거시
+import LayoutEditorTab from './tabs/layout-editor'
 import GameDashboard from './tabs/GameDashboard'
 import TodoHomePage from './tabs/TodoHomePage'
 import MemoTab from './tabs/MemoTab'
@@ -55,7 +56,7 @@ export default function App() {
         {page === 'dashboard' && <GameDashboard />}
         {page === 'game01-assets' && <GameAssetsTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
         {page === 'game02-assets' && <PlaceholderTab title="game02 에셋 관리" message="game02 프로젝트가 생성되면 활성화됩니다." />}
-        {page === 'game01-layout' && <LayoutEditorTab gameId="game01" gameName="직장인 잔혹시" onBanner={showBanner} />}
+        {page === 'game01-layout' && <LayoutEditorTab gameId="game01" onBanner={showBanner} />}
         {page === 'game01-content' && <ContentTab gameId="game01" gameName="직장인 잔혹사 : 퇴근길" onBanner={showBanner} />}
         {page === 'shared-files' && <SharedFilesTab onBanner={showBanner} />}
         {page === 'memo' && <MemoTab onBanner={showBanner} />}
