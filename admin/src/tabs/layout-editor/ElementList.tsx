@@ -132,70 +132,17 @@ export default function ElementList({ elements, selectedId, onSelect, onUpdate, 
                         onDuplicate={() => onDuplicate(el.id)}
                         onRemove={() => onRemove(el.id)}
                       />
-                      {/* 자식 요소 (인덴트, 재귀) */}
+                      {/* 자식 요소 (인덴트, 행 그룹핑) */}
                       {children.length > 0 && (
                         <div style={{ borderLeft: '3px solid #f59e0b', marginLeft: 14, background: 'rgba(245,158,11,0.03)' }}>
                           <div style={{ padding: '2px 14px 0', fontSize: 10, color: '#f59e0b', fontWeight: 600 }}>
                             하위 ({children.length}개)
                           </div>
-                          {children.map((child) => {
-                            const isChildContainer = child.type === 'card' || child.type === 'modal'
-                            const grandchildren = isChildContainer ? childrenOf(child.id) : []
-                            return (
-                              <div key={child.id}>
-                                <ElementRow
-                                  el={child}
-                                  indent
-                                  selected={selectedId === child.id}
-                                  dragging={dragId === child.id}
-                                  dropOver={
-                                    (dropTarget?.type === 'nest' && dropTarget.parentId === child.id) ||
-                                    (dropTarget?.type === 'merge' && dropTarget.targetId === child.id)
-                                  }
-                                  onSelect={() => onSelect(child.id)}
-                                  onDragStart={() => handleDragStart(child.id)}
-                                  onDragEnd={handleDragEnd}
-                                  onDragOver={(e) => {
-                                    e.preventDefault()
-                                    if (isChildContainer) setDropTarget({ type: 'nest', parentId: child.id })
-                                    else setDropTarget({ type: 'merge', targetId: child.id })
-                                  }}
-                                  onDragLeave={() => setDropTarget(null)}
-                                  onDrop={() => isChildContainer ? handleDropNest(child.id) : handleDropOnElement(child.id)}
-                                  onToggleVisible={() => onUpdate(child.id, { visible: child.visible === false })}
-                                  onToggleLock={() => onUpdate(child.id, { locked: !child.locked })}
-                                  onDuplicate={() => onDuplicate(child.id)}
-                                  onRemove={() => onRemove(child.id)}
-                                />
-                                {grandchildren.length > 0 && (
-                                  <div style={{ borderLeft: '3px solid #8b5cf6', marginLeft: 14, background: 'rgba(139,92,246,0.03)' }}>
-                                    <div style={{ padding: '2px 14px 0', fontSize: 10, color: '#8b5cf6', fontWeight: 600 }}>
-                                      하위 ({grandchildren.length}개)
-                                    </div>
-                                    {grandchildren.map((gc) => (
-                                      <ElementRow
-                                        key={gc.id}
-                                        el={gc}
-                                        indent
-                                        selected={selectedId === gc.id}
-                                        dragging={dragId === gc.id}
-                                        dropOver={dropTarget?.type === 'merge' && dropTarget.targetId === gc.id}
-                                        onSelect={() => onSelect(gc.id)}
-                                        onDragStart={() => handleDragStart(gc.id)}
-                                        onDragEnd={handleDragEnd}
-                                        onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'merge', targetId: gc.id }) }}
-                                        onDragLeave={() => setDropTarget(null)}
-                                        onDrop={() => handleDropOnElement(gc.id)}
-                                        onToggleVisible={() => onUpdate(gc.id, { visible: gc.visible === false })}
-                                        onToggleLock={() => onUpdate(gc.id, { locked: !gc.locked })}
-                                        onDuplicate={() => onDuplicate(gc.id)}
-                                        onRemove={() => onRemove(gc.id)}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )
+                          {renderChildRows(children, {
+                            selectedId, dragId, dropTarget, childrenOf,
+                            onSelect, onUpdate, onDuplicate, onRemove,
+                            handleDragStart, handleDragEnd, handleDropOnElement, handleDropNest,
+                            setDropTarget,
                           })}
                         </div>
                       )}
@@ -243,6 +190,69 @@ export default function ElementList({ elements, selectedId, onSelect, onUpdate, 
       </div>
     </div>
   )
+}
+
+/** 하위 요소를 order 기준 행 그룹으로 렌더 */
+function renderChildRows(children: LayoutElement[], ctx: {
+  selectedId: string | null; dragId: string | null; dropTarget: DropTarget | null
+  childrenOf: (id: string) => LayoutElement[]
+  onSelect: (id: string) => void; onUpdate: (id: string, patch: Partial<LayoutElement>) => void
+  onDuplicate: (id: string) => void; onRemove: (id: string) => void
+  handleDragStart: (id: string) => void; handleDragEnd: () => void
+  handleDropOnElement: (id: string) => void; handleDropNest: (id: string) => void
+  setDropTarget: (t: DropTarget | null) => void
+}) {
+  // 행 그룹핑
+  const groupChildren = children.filter((e): e is GroupElement => e.positioning === 'group')
+  const childRowMap = new Map<number, GroupElement[]>()
+  for (const c of groupChildren) {
+    const row = childRowMap.get(c.order) || []
+    row.push(c)
+    childRowMap.set(c.order, row)
+  }
+  const childRowOrders = [...childRowMap.keys()].sort((a, b) => a - b)
+
+  return childRowOrders.map((order) => {
+    const rowEls = childRowMap.get(order)!
+    const isMulti = rowEls.length > 1
+    return (
+      <div key={`child-row-${order}`}>
+        {isMulti && (
+          <div style={{ padding: '2px 28px 0', fontSize: 10, color: '#3182f6', fontWeight: 600 }}>같은 행 ({rowEls.length}개)</div>
+        )}
+        {rowEls.map((child) => {
+          const isContainer = child.type === 'card' || child.type === 'modal'
+          return (
+            <ElementRow
+              key={child.id}
+              el={child}
+              indent
+              selected={ctx.selectedId === child.id}
+              dragging={ctx.dragId === child.id}
+              dropOver={
+                (ctx.dropTarget?.type === 'nest' && ctx.dropTarget.parentId === child.id) ||
+                (ctx.dropTarget?.type === 'merge' && ctx.dropTarget.targetId === child.id)
+              }
+              onSelect={() => ctx.onSelect(child.id)}
+              onDragStart={() => ctx.handleDragStart(child.id)}
+              onDragEnd={ctx.handleDragEnd}
+              onDragOver={(e) => {
+                e.preventDefault()
+                if (isContainer) ctx.setDropTarget({ type: 'nest', parentId: child.id })
+                else ctx.setDropTarget({ type: 'merge', targetId: child.id })
+              }}
+              onDragLeave={() => ctx.setDropTarget(null)}
+              onDrop={() => isContainer ? ctx.handleDropNest(child.id) : ctx.handleDropOnElement(child.id)}
+              onToggleVisible={() => ctx.onUpdate(child.id, { visible: child.visible === false })}
+              onToggleLock={() => ctx.onUpdate(child.id, { locked: !child.locked })}
+              onDuplicate={() => ctx.onDuplicate(child.id)}
+              onRemove={() => ctx.onRemove(child.id)}
+            />
+          )
+        })}
+      </div>
+    )
+  })
 }
 
 function DropZone({ active, onDragOver, onDragLeave, onDrop }: {
