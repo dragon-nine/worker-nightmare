@@ -25,8 +25,7 @@ export class CommuteScene extends Phaser.Scene {
   private gameStarted = false;
   private hasRevived = false;
   private bgm?: Phaser.Sound.BaseSound;
-  private bgSprites: Phaser.GameObjects.Image[] = [];
-  private bgPatternH = 0;  // bg-1 + bg-2 + bg-2 합산 높이 (스케일 후)
+  private bgTile?: Phaser.GameObjects.TileSprite;
 
   private laneWorldX: number[] = [];
   private laneW = 0;
@@ -53,38 +52,18 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#000000');
 
-    // 배경 이미지: bg-1, bg-2, bg-2 패턴을 개별 스프라이트로 세로 배치 + 무한 루프
-    if (this.textures.exists('bg-1') && this.textures.exists('bg-2')) {
-      const src1 = this.textures.get('bg-1').getSourceImage();
-      const src2 = this.textures.get('bg-2').getSourceImage();
-      const bgScale = width / src1.width;
-      const h1 = src1.height * bgScale;
-      const h2 = src2.height * bgScale;
-      this.bgPatternH = h1 + h2 * 2;
-
-      // 패턴: bg-1, bg-2, bg-2 — 2세트 배치 (화면보다 넉넉하게)
-      const pattern: string[] = ['bg-1', 'bg-2', 'bg-2'];
-      const heights: number[] = [h1, h2, h2];
-      const setsNeeded = Math.ceil(height / this.bgPatternH) + 2;
-
-      let curY = 0;
-      for (let s = 0; s < setsNeeded; s++) {
-        for (let i = 0; i < pattern.length; i++) {
-          const spr = this.add.image(0, curY, pattern[i])
-            .setOrigin(0, 0)
-            .setScale(bgScale)
-            .setDepth(0);
-          this.bgSprites.push(spr);
-          curY += heights[i];
-        }
-      }
-
-      // 초기 위치: 화면 하단에 맞춤
-      const totalH = curY;
-      const offsetY = height - totalH;
-      for (const spr of this.bgSprites) {
-        spr.y += offsetY;
-      }
+    // 배경 이미지 (너비 맞춤, 화면 하단 = 이미지 하단, 위로 반복)
+    if (this.textures.exists('bg-game')) {
+      const bgFrame = this.textures.get('bg-game').getSourceImage();
+      const scale = width / bgFrame.width;
+      const texH = bgFrame.height;
+      const screenHInTex = height / scale;
+      const tileY = -(screenHInTex % texH);
+      this.bgTile = this.add.tileSprite(0, 0, width, height, 'bg-game')
+        .setOrigin(0, 0)
+        .setTileScale(scale, scale)
+        .setTilePosition(0, tileY)
+        .setDepth(0);
     }
 
     // 화면에 보이는 2레인 기준으로 크기 계산
@@ -314,28 +293,11 @@ export class CommuteScene extends Phaser.Scene {
     });
 
     // 배경 패럴랙스 스크롤 (도로보다 느리게 → 깊이감)
-    if (this.bgSprites.length > 0) {
-      const dy = -scrollDelta * 0.3;
-      for (const spr of this.bgSprites) {
-        this.tweens.add({
-          targets: spr,
-          y: spr.y + dy,
-          duration: 100, ease: 'Quad.easeOut',
-        });
-      }
-      // 무한 루프: 패턴 높이만큼 래핑
-      this.time.delayedCall(110, () => {
-        if (this.bgPatternH <= 0) return;
-        for (const spr of this.bgSprites) {
-          // 화면 아래로 완전히 벗어나면 위로 올림
-          if (spr.y > this.scale.height) {
-            spr.y -= this.bgPatternH * Math.ceil(this.bgSprites.length / 3);
-          }
-          // 화면 위로 완전히 벗어나면 아래로 내림
-          if (spr.y + spr.displayHeight < -this.bgPatternH) {
-            spr.y += this.bgPatternH * Math.ceil(this.bgSprites.length / 3);
-          }
-        }
+    if (this.bgTile) {
+      this.tweens.add({
+        targets: this.bgTile,
+        tilePositionY: this.bgTile.tilePositionY - scrollDelta * 0.3,
+        duration: 100, ease: 'Quad.easeOut',
       });
     }
 
