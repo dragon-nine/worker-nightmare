@@ -56,7 +56,7 @@ export const typeScale = {
   md: { fontSize: 28, fontWeight: 900, stroke: 3 },
   sm: { fontSize: 20, fontWeight: 700, stroke: 2 },
   xs: { fontSize: 16, fontWeight: 700, stroke: 0 },
-  '2xs': { fontSize: 13, fontWeight: 700, stroke: 0 },
+  '2xs': { fontSize: 13, fontWeight: 400, stroke: 0 },
 } as const
 
 /** 버튼 스타일 기본값 */
