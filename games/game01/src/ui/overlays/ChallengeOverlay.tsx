@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { gameBus } from '../../game/event-bus';
-import { getRandomQuote } from '../../game/game-over-quotes';
+import { getRandomChallengeQuote } from '../../game/challenge-quotes';
 import styles from './overlay.module.css';
 
 const R2_BASE = 'https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev';
@@ -11,7 +11,9 @@ interface Props {
 }
 
 export function ChallengeOverlay({ score, onClose }: Props) {
-  const [message, setMessage] = useState(() => getRandomQuote());
+  const bestScore = Number(localStorage.getItem('bestScore') || '0');
+  const isNewRecord = score >= bestScore && bestScore > 0;
+  const [message, setMessage] = useState(() => getRandomChallengeQuote(score, isNewRecord));
   const [challengeImages, setChallengeImages] = useState<string[]>([]);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
@@ -33,7 +35,7 @@ export function ChallengeOverlay({ score, onClose }: Props) {
 
   const handleRefresh = useCallback(() => {
     gameBus.emit('play-sfx', 'sfx-click');
-    setMessage(getRandomQuote());
+    setMessage(getRandomChallengeQuote(score, isNewRecord));
     if (challengeImages.length > 0) {
       setCurrentImage(challengeImages[Math.floor(Math.random() * challengeImages.length)]);
     }
