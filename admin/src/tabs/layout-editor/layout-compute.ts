@@ -25,7 +25,7 @@ function calcButtonHeight(el: LayoutElement, scale: number): number {
   const scaleKey = el.buttonStyle?.scaleKey || 'lg'
   const ts = typeScale[scaleKey]
   const fontSize = ts.fontSize * scale
-  const padY = Math.max(10, Math.round(ts.fontSize * 0.45)) * scale
+  const padY = Math.max(20, Math.round(ts.fontSize * 0.45)) * scale
   return fontSize + padY * 2  // font + 상하 패딩
 }
 

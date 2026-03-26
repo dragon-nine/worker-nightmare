@@ -490,7 +490,7 @@ function GameButton({ variant = 'flat', children, icon, scale = 'lg', bgColor }:
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
-          padding: `${Math.max(10, Math.round(s.fontSize * 0.45))}px ${Math.round(s.fontSize * 0.9)}px`,
+          padding: `${Math.max(20, Math.round(s.fontSize * 0.45))}px ${Math.round(s.fontSize * 0.9)}px`,
           borderRadius: d.borderRadius - 4,
           border: `${d.innerLineWidth}px solid ${d.innerLineColor}`,
           width: '100%',
@@ -511,7 +511,7 @@ function GameButton({ variant = 'flat', children, icon, scale = 'lg', bgColor }:
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
-          padding: `${Math.max(10, Math.round(s.fontSize * 0.45))}px ${Math.round(s.fontSize * 0.9)}px`,
+          padding: `${Math.max(20, Math.round(s.fontSize * 0.45))}px ${Math.round(s.fontSize * 0.9)}px`,
         }}>
           {icon && <span style={{ fontSize: s.fontSize }}>{icon}</span>}
           <span style={{

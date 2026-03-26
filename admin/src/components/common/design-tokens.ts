@@ -48,12 +48,12 @@ export const font = {
  * 모든 텍스트는 이 스케일 안에서 선택. 용도는 매핑으로 관리.
  */
 export const typeScale = {
-  '3xl': { fontSize: 72, fontWeight: 900, stroke: 6 },
+  '3xl': { fontSize: 76, fontWeight: 900, stroke: 6 },
   '2xl': { fontSize: 56, fontWeight: 900, stroke: 6 },
   xl: { fontSize: 44, fontWeight: 900, stroke: 4 },
-  lg: { fontSize: 36, fontWeight: 900, stroke: 3 },
+  lg: { fontSize: 32, fontWeight: 900, stroke: 3 },
   md: { fontSize: 28, fontWeight: 900, stroke: 3 },
-  sm: { fontSize: 22, fontWeight: 700, stroke: 2 },
+  sm: { fontSize: 20, fontWeight: 700, stroke: 2 },
   xs: { fontSize: 16, fontWeight: 700, stroke: 0 },
   '2xs': { fontSize: 13, fontWeight: 700, stroke: 0 },
 } as const
