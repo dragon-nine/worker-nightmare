@@ -110,8 +110,8 @@ export default function Inspector({
       {/* Group */}
       {el.positioning === 'group' && (
         <Section title="그룹 배치">
-          <Field label="순서"><NumInput value={(el as GroupElement).order} onChange={(v) => update({ order: v })} /></Field>
           <Field label="위 간격"><NumInput value={(el as GroupElement).gapPx} onChange={(v) => update({ gapPx: v })} /></Field>
+          <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>순서/행 변경은 요소 목록에서 드래그</p>
         </Section>
       )}
 

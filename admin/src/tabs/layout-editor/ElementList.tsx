@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState, useRef } from 'react'
 import type { LayoutElement, GroupElement } from './types'
 import { Eye, EyeOff, Lock, Unlock, Copy, Trash2, GripVertical } from 'lucide-react'
 
@@ -12,54 +12,58 @@ interface Props {
   onReorder: (id: string, patch: Partial<LayoutElement>) => void
 }
 
+type DropTarget = { type: 'between'; order: number } | { type: 'merge'; targetId: string }
+
 export default function ElementList({ elements, selectedId, onSelect, onUpdate, onRemove, onDuplicate, onReorder }: Props) {
   const [dragId, setDragId] = useState<string | null>(null)
-  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
   const dragRef = useRef<string | null>(null)
 
-  const sorted = [...elements].sort((a, b) => {
-    if (a.positioning === 'group' && b.positioning === 'group') return a.order - b.order
-    if (a.positioning === 'group') return -1
-    return 1
-  })
+  // 행 그룹으로 묶기
+  const groupEls = elements.filter((e): e is GroupElement => e.positioning === 'group')
+  const anchorEls = elements.filter((e) => e.positioning === 'anchor')
+  const rowMap = new Map<number, GroupElement[]>()
+  for (const el of groupEls) {
+    const row = rowMap.get(el.order) || []
+    row.push(el)
+    rowMap.set(el.order, row)
+  }
+  const rowOrders = [...rowMap.keys()].sort((a, b) => a - b)
 
   const handleDragStart = (id: string) => {
     dragRef.current = id
     setDragId(id)
   }
 
-  const handleDragOver = (e: React.DragEvent, id: string) => {
-    e.preventDefault()
-    setDragOverId(id)
+  const handleDragEnd = () => {
+    setDragId(null)
+    setDropTarget(null)
   }
 
-  const handleDrop = (targetId: string) => {
+  // 요소 위에 드롭 → 같은 행으로 합침
+  const handleDropOnElement = (targetId: string) => {
     const sourceId = dragRef.current
-    if (!sourceId || sourceId === targetId) { setDragId(null); setDragOverId(null); return }
+    if (!sourceId || sourceId === targetId) { handleDragEnd(); return }
+    const source = elements.find((e) => e.id === sourceId) as GroupElement | undefined
+    const target = elements.find((e) => e.id === targetId) as GroupElement | undefined
+    if (!source || !target || source.positioning !== 'group' || target.positioning !== 'group') { handleDragEnd(); return }
+    onReorder(sourceId, { order: target.order })
+    handleDragEnd()
+  }
 
-    const source = elements.find((e) => e.id === sourceId)
-    const target = elements.find((e) => e.id === targetId)
-    if (!source || !target) { setDragId(null); setDragOverId(null); return }
+  // 행 사이에 드롭 → 순서 변경 (새 행으로)
+  const handleDropBetween = (newOrder: number) => {
+    const sourceId = dragRef.current
+    if (!sourceId) { handleDragEnd(); return }
+    const source = elements.find((e) => e.id === sourceId) as GroupElement | undefined
+    if (!source || source.positioning !== 'group') { handleDragEnd(); return }
 
-    // Only reorder group elements
-    if (source.positioning === 'group' && target.positioning === 'group') {
-      const targetOrder = (target as GroupElement).order
-      onReorder(sourceId, { order: targetOrder })
-      // Shift other elements
-      elements
-        .filter((e): e is GroupElement => e.positioning === 'group' && e.id !== sourceId)
-        .forEach((e) => {
-          const srcOrder = (source as GroupElement).order
-          if (srcOrder < targetOrder) {
-            if (e.order > srcOrder && e.order <= targetOrder) onReorder(e.id, { order: e.order - 1 })
-          } else {
-            if (e.order >= targetOrder && e.order < srcOrder) onReorder(e.id, { order: e.order + 1 })
-          }
-        })
-    }
-
-    setDragId(null)
-    setDragOverId(null)
+    // 새 위치에 삽입: newOrder 이상의 기존 행들을 +1
+    groupEls.filter((e) => e.id !== sourceId).forEach((e) => {
+      if (e.order >= newOrder) onReorder(e.id, { order: e.order + 1 })
+    })
+    onReorder(sourceId, { order: newOrder })
+    handleDragEnd()
   }
 
   return (
@@ -68,59 +72,155 @@ export default function ElementList({ elements, selectedId, onSelect, onUpdate, 
         <span style={{ fontSize: 12, fontWeight: 700, color: '#555' }}>요소 목록</span>
         <span style={{ fontSize: 11, color: '#bbb', marginLeft: 6 }}>{elements.length}</span>
       </div>
-      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-        {sorted.map((el) => (
-          <div
-            key={el.id}
-            draggable={el.positioning === 'group'}
-            onDragStart={() => handleDragStart(el.id)}
-            onDragOver={(e) => handleDragOver(e, el.id)}
-            onDrop={() => handleDrop(el.id)}
-            onDragEnd={() => { setDragId(null); setDragOverId(null) }}
-            onClick={() => onSelect(el.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 14px',
-              background: selectedId === el.id ? '#e8f0fe' : dragOverId === el.id ? '#f0f5ff' : 'transparent',
-              opacity: dragId === el.id ? 0.4 : 1,
-              cursor: 'pointer',
-              borderBottom: '1px solid #f0f0f0',
-              transition: 'background 0.1s',
-            }}
-          >
-            {/* Drag handle */}
-            {el.positioning === 'group' && (
-              <span style={{ cursor: 'grab', color: '#ccc', display: 'flex' }}>
-                <GripVertical size={14} />
-              </span>
-            )}
-            <TypeDot type={el.type} />
-            <span style={{ fontSize: 12, color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {el.label || el.id}
-            </span>
-            <span style={{ fontSize: 10, color: '#ccc', flexShrink: 0 }}>
-              {el.positioning === 'group' ? `#${(el as GroupElement).order}` : 'anchor'}
-            </span>
-            <IconBtn onClick={(e) => { e.stopPropagation(); onUpdate(el.id, { visible: el.visible === false }) }}>
-              {el.visible === false ? <EyeOff size={12} /> : <Eye size={12} />}
-            </IconBtn>
-            <IconBtn onClick={(e) => { e.stopPropagation(); onUpdate(el.id, { locked: !el.locked }) }}>
-              {el.locked ? <Lock size={12} /> : <Unlock size={12} />}
-            </IconBtn>
-            <IconBtn onClick={(e) => { e.stopPropagation(); onDuplicate(el.id) }}>
-              <Copy size={12} />
-            </IconBtn>
-            <IconBtn onClick={(e) => { e.stopPropagation(); onRemove(el.id) }}>
-              <Trash2 size={12} />
-            </IconBtn>
-          </div>
-        ))}
+      <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+        {rowOrders.map((order) => {
+          const rowEls = rowMap.get(order)!
+          const isMulti = rowEls.length > 1
+          return (
+            <div key={order}>
+              {/* 행 사이 드롭존 */}
+              <DropZone
+                active={dropTarget?.type === 'between' && dropTarget.order === order}
+                onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'between', order }) }}
+                onDragLeave={() => setDropTarget(null)}
+                onDrop={() => handleDropBetween(order)}
+              />
+              {/* 행 컨테이너 */}
+              <div style={{
+                borderLeft: isMulti ? '3px solid #3182f6' : '3px solid transparent',
+                background: isMulti ? 'rgba(49,130,246,0.03)' : 'transparent',
+              }}>
+                {isMulti && (
+                  <div style={{ padding: '2px 14px 0', fontSize: 10, color: '#3182f6', fontWeight: 600 }}>
+                    같은 행 ({rowEls.length}개)
+                  </div>
+                )}
+                {rowEls.map((el) => (
+                  <ElementRow
+                    key={el.id}
+                    el={el}
+                    selected={selectedId === el.id}
+                    dragging={dragId === el.id}
+                    dropOver={dropTarget?.type === 'merge' && dropTarget.targetId === el.id}
+                    onSelect={() => onSelect(el.id)}
+                    onDragStart={() => handleDragStart(el.id)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'merge', targetId: el.id }) }}
+                    onDragLeave={() => setDropTarget(null)}
+                    onDrop={() => handleDropOnElement(el.id)}
+                    onToggleVisible={() => onUpdate(el.id, { visible: el.visible === false })}
+                    onToggleLock={() => onUpdate(el.id, { locked: !el.locked })}
+                    onDuplicate={() => onDuplicate(el.id)}
+                    onRemove={() => onRemove(el.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+        {/* 마지막 드롭존 */}
+        {rowOrders.length > 0 && (
+          <DropZone
+            active={dropTarget?.type === 'between' && dropTarget.order === (rowOrders[rowOrders.length - 1] + 1)}
+            onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'between', order: rowOrders[rowOrders.length - 1] + 1 }) }}
+            onDragLeave={() => setDropTarget(null)}
+            onDrop={() => handleDropBetween(rowOrders[rowOrders.length - 1] + 1)}
+          />
+        )}
+
+        {/* 앵커 요소 */}
+        {anchorEls.length > 0 && (
+          <>
+            <div style={{ padding: '6px 14px', fontSize: 10, color: '#999', fontWeight: 600, borderTop: '1px solid #eee' }}>앵커</div>
+            {anchorEls.map((el) => (
+              <ElementRow
+                key={el.id}
+                el={el}
+                selected={selectedId === el.id}
+                dragging={false}
+                dropOver={false}
+                onSelect={() => onSelect(el.id)}
+                onToggleVisible={() => onUpdate(el.id, { visible: el.visible === false })}
+                onToggleLock={() => onUpdate(el.id, { locked: !el.locked })}
+                onDuplicate={() => onDuplicate(el.id)}
+                onRemove={() => onRemove(el.id)}
+              />
+            ))}
+          </>
+        )}
+
         {elements.length === 0 && (
-          <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: '#bbb' }}>
-            요소가 없습니다
-          </div>
+          <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: '#bbb' }}>요소가 없습니다</div>
         )}
       </div>
+    </div>
+  )
+}
+
+function DropZone({ active, onDragOver, onDragLeave, onDrop }: {
+  active: boolean
+  onDragOver: (e: React.DragEvent) => void
+  onDragLeave: () => void
+  onDrop: () => void
+}) {
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      style={{
+        height: active ? 4 : 2,
+        background: active ? '#3182f6' : 'transparent',
+        transition: 'all 0.1s',
+      }}
+    />
+  )
+}
+
+function ElementRow({ el, selected, dragging, dropOver, onSelect, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop, onToggleVisible, onToggleLock, onDuplicate, onRemove }: {
+  el: LayoutElement; selected: boolean; dragging: boolean; dropOver: boolean
+  onSelect: () => void
+  onDragStart?: () => void; onDragEnd?: () => void
+  onDragOver?: (e: React.DragEvent) => void; onDragLeave?: () => void; onDrop?: () => void
+  onToggleVisible: () => void; onToggleLock: () => void; onDuplicate: () => void; onRemove: () => void
+}) {
+  const isGroup = el.positioning === 'group'
+  return (
+    <div
+      draggable={isGroup}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onClick={onSelect}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '6px 14px',
+        background: selected ? '#e8f0fe' : dropOver ? '#e0ecff' : 'transparent',
+        opacity: dragging ? 0.3 : 1,
+        cursor: 'pointer',
+        borderBottom: '1px solid #f0f0f0',
+        transition: 'background 0.1s',
+      }}
+    >
+      {isGroup && <span style={{ cursor: 'grab', color: '#ccc', display: 'flex' }}><GripVertical size={14} /></span>}
+      <TypeDot type={el.type} />
+      <span style={{ fontSize: 12, color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {el.label || el.id}
+      </span>
+      <IconBtn onClick={(e) => { e.stopPropagation(); onToggleVisible() }}>
+        {el.visible === false ? <EyeOff size={12} /> : <Eye size={12} />}
+      </IconBtn>
+      <IconBtn onClick={(e) => { e.stopPropagation(); onToggleLock() }}>
+        {el.locked ? <Lock size={12} /> : <Unlock size={12} />}
+      </IconBtn>
+      <IconBtn onClick={(e) => { e.stopPropagation(); onDuplicate() }}>
+        <Copy size={12} />
+      </IconBtn>
+      <IconBtn onClick={(e) => { e.stopPropagation(); onRemove() }}>
+        <Trash2 size={12} />
+      </IconBtn>
     </div>
   )
 }
