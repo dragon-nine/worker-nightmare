@@ -2,8 +2,11 @@ import { useState, useCallback, useEffect } from 'react'
 import { gradients, type GradientKey } from '../../components/common/design-tokens'
 import { useLayoutEditor } from './useLayoutEditor'
 
-function computeBgCss(bgType: string, bgColor: string, bgGradient: string): string {
+const R2_PUBLIC = 'https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev'
+
+function computeBgCss(bgType: string, bgColor: string, bgGradient: string, bgAssetKey?: string): string {
   if (bgType === 'transparent') return 'transparent'
+  if (bgType === 'image' && bgAssetKey) return `url(${R2_PUBLIC}/${bgAssetKey}) center/cover no-repeat`
   if (bgType === 'gradient') {
     const g = gradients[bgGradient as GradientKey]
     if (g) return `linear-gradient(${g.direction}, ${g.from}, ${g.to})`
@@ -26,21 +29,33 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
   const editor = useLayoutEditor(gameId)
   const [assetPickerOpen, setAssetPickerOpen] = useState(false)
   const [assetPickerTarget, setAssetPickerTarget] = useState<string | null>(null)
+  const [assetPickerMode, setAssetPickerMode] = useState<'element' | 'bg'>('element')
 
   const selectedElement = editor.elements.find((e) => e.id === editor.selectedId) || null
 
   const handleOpenAssetPicker = useCallback(() => {
+    setAssetPickerMode('element')
     const id = editor.addElement('image', 'group')
     setAssetPickerTarget(id)
     setAssetPickerOpen(true)
   }, [editor])
 
+  const handleOpenBgAssetPicker = useCallback(() => {
+    setAssetPickerMode('bg')
+    setAssetPickerTarget(null)
+    setAssetPickerOpen(true)
+  }, [])
+
   const handleAssetSelect = useCallback((assetKey: string, url: string) => {
-    const targetId = assetPickerTarget || editor.addElement('image', 'group')
-    editor.setElementImage(targetId, assetKey, url)
+    if (assetPickerMode === 'bg') {
+      editor.updateBg({ bgType: 'image', bgAssetKey: assetKey })
+    } else {
+      const targetId = assetPickerTarget || editor.addElement('image', 'group')
+      editor.setElementImage(targetId, assetKey, url)
+    }
     setAssetPickerOpen(false)
     setAssetPickerTarget(null)
-  }, [assetPickerTarget, editor])
+  }, [assetPickerMode, assetPickerTarget, editor])
 
   const handleSave = useCallback(async () => {
     await editor.save()
@@ -130,7 +145,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
             imageSizes={editor.imageSizes}
             groupVAlign={editor.groupVAlign}
             padding={editor.padding}
-            bgCss={computeBgCss(editor.bgType, editor.bgColor, editor.bgGradient)}
+            bgCss={computeBgCss(editor.bgType, editor.bgColor, editor.bgGradient, editor.bgAssetKey)}
             screenKey={editor.screenKey}
             gameId={gameId}
             selectedId={editor.selectedId}
@@ -152,6 +167,8 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
               bgType={editor.bgType}
               bgColor={editor.bgColor}
               bgGradient={editor.bgGradient}
+              bgAssetKey={editor.bgAssetKey}
+              onOpenAssetPicker={handleOpenBgAssetPicker}
               onBgUpdate={editor.updateBg}
             />
             <ElementList
@@ -162,6 +179,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
               onDuplicate={editor.duplicateElement}
               onReorder={editor.updateElement}
               onSetParent={editor.setParent}
+              onAddElement={editor.addElement}
             />
           </div>
         </div>

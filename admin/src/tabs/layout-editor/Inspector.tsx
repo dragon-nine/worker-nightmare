@@ -8,7 +8,7 @@ const GRADIENT_KEYS = Object.keys(gradients) as GradientKey[]
 const SCALE_KEYS = Object.keys(typeScale) as TypeScaleKey[]
 const COLOR_ENTRIES = Object.entries(colors) as [string, string][]
 
-type BgType = 'transparent' | 'solid' | 'gradient'
+type BgType = 'transparent' | 'solid' | 'gradient' | 'image'
 
 interface Props {
   elements: LayoutElement[]
@@ -22,13 +22,15 @@ interface Props {
   bgType: BgType
   bgColor: string
   bgGradient: string
-  onBgUpdate: (patch: { bgType?: BgType; bgColor?: string; bgGradient?: string }) => void
+  bgAssetKey: string
+  onBgUpdate: (patch: { bgType?: BgType; bgColor?: string; bgGradient?: string; bgAssetKey?: string }) => void
+  onOpenAssetPicker: (target: 'bg') => void
 }
 
 export default function Inspector({
   elements, element, onUpdate, onRemove, onDuplicate, onSetParent,
   padding, onPaddingUpdate,
-  bgType, bgColor, bgGradient, onBgUpdate,
+  bgType, bgColor, bgGradient, bgAssetKey, onBgUpdate, onOpenAssetPicker,
 }: Props) {
   if (!element) {
     return (
@@ -43,22 +45,15 @@ export default function Inspector({
           </div>
         </Field>
         <Field label="배경">
-          <select value={bgType} onChange={(e) => onBgUpdate({ bgType: e.target.value as BgType })} style={selectStyle}>
-            <option value="transparent">투명</option>
-            <option value="solid">단색</option>
-            <option value="gradient">그라데이션</option>
-          </select>
+          <BgSelect
+            bgType={bgType}
+            bgColor={bgColor}
+            bgGradient={bgGradient}
+            bgAssetKey={bgAssetKey}
+            onChange={onBgUpdate}
+            onPickImage={() => onOpenAssetPicker('bg')}
+          />
         </Field>
-        {bgType === 'solid' && (
-          <Field label="배경색"><ColorSelect value={bgColor} onChange={(v) => onBgUpdate({ bgColor: v })} /></Field>
-        )}
-        {bgType === 'gradient' && (
-          <Field label="그라데이션">
-            <select value={bgGradient} onChange={(e) => onBgUpdate({ bgGradient: e.target.value })} style={selectStyle}>
-              {GRADIENT_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
-            </select>
-          </Field>
-        )}
         <p style={{ fontSize: 12, color: '#999', marginTop: 16 }}>요소를 클릭하면 속성을 편집할 수 있습니다.</p>
       </Panel>
     )
@@ -331,22 +326,6 @@ function NumInput({ value, onChange }: { value: number; onChange: (v: number) =>
   )
 }
 
-function ColorSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const matched = COLOR_ENTRIES.find(([, hex]) => hex === value)?.[0]
-  return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-      <div style={{ width: 20, height: 20, borderRadius: 4, background: value, border: '1px solid #ddd', flexShrink: 0 }} />
-      <select
-        value={matched ?? '__custom'}
-        onChange={(e) => { if (e.target.value !== '__custom') { const hex = colors[e.target.value as keyof typeof colors]; if (hex) onChange(hex) } }}
-        style={{ ...selectStyle, flex: 1 }}
-      >
-        {!matched && <option value="__custom">{value}</option>}
-        {COLOR_ENTRIES.map(([name, hex]) => <option key={name} value={name}>{name} — {hex}</option>)}
-      </select>
-    </div>
-  )
-}
 
 function TypeBadge({ type }: { type: string }) {
   const bg: Record<string, string> = { text: '#3182f6', image: '#e53935', button: '#111', card: '#8b5cf6', modal: '#f59e0b', toggle: '#434750', close: '#666', gauge: '#c41e1e', 'circle-btn': '#4a5a6a' }
@@ -426,6 +405,89 @@ function MiniToggle({ active, label, onClick }: { active: boolean; label: string
     }}>
       {label}
     </button>
+  )
+}
+
+const R2_PUBLIC = 'https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev'
+
+function BgSelect({ bgType, bgColor, bgGradient, bgAssetKey, onChange, onPickImage }: {
+  bgType: BgType
+  bgColor: string
+  bgGradient: string
+  bgAssetKey: string
+  onChange: (patch: { bgType?: BgType; bgColor?: string; bgGradient?: string; bgAssetKey?: string }) => void
+  onPickImage: () => void
+}) {
+  // Compute unified select value
+  const selectValue = bgType === 'transparent' ? '__transparent'
+    : bgType === 'image' ? '__image'
+    : bgType === 'gradient' ? `grad:${bgGradient}`
+    : COLOR_ENTRIES.find(([, hex]) => hex === bgColor)?.[0] || '__custom'
+
+  // Preview
+  const previewBg = bgType === 'transparent'
+    ? 'repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 0 0 / 12px 12px'
+    : bgType === 'image' && bgAssetKey
+    ? `url(${R2_PUBLIC}/${bgAssetKey}) center/cover`
+    : bgType === 'gradient'
+    ? (() => { const g = gradients[bgGradient as GradientKey]; return g ? `linear-gradient(${g.direction}, ${g.from}, ${g.to})` : bgColor })()
+    : bgColor
+
+  const handleChange = (val: string) => {
+    if (val === '__transparent') {
+      onChange({ bgType: 'transparent' })
+    } else if (val === '__image') {
+      onChange({ bgType: 'image' })
+      onPickImage()
+    } else if (val.startsWith('grad:')) {
+      const key = val.slice(5)
+      onChange({ bgType: 'gradient', bgGradient: key })
+    } else {
+      const hex = colors[val as keyof typeof colors]
+      if (hex) onChange({ bgType: 'solid', bgColor: hex })
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ width: 24, height: 24, borderRadius: 6, background: previewBg, border: '1px solid #ddd', flexShrink: 0 }} />
+        <select
+          value={selectValue}
+          onChange={(e) => handleChange(e.target.value)}
+          style={{ ...selectStyleInline, flex: 1 }}
+        >
+          <option value="__transparent">투명</option>
+          <option value="__image">이미지</option>
+          <optgroup label="단색">
+            {COLOR_ENTRIES.map(([name, hex]) => (
+              <option key={name} value={name}>{name} — {hex}</option>
+            ))}
+          </optgroup>
+          <optgroup label="그라데이션">
+            {GRADIENT_KEYS.map((k) => (
+              <option key={k} value={`grad:${k}`}>{k}</option>
+            ))}
+          </optgroup>
+        </select>
+      </div>
+      {bgType === 'image' && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: '#999', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {bgAssetKey ? bgAssetKey.split('/').pop() : '이미지 없음'}
+          </span>
+          <button
+            onClick={onPickImage}
+            style={{
+              padding: '3px 10px', borderRadius: 6, border: '1px solid #ddd',
+              background: '#fff', color: '#333', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            변경
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 

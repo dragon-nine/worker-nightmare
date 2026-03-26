@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import type { LayoutElement, GroupElement } from './types'
-import { Copy, Trash2, GripVertical } from 'lucide-react'
+import { Copy, Trash2, GripVertical, Plus } from 'lucide-react'
 
 interface Props {
   elements: LayoutElement[]
@@ -10,14 +10,16 @@ interface Props {
   onDuplicate: (id: string) => void
   onReorder: (id: string, patch: Partial<LayoutElement>) => void
   onSetParent: (childId: string, parentId: string | undefined) => void
+  onAddElement: (type: string, positioning: 'group' | 'anchor') => void
 }
 
 type DropTarget = { type: 'between'; order: number } | { type: 'merge'; targetId: string } | { type: 'nest'; parentId: string }
 
-export default function ElementList({ elements, selectedId, onSelect, onRemove, onDuplicate, onReorder, onSetParent }: Props) {
+export default function ElementList({ elements, selectedId, onSelect, onRemove, onDuplicate, onReorder, onSetParent, onAddElement }: Props) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
   const dragRef = useRef<string | null>(null)
+  const [anchorMenuOpen, setAnchorMenuOpen] = useState(false)
 
   const rootEls = elements.filter((e) => !e.parentId)
   const groupEls = rootEls.filter((e): e is GroupElement => e.positioning === 'group')
@@ -198,12 +200,46 @@ export default function ElementList({ elements, selectedId, onSelect, onRemove, 
             onDrop={() => handleDropBetween(rowOrders[rowOrders.length - 1] + 1)}
           />
         )}
-        {anchorEls.length > 0 && (
-          <>
-            <div style={{ padding: '6px 14px', fontSize: 10, color: '#999', fontWeight: 600, borderTop: '1px solid #eee' }}>앵커</div>
-            {anchorEls.map((el) => renderRow(el))}
-          </>
-        )}
+        {/* 앵커 섹션 — 항목이 없어도 항상 표시 */}
+        <div style={{ borderTop: '1px solid #eee', position: 'relative' }}>
+          <div style={{ padding: '6px 14px', fontSize: 10, color: '#999', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>앵커</span>
+            <button
+              onClick={() => setAnchorMenuOpen((v) => !v)}
+              style={{ padding: '1px 4px', background: 'transparent', border: '1px solid #e0e0e0', borderRadius: 4, cursor: 'pointer', color: '#999', display: 'flex', alignItems: 'center' }}
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+          {anchorMenuOpen && (
+            <div style={{
+              position: 'absolute', right: 14, top: 28, zIndex: 10,
+              background: '#fff', border: '1px solid #e0e0e0', borderRadius: 8,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: 100,
+            }}>
+              {[
+                { label: '텍스트', type: 'text' },
+                { label: '이미지', type: 'image' },
+                { label: 'X 닫기', type: 'close' },
+              ].map((item) => (
+                <button
+                  key={item.type}
+                  onClick={() => { onAddElement(item.type, 'anchor'); setAnchorMenuOpen(false) }}
+                  style={{
+                    display: 'block', width: '100%', padding: '8px 14px', border: 'none',
+                    background: '#fff', fontSize: 12, color: '#333', cursor: 'pointer', textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => { (e.target as HTMLElement).style.background = '#f5f5f5' }}
+                  onMouseLeave={(e) => { (e.target as HTMLElement).style.background = '#fff' }}
+                >
+                  + {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {anchorEls.map((el) => renderRow(el))}
+          {anchorEls.length === 0 && <div style={{ padding: '8px 14px', fontSize: 11, color: '#ccc' }}>앵커 요소 없음</div>}
+        </div>
         {elements.length === 0 && <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: '#bbb' }}>요소가 없습니다</div>}
       </div>
     </div>

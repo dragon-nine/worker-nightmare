@@ -16,13 +16,8 @@ export default function Toolbar({ onAddElement, onOpenAssetPicker, onAutoFit }: 
       <div style={{ width: 1, height: 24, background: '#e8e8e8', margin: '0 8px' }} />
       <div style={{ fontSize: 12, color: '#999', display: 'flex', alignItems: 'center', marginRight: 4 }}>컴포넌트</div>
       <ToolBtn label="토글" onClick={() => onAddElement('toggle', 'group')} />
-      <ToolBtn label="X 닫기" onClick={() => onAddElement('close', 'anchor')} />
       <ToolBtn label="게이지" onClick={() => onAddElement('gauge', 'group')} />
       <ToolBtn label="원형 버튼" onClick={() => onAddElement('circle-btn', 'group')} />
-      <div style={{ width: 1, height: 24, background: '#e8e8e8', margin: '0 8px' }} />
-      <div style={{ fontSize: 12, color: '#999', display: 'flex', alignItems: 'center', marginRight: 4 }}>앵커</div>
-      <ToolBtn label="텍스트" onClick={() => onAddElement('text', 'anchor')} />
-      <ToolBtn label="이미지" onClick={() => onAddElement('image', 'anchor')} />
       <div style={{ width: 1, height: 24, background: '#e8e8e8', margin: '0 8px' }} />
       <ToolBtn label="자동 맞춤" onClick={onAutoFit} secondary />
     </div>

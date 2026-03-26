@@ -14,9 +14,10 @@ interface EditorState {
   elements: LayoutElement[]
   groupVAlign: 'center' | 'top'
   padding: { top: number; right: number; bottom: number; left: number }
-  bgType: 'transparent' | 'solid' | 'gradient'
+  bgType: 'transparent' | 'solid' | 'gradient' | 'image'
   bgColor: string
   bgGradient: string
+  bgAssetKey: string
   selectedId: string | null
   imageSizes: Record<string, { w: number; h: number }>
   dirty: boolean
@@ -38,6 +39,7 @@ export function useLayoutEditor(gameId: string) {
     bgType: 'solid',
     bgColor: '#000000',
     bgGradient: 'Wine → Black',
+    bgAssetKey: '',
     selectedId: null,
     imageSizes: {},
     dirty: false,
@@ -94,6 +96,7 @@ export function useLayoutEditor(gameId: string) {
           bgType: layout.bgType || 'solid',
           bgColor: layout.bgColor || '#000000',
           bgGradient: layout.bgGradient || 'Wine → Black',
+          bgAssetKey: layout.bgAssetKey || '',
           imageSizes: sizes,
           loading: false,
           dirty: false,
@@ -257,6 +260,7 @@ export function useLayoutEditor(gameId: string) {
         bgType: state.bgType,
         bgColor: state.bgColor,
         bgGradient: state.bgGradient,
+        bgAssetKey: state.bgAssetKey || undefined,
       }
       const blob = new Blob([JSON.stringify(layout, null, 2)], { type: 'application/json' })
       const file = new File([blob], `${state.screenKey}.json`, { type: 'application/json' })
@@ -389,7 +393,7 @@ export function useLayoutEditor(gameId: string) {
   }, [])
 
   // Update bg
-  const updateBg = useCallback((patch: Partial<Pick<EditorState, 'bgType' | 'bgColor' | 'bgGradient'>>) => {
+  const updateBg = useCallback((patch: Partial<Pick<EditorState, 'bgType' | 'bgColor' | 'bgGradient' | 'bgAssetKey'>>) => {
     setState((prev) => ({ ...prev, ...patch, dirty: true }))
   }, [])
 

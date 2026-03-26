@@ -59,7 +59,7 @@ export interface ScreenLayout {
   elements: LayoutElement[]
   groupVAlign?: 'center' | 'top'
   padding?: { top: number; right: number; bottom: number; left: number }
-  bgType?: 'transparent' | 'solid' | 'gradient'
+  bgType?: 'transparent' | 'solid' | 'gradient' | 'image'
   bgColor?: string
   bgGradient?: string
   bgAssetKey?: string
