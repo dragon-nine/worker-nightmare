@@ -20,6 +20,8 @@ interface Props {
 const QUOTES_KEY = (gameId: string) => `${gameId}/content/quotes.json`
 const CHALLENGE_KEY = (gameId: string) => `${gameId}/content/challenge-quotes.json`
 
+type ContentTabId = 'gameover' | 'challenge'
+
 /* ─── 게임오버 멘트 섹션 ─── */
 
 function GameOverSection({ gameId, onBanner }: { gameId: string; onBanner: Props['onBanner'] }) {
@@ -91,9 +93,8 @@ function GameOverSection({ gameId, onBanner }: { gameId: string; onBanner: Props
   }
 
   return (
-    <div className="card">
+    <>
       <div className="category-header">
-        <div className="card-title" style={{ marginBottom: 0 }}>게임오버 멘트</div>
         <span className="section-count">{quotes.length}개</span>
         <button className="category-add-btn" onClick={handleStartAdd} title="추가">+</button>
       </div>
@@ -149,7 +150,7 @@ function GameOverSection({ gameId, onBanner }: { gameId: string; onBanner: Props
           </div>
         ))}
       </div>
-    </div>
+    </>
   )
 }
 
@@ -230,9 +231,8 @@ function ChallengeSection({ gameId, onBanner }: { gameId: string; onBanner: Prop
   const recordCount = quotes.filter((q) => q.type === 'record').length
 
   return (
-    <div className="card">
+    <>
       <div className="category-header">
-        <div className="card-title" style={{ marginBottom: 0 }}>도전장 멘트</div>
         <span className="section-count">{quotes.length}개</span>
         <button className="category-add-btn" onClick={handleStartAdd} title="추가">+</button>
       </div>
@@ -318,19 +318,42 @@ function ChallengeSection({ gameId, onBanner }: { gameId: string; onBanner: Prop
           )
         })}
       </div>
-    </div>
+    </>
   )
 }
 
 /* ─── 메인 탭 ─── */
 
+const TABS: { id: ContentTabId; label: string }[] = [
+  { id: 'gameover', label: '게임오버 멘트' },
+  { id: 'challenge', label: '도전장 멘트' },
+]
+
 export default function ContentTab({ gameId, gameName, onBanner }: Props) {
+  const [activeTab, setActiveTab] = useState<ContentTabId>('gameover')
+
   return (
     <div>
       <h1 className="page-title">콘텐츠 관리</h1>
       <p className="page-subtitle">{gameName} — 게임 내 텍스트 콘텐츠</p>
-      <GameOverSection gameId={gameId} onBanner={onBanner} />
-      <ChallengeSection gameId={gameId} onBanner={onBanner} />
+
+      {/* 탭 바 */}
+      <div className="content-tab-bar">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`content-tab-btn${activeTab === t.id ? ' active' : ''}`}
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="card">
+        {activeTab === 'gameover' && <GameOverSection gameId={gameId} onBanner={onBanner} />}
+        {activeTab === 'challenge' && <ChallengeSection gameId={gameId} onBanner={onBanner} />}
+      </div>
     </div>
   )
 }

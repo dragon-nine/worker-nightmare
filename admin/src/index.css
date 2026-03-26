@@ -2065,6 +2065,31 @@ body {
   cursor: pointer;
 }
 
+/* 콘텐츠 관리 — 탭 바 */
+.content-tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 16px;
+}
+.content-tab-btn {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.content-tab-btn.active {
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
 /* 도전장 멘트 — 필터 버튼 */
 .ct-filter,
 .ct-filter-active {
