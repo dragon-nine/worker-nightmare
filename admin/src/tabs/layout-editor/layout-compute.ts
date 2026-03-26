@@ -57,7 +57,7 @@ function calcContainerHeight(
 
     let rowH = 0
     for (const c of row) {
-      if ((c.type === 'card' || c.type === 'modal') && !c.heightPx) {
+      if (c.type === 'card' || c.type === 'modal') {
         // 재귀: 중첩된 카드/모달
         rowH = Math.max(rowH, calcContainerHeight(c, allElements, imageSizes, scale))
       } else if (c.type === 'image' && imageSizes[c.id]) {
@@ -124,7 +124,7 @@ export function computePreviewLayout(
     let maxH = 0
     for (const el of rowEls) {
       const elW = resolveElWidth(el, n)
-      if ((el.type === 'card' || el.type === 'modal') && !el.heightPx) {
+      if (el.type === 'card' || el.type === 'modal') {
         maxH = Math.max(maxH, calcContainerHeight(el, allElements, imageSizes, scale))
       } else if (el.type === 'image' && imageSizes[el.id]) {
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
