@@ -178,18 +178,23 @@ export default function PhoneCanvasElement({ el, pos, scale, selected, assetUrl,
     const color = textStyle?.color || '#ffffff'
     return (
       <div style={{
-        fontFamily: font.primary, fontSize, fontWeight: 700,
-        color: textStyle?.gradientColors ? undefined : color,
-        WebkitTextStroke: textStyle?.strokeWidth ? `${textStyle.strokeWidth * scale}px ${textStyle.strokeColor || '#000'}` : undefined,
-        paintOrder: 'stroke fill',
-        textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.4,
-        ...(textStyle?.gradientColors ? {
-          background: `linear-gradient(to bottom, ${textStyle.gradientColors[0]}, ${textStyle.gradientColors[1]})`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        } : {}),
+        width: '100%', height: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {el.label || el.id}
+        <div style={{
+          fontFamily: font.primary, fontSize, fontWeight: 700,
+          color: textStyle?.gradientColors ? undefined : color,
+          WebkitTextStroke: textStyle?.strokeWidth ? `${textStyle.strokeWidth * scale}px ${textStyle.strokeColor || '#000'}` : undefined,
+          paintOrder: 'stroke fill',
+          textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.4,
+          ...(textStyle?.gradientColors ? {
+            background: `linear-gradient(to bottom, ${textStyle.gradientColors[0]}, ${textStyle.gradientColors[1]})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          } : {}),
+        }}>
+          {el.label || el.id}
+        </div>
       </div>
     )
   }

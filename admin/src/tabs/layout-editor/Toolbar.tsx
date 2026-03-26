@@ -1,42 +1,88 @@
+import { useState, useRef, useEffect } from 'react'
+
 interface Props {
   onAddElement: (type: string, positioning: 'group' | 'anchor') => void
   onOpenAssetPicker: () => void
   onAutoFit: () => void
 }
 
-export default function Toolbar({ onAddElement, onOpenAssetPicker, onAutoFit }: Props) {
-  return (
-    <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-      <div style={{ fontSize: 12, color: '#999', display: 'flex', alignItems: 'center', marginRight: 4 }}>그룹</div>
-      <ToolBtn label="텍스트" onClick={() => onAddElement('text', 'group')} />
-      <ToolBtn label="이미지" onClick={onOpenAssetPicker} />
-      <ToolBtn label="버튼" onClick={() => onAddElement('button', 'group')} />
-      <ToolBtn label="카드" onClick={() => onAddElement('card', 'group')} />
-      <ToolBtn label="모달" onClick={() => onAddElement('modal', 'group')} />
-      <div style={{ width: 1, height: 24, background: '#e8e8e8', margin: '0 8px' }} />
-      <div style={{ fontSize: 12, color: '#999', display: 'flex', alignItems: 'center', marginRight: 4 }}>컴포넌트</div>
-      <ToolBtn label="토글" onClick={() => onAddElement('toggle', 'group')} />
-      <ToolBtn label="게이지" onClick={() => onAddElement('gauge', 'group')} />
-      <ToolBtn label="원형 버튼" onClick={() => onAddElement('circle-btn', 'group')} />
-      <div style={{ width: 1, height: 24, background: '#e8e8e8', margin: '0 8px' }} />
-      <ToolBtn label="자동 맞춤" onClick={onAutoFit} secondary />
-    </div>
-  )
-}
+const ITEMS = [
+  { label: '텍스트', type: 'text' },
+  { label: '이미지', type: 'image' },
+  { label: '버튼', type: 'button' },
+  { label: '카드', type: 'card' },
+  { label: '모달', type: 'modal' },
+  { label: '토글', type: 'toggle' },
+  { label: '게이지', type: 'gauge' },
+  { label: '원형 버튼', type: 'circle-btn' },
+]
 
-function ToolBtn({ label, onClick, secondary }: { label: string; onClick: () => void; secondary?: boolean }) {
+export default function Toolbar({ onAddElement, onOpenAssetPicker, onAutoFit }: Props) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleSelect = (type: string) => {
+    if (type === 'image') onOpenAssetPicker()
+    else onAddElement(type, 'group')
+    setOpen(false)
+  }
+
   return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '5px 12px', borderRadius: 6,
-        border: '1px solid #e8e8e8',
-        background: secondary ? '#f5f5f5' : '#fff',
-        color: secondary ? '#999' : '#333',
-        fontSize: 12, fontWeight: 500, cursor: 'pointer',
-      }}
-    >
-      {secondary ? label : `+ ${label}`}
-    </button>
+    <div style={{ display: 'flex', gap: 8, marginBottom: 20, alignItems: 'center' }}>
+      <div ref={ref} style={{ position: 'relative' }}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            padding: '6px 14px', borderRadius: 8,
+            border: '1px solid #ddd', background: '#111', color: '#fff',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          + 요소 추가
+        </button>
+        {open && (
+          <div style={{
+            position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 20,
+            background: '#fff', border: '1px solid #e0e0e0', borderRadius: 10,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 140,
+          }}>
+            {ITEMS.map((item) => (
+              <button
+                key={item.type}
+                onClick={() => handleSelect(item.type)}
+                style={{
+                  display: 'block', width: '100%', padding: '9px 16px', border: 'none',
+                  background: '#fff', fontSize: 13, color: '#333', cursor: 'pointer', textAlign: 'left',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#f5f5f5' }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#fff' }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <button
+        onClick={onAutoFit}
+        style={{
+          padding: '6px 14px', borderRadius: 8,
+          border: '1px solid #e8e8e8', background: '#f5f5f5', color: '#999',
+          fontSize: 12, fontWeight: 500, cursor: 'pointer',
+        }}
+      >
+        자동 맞춤
+      </button>
+    </div>
   )
 }

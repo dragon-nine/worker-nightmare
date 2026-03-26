@@ -85,7 +85,7 @@ export function computeLayout(
   excludeIds: string[] = [],
   groupVAlign: 'center' | 'top' = 'center',
 ): ComputedPosition[] {
-  const scale = screenW / DESIGN_W
+  const widthScale = screenW / DESIGN_W
   const results: ComputedPosition[] = []
   const excluded = new Set(excludeIds)
 
@@ -102,32 +102,39 @@ export function computeLayout(
   }
   const rowOrders = [...rowMap.keys()].sort((a, b) => a - b)
 
-  // Compute row heights and total height
+  // 1차 패스: widthScale 기준으로 전체 높이 계산
   interface RowInfo { order: number; elements: GroupElement[]; height: number; gapPx: number }
-  const rows: RowInfo[] = []
 
-  for (let i = 0; i < rowOrders.length; i++) {
-    const order = rowOrders[i]
-    const rowEls = rowMap.get(order)!
-    let maxH = 0
-    const gapPx = rowEls[0].gapPx
-
-    for (const el of rowEls) {
-      const elW = el.widthPx * scale
-      let elH = 0
-      if (el.type === 'image') {
-        const size = getImageSize(el.id)
-        if (size) elH = size.h * (elW / size.w)
-      } else {
-        // 텍스트: getTextSize 콜백 결과 또는 textStyle에서 자동 계산
-        const size = getTextSize?.(el.id)
-        elH = size ? size.h : calcTextHeight(el, scale)
+  function computeRows(s: number): RowInfo[] {
+    const r: RowInfo[] = []
+    for (let i = 0; i < rowOrders.length; i++) {
+      const order = rowOrders[i]
+      const rowEls = rowMap.get(order)!
+      let maxH = 0
+      const gapPx = rowEls[0].gapPx
+      for (const el of rowEls) {
+        const elW = el.widthPx * s
+        let elH = 0
+        if (el.type === 'image') {
+          const size = getImageSize(el.id)
+          if (size) elH = size.h * (elW / size.w)
+        } else {
+          const size = getTextSize?.(el.id)
+          elH = size ? size.h : calcTextHeight(el, s)
+        }
+        maxH = Math.max(maxH, elH)
       }
-      maxH = Math.max(maxH, elH)
+      r.push({ order, elements: rowEls, height: maxH, gapPx })
     }
-
-    rows.push({ order, elements: rowEls, height: maxH, gapPx })
+    return r
   }
+
+  // 세로 오버플로우 보정: 전체 높이가 화면을 넘으면 scale 축소
+  const testRows = computeRows(widthScale)
+  const testTotalH = testRows.reduce((sum, r, i) => sum + r.height + (i > 0 ? r.gapPx * widthScale : 0), 0)
+  const scale = testTotalH > screenH ? Math.min(widthScale, screenH / (testTotalH / widthScale)) : widthScale
+
+  const rows = scale === widthScale ? testRows : computeRows(scale)
 
   const firstGap = rows.length > 0 ? rows[0].gapPx * scale : 0
   const totalH = rows.reduce((sum, r, i) => sum + r.height + (i > 0 ? r.gapPx * scale : 0), 0)
