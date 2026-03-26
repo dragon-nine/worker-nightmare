@@ -117,6 +117,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
       <Toolbar
         onAddElement={editor.addElement}
         onOpenAssetPicker={handleOpenAssetPicker}
+        onResetGaps={editor.resetGaps}
       />
 
       {editor.loading ? (

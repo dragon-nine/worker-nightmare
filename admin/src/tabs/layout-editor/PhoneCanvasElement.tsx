@@ -112,6 +112,7 @@ export default function PhoneCanvasElement({ el, pos, scale, selected, assetUrl,
   return (
     <div
       onPointerDown={onPointerDown}
+      onClick={(e) => e.stopPropagation()}
       style={{
         position: 'absolute',
         left, top,

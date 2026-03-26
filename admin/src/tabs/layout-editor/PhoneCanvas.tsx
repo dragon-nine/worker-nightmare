@@ -108,7 +108,7 @@ export default function PhoneCanvas({
       {/* Screen */}
       <div
         ref={canvasRef}
-        onClick={() => onSelect(null)}
+        onClick={(e) => { if (e.target === e.currentTarget) onSelect(null) }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         style={{

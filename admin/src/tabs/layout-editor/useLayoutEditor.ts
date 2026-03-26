@@ -235,6 +235,17 @@ export function useLayoutEditor(gameId: string) {
     loadScreen(key)
   }, [state.screens, loadScreen])
 
+  // Reset all gaps
+  const resetGaps = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      dirty: true,
+      elements: prev.elements.map((el) =>
+        el.positioning === 'group' ? { ...el, gapPx: DEFAULT_GAP } : el,
+      ) as LayoutElement[],
+    }))
+  }, [])
+
   // Update bg
   const updateBg = useCallback((patch: Partial<Pick<EditorState, 'bgType' | 'bgColor' | 'bgGradient'>>) => {
     setState((prev) => ({ ...prev, ...patch, dirty: true }))
@@ -251,6 +262,7 @@ export function useLayoutEditor(gameId: string) {
     setElementImage,
     save,
     createScreen,
+    resetGaps,
     updateBg,
   }
 }
