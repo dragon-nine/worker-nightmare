@@ -48,12 +48,14 @@ export const font = {
  * 모든 텍스트는 이 스케일 안에서 선택. 용도는 매핑으로 관리.
  */
 export const typeScale = {
-  '2xl': { fontSize: 72, fontWeight: 900, stroke: 6 },
-  xl: { fontSize: 56, fontWeight: 900, stroke: 6 },
-  lg: { fontSize: 28, fontWeight: 900, stroke: 3 },
-  md: { fontSize: 22, fontWeight: 700, stroke: 2.5 },
-  sm: { fontSize: 16, fontWeight: 700, stroke: 0 },
-  xs: { fontSize: 13, fontWeight: 700, stroke: 0 },
+  '3xl': { fontSize: 72, fontWeight: 900, stroke: 6 },
+  '2xl': { fontSize: 56, fontWeight: 900, stroke: 6 },
+  xl: { fontSize: 44, fontWeight: 900, stroke: 4 },
+  lg: { fontSize: 36, fontWeight: 900, stroke: 3 },
+  md: { fontSize: 28, fontWeight: 900, stroke: 3 },
+  sm: { fontSize: 22, fontWeight: 700, stroke: 2 },
+  xs: { fontSize: 16, fontWeight: 700, stroke: 0 },
+  '2xs': { fontSize: 13, fontWeight: 700, stroke: 0 },
 } as const
 
 /** 버튼 스타일 기본값 */
@@ -92,10 +94,12 @@ export type GradientKey = keyof typeof gradients
 
 /** 용도별 스케일 매핑 */
 export const typeUsage: Record<string, { scale: keyof typeof typeScale; usages: string[] }> = {
-  '2xl': { scale: '2xl', usages: ['게임 점수 (HUD, 게임오버, 도전장)'] },
-  xl: { scale: 'xl', usages: ['메인 타이틀 (직장인 잔혹사)'] },
-  lg: { scale: 'lg', usages: ['홈으로 가기', '광고보고 부활', '퇴근하기'] },
-  md: { scale: 'md', usages: ['도전장 보내기', '랭킹 보기', '서브타이틀'] },
-  sm: { scale: 'sm', usages: ['카카오톡 CTA', '게임오버 멘트'] },
-  xs: { scale: 'xs', usages: ['가이드 텍스트', '라벨', '최고기록'] },
+  '3xl': { scale: '3xl', usages: ['게임 점수'] },
+  '2xl': { scale: '2xl', usages: ['메인 타이틀'] },
+  xl: { scale: 'xl', usages: ['서브 타이틀, 강조 텍스트'] },
+  lg: { scale: 'lg', usages: ['대형 버튼'] },
+  md: { scale: 'md', usages: ['중형 버튼'] },
+  sm: { scale: 'sm', usages: ['소형 버튼, 서브타이틀'] },
+  xs: { scale: 'xs', usages: ['CTA, 멘트'] },
+  '2xs': { scale: '2xs', usages: ['가이드, 라벨'] },
 }

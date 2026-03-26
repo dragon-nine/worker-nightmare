@@ -85,9 +85,9 @@ export const DEFAULT_SPEC: DesignSpec = {
     paddingY: 26,
     gap: 16,
     bgColor: '#2a292e',
-    scoreScale: '2xl',
-    messageScale: 'sm',
-    ctaScale: 'sm',
+    scoreScale: '3xl',
+    messageScale: 'xs',
+    ctaScale: 'xs',
   },
 }
 

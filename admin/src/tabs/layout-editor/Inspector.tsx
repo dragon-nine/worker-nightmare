@@ -134,29 +134,64 @@ export default function Inspector({
       )}
 
       {/* Text style */}
-      {el.type === 'text' && (
-        <Section title="텍스트 스타일">
-          <Field label="Type Scale">
-            <select
-              value={el.textStyle?.scaleKey || ''}
-              onChange={(e) => {
-                const key = e.target.value as TypeScaleKey
-                const ts = typeScale[key]
-                update({ textStyle: { ...el.textStyle, scaleKey: key, fontSizePx: ts.fontSize, strokeWidth: ts.stroke } })
-              }}
-              style={selectStyle}
-            >
-              <option value="">커스텀</option>
-              {SCALE_KEYS.map((k) => <option key={k} value={k}>{k} — {typeScale[k].fontSize}px</option>)}
-            </select>
-          </Field>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Field label="크기"><NumInput value={el.textStyle?.fontSizePx || 14} onChange={(v) => update({ textStyle: { ...el.textStyle, fontSizePx: v } })} /></Field>
-            <Field label="Stroke"><NumInput value={el.textStyle?.strokeWidth || 0} onChange={(v) => update({ textStyle: { ...el.textStyle, strokeWidth: v } })} /></Field>
-          </div>
-          <Field label="색상"><ColorSelect value={el.textStyle?.color || '#ffffff'} onChange={(v) => update({ textStyle: { ...el.textStyle, color: v } })} /></Field>
-        </Section>
-      )}
+      {el.type === 'text' && (() => {
+        const ts = el.textStyle || {}
+        const scaleKey = ts.scaleKey || 'sm'
+        const scaleVal = typeScale[scaleKey]
+        const hasStroke = (ts.strokeWidth ?? scaleVal.stroke) > 0
+        const hasGradient = !!ts.gradientColors
+        return (
+          <Section title="텍스트 스타일">
+            <Field label="Type Scale">
+              <select
+                value={scaleKey}
+                onChange={(e) => {
+                  const key = e.target.value as TypeScaleKey
+                  const s = typeScale[key]
+                  update({ textStyle: { ...ts, scaleKey: key, fontSizePx: s.fontSize, strokeWidth: hasStroke ? s.stroke : 0 } })
+                }}
+                style={selectStyle}
+              >
+                {SCALE_KEYS.map((k) => <option key={k} value={k}>{k} — {typeScale[k].fontSize}px</option>)}
+              </select>
+            </Field>
+            {/* Color: 단색 or 그라데이션 */}
+            <Field label="색상">
+              <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                <MiniToggle active={!hasGradient} label="단색" onClick={() => update({ textStyle: { ...ts, color: ts.color || '#ffffff', gradientColors: undefined } })} />
+                <MiniToggle active={hasGradient} label="그라데이션" onClick={() => {
+                  const g = gradients[GRADIENT_KEYS[0]]
+                  update({ textStyle: { ...ts, gradientColors: [g.from, g.to] } })
+                }} />
+              </div>
+              {hasGradient ? (
+                <select
+                  value={GRADIENT_KEYS.find((k) => {
+                    const g = gradients[k]
+                    return ts.gradientColors?.[0] === g.from && ts.gradientColors?.[1] === g.to
+                  }) || GRADIENT_KEYS[0]}
+                  onChange={(e) => {
+                    const g = gradients[e.target.value as GradientKey]
+                    update({ textStyle: { ...ts, gradientColors: [g.from, g.to] } })
+                  }}
+                  style={selectStyle}
+                >
+                  {GRADIENT_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
+                </select>
+              ) : (
+                <ColorSelect value={ts.color || '#ffffff'} onChange={(v) => update({ textStyle: { ...ts, color: v } })} />
+              )}
+            </Field>
+            {/* Stroke toggle */}
+            <Field label="외곽선 (Stroke)">
+              <div style={{ display: 'flex', gap: 6 }}>
+                <MiniToggle active={!hasStroke} label="없음" onClick={() => update({ textStyle: { ...ts, strokeWidth: 0 } })} />
+                <MiniToggle active={hasStroke} label={`적용 (${scaleVal.stroke}px)`} onClick={() => update({ textStyle: { ...ts, strokeWidth: scaleVal.stroke } })} />
+              </div>
+            </Field>
+          </Section>
+        )
+      })()}
 
       {/* Button style */}
       {el.type === 'button' && (
@@ -268,6 +303,20 @@ function ActionBtn({ label, onClick, danger }: { label: string; onClick: () => v
       padding: '3px 8px', borderRadius: 4, border: '1px solid #eee',
       background: danger ? '#fff5f5' : '#fff', color: danger ? '#e53935' : '#555',
       fontSize: 11, cursor: 'pointer', fontWeight: 500,
+    }}>
+      {label}
+    </button>
+  )
+}
+
+function MiniToggle({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: '4px 10px', borderRadius: 6,
+      border: active ? '1px solid #111' : '1px solid #ddd',
+      background: active ? '#111' : '#fff',
+      color: active ? '#fff' : '#999',
+      fontSize: 11, fontWeight: 600, cursor: 'pointer',
     }}>
       {label}
     </button>
