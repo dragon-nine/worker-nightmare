@@ -10,6 +10,7 @@ interface Props {
   elements: LayoutElement[]
   imageSizes: Record<string, { w: number; h: number }>
   groupVAlign: 'center' | 'top'
+  padding: { top: number; right: number; bottom: number; left: number }
   bgCss: string
   screenKey: string
   gameId: string
@@ -19,7 +20,7 @@ interface Props {
 }
 
 export default function PhoneCanvas({
-  elements, imageSizes, groupVAlign, bgCss, screenKey, gameId,
+  elements, imageSizes, groupVAlign, padding, bgCss, screenKey, gameId,
   selectedId, onSelect, onUpdate,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -28,7 +29,7 @@ export default function PhoneCanvas({
     origVal: number; origVal2?: number; field: string; field2?: string
   } | null>(null)
 
-  const positions = computePreviewLayout(elements, PHONE_PREVIEW_W, PHONE_PREVIEW_H, imageSizes, groupVAlign)
+  const positions = computePreviewLayout(elements, PHONE_PREVIEW_W, PHONE_PREVIEW_H, imageSizes, groupVAlign, padding)
   const scale = PHONE_PREVIEW_W / DESIGN_W
 
   const getAssetUrl = (el: LayoutElement) => {
@@ -109,6 +110,8 @@ export default function PhoneCanvas({
         flexShrink: 0,
       }}
     >
+        {/* Padding guides */}
+        <div style={{ position: 'absolute', top: padding.top * scale, left: padding.left * scale, right: padding.right * scale, bottom: padding.bottom * scale, border: '1px dashed rgba(255,255,255,0.15)', pointerEvents: 'none', borderRadius: 2 }} />
         {positions.map((pos) => {
           const el = elements.find((x) => x.id === pos.id)
           if (!el || el.visible === false) return null

@@ -23,6 +23,7 @@ export interface ButtonStyle {
 interface LayoutElementBase {
   id: string
   type: 'text' | 'image' | 'button'
+  widthMode?: 'full' | 'fixed'
   widthPx: number
   heightPx?: number
   label?: string
@@ -54,6 +55,7 @@ export interface ScreenLayout {
   designWidth: number
   elements: LayoutElement[]
   groupVAlign?: 'center' | 'top'
+  padding?: { top: number; right: number; bottom: number; left: number }
   bgType?: 'transparent' | 'solid' | 'gradient'
   bgColor?: string
   bgGradient?: string

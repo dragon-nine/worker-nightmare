@@ -129,6 +129,7 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
             elements={editor.elements}
             imageSizes={editor.imageSizes}
             groupVAlign={editor.groupVAlign}
+            padding={editor.padding}
             bgCss={computeBgCss(editor.bgType, editor.bgColor, editor.bgGradient)}
             screenKey={editor.screenKey}
             gameId={gameId}
@@ -144,6 +145,8 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
               onUpdate={editor.updateElement}
               onRemove={editor.removeElement}
               onDuplicate={editor.duplicateElement}
+              padding={editor.padding}
+              onPaddingUpdate={editor.updatePadding}
               bgType={editor.bgType}
               bgColor={editor.bgColor}
               bgGradient={editor.bgGradient}

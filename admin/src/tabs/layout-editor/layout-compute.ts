@@ -34,9 +34,12 @@ export function computePreviewLayout(
   screenH: number,
   imageSizes: Record<string, { w: number; h: number }>,
   groupVAlign: 'center' | 'top' = 'center',
+  padding = { top: 60, right: 24, bottom: 40, left: 24 },
 ): ComputedPos[] {
   const scale = screenW / DESIGN_W
   const results: ComputedPos[] = []
+  const contentW = DESIGN_W - padding.left - padding.right
+  const contentLeft = padding.left * scale
 
   // Group elements
   const groupEls = elements.filter(
@@ -53,12 +56,21 @@ export function computePreviewLayout(
   interface RowInfo { elements: GroupElement[]; height: number; gapPx: number }
   const rows: RowInfo[] = []
 
+  /** full 모드 요소의 너비 계산 — 같은 행에 여러 개면 균등 분할 */
+  function resolveElWidth(el: GroupElement, rowCount: number): number {
+    if (el.widthMode === 'fixed') return el.widthPx * scale
+    if (rowCount <= 1) return contentW * scale
+    const hGap = (el.hGapPx ?? 8)
+    return (contentW - hGap * (rowCount - 1)) / rowCount * scale
+  }
+
   for (const order of rowOrders) {
     const rowEls = rowMap.get(order)!
     const gapPx = rowEls[0].gapPx
+    const n = rowEls.length
     let maxH = 0
     for (const el of rowEls) {
-      const elW = el.widthPx * scale
+      const elW = resolveElWidth(el, n)
       if (el.type === 'image' && imageSizes[el.id]) {
         maxH = Math.max(maxH, imageSizes[el.id].h * (elW / imageSizes[el.id].w))
       } else if (el.heightPx) {
@@ -80,6 +92,7 @@ export function computePreviewLayout(
     const row = rows[ri]
     if (ri > 0) curY += row.gapPx * scale
     const cy = curY + row.height / 2
+    const n = row.elements.length
 
     const calcElH = (el: LayoutElement, elW: number) => {
       if (el.type === 'image' && imageSizes[el.id]) return imageSizes[el.id].h * (elW / imageSizes[el.id].w)
@@ -88,17 +101,16 @@ export function computePreviewLayout(
       return row.height
     }
 
-    if (row.elements.length === 1) {
+    if (n === 1) {
       const el = row.elements[0]
-      const elW = el.widthPx * scale
-      results.push({ id: el.id, x: screenW / 2, y: cy, w: elW, h: calcElH(el, elW), originX: 0.5, originY: 0.5 })
+      const elW = resolveElWidth(el, 1)
+      const cx = el.widthMode === 'fixed' ? screenW / 2 : contentLeft + contentW * scale / 2
+      results.push({ id: el.id, x: cx, y: cy, w: elW, h: calcElH(el, elW), originX: 0.5, originY: 0.5 })
     } else {
-      const totalRowW = row.elements.reduce((s, el) => s + el.widthPx * scale, 0)
       const hGap = (row.elements[0].hGapPx ?? 8) * scale
-      const totalWithGaps = totalRowW + hGap * (row.elements.length - 1)
-      let cx = (screenW - totalWithGaps) / 2
+      let cx = contentLeft
       for (const el of row.elements) {
-        const elW = el.widthPx * scale
+        const elW = resolveElWidth(el, n)
         results.push({ id: el.id, x: cx + elW / 2, y: cy, w: elW, h: calcElH(el, elW), originX: 0.5, originY: 0.5 })
         cx += elW + hGap
       }

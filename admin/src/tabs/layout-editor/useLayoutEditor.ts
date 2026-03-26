@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import type { LayoutElement, ScreenLayout, LayoutIndex, GroupElement, AnchorElement } from './types'
-import { R2_LAYOUT_INDEX_KEY, DESIGN_W, DEFAULT_SCREENS, DEFAULT_ELEMENT_WIDTH, DEFAULT_GAP } from './constants'
+import { R2_LAYOUT_INDEX_KEY, DESIGN_W, DEFAULT_SCREENS, DEFAULT_GAP, DEFAULT_PADDING } from './constants'
 import { getJson, putJson, uploadBlob } from '../../api'
 
 const R2_PUBLIC = 'https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev'
@@ -12,6 +12,7 @@ interface EditorState {
   screens: LayoutIndex['screens']
   elements: LayoutElement[]
   groupVAlign: 'center' | 'top'
+  padding: { top: number; right: number; bottom: number; left: number }
   bgType: 'transparent' | 'solid' | 'gradient'
   bgColor: string
   bgGradient: string
@@ -32,6 +33,7 @@ export function useLayoutEditor(gameId: string) {
     screens: [],
     elements: [],
     groupVAlign: 'center',
+    padding: { ...DEFAULT_PADDING },
     bgType: 'solid',
     bgColor: '#000000',
     bgGradient: 'Wine → Black',
@@ -80,6 +82,7 @@ export function useLayoutEditor(gameId: string) {
           ...prev,
           elements: layout.elements,
           groupVAlign: layout.groupVAlign || 'center',
+          padding: layout.padding || { ...DEFAULT_PADDING },
           bgType: layout.bgType || 'solid',
           bgColor: layout.bgColor || '#000000',
           bgGradient: layout.bgGradient || 'Wine → Black',
@@ -123,9 +126,10 @@ export function useLayoutEditor(gameId: string) {
       .filter((e): e is GroupElement => e.positioning === 'group')
       .reduce((max, e) => Math.max(max, e.order), -1)
 
-    const w = type === 'image' ? 200 : DEFAULT_ELEMENT_WIDTH
+    const isFull = type !== 'image'
+    const w = isFull ? DESIGN_W - state.padding.left - state.padding.right : 200
 
-    const base = { id, type, widthPx: w, visible: true, locked: false }
+    const base = { id, type, widthMode: isFull ? 'full' as const : 'fixed' as const, widthPx: w, visible: true, locked: false }
 
     let el: LayoutElement
     if (positioning === 'group') {
@@ -206,6 +210,7 @@ export function useLayoutEditor(gameId: string) {
         designWidth: DESIGN_W,
         elements: state.elements,
         groupVAlign: state.groupVAlign,
+        padding: state.padding,
         bgType: state.bgType,
         bgColor: state.bgColor,
         bgGradient: state.bgGradient,
@@ -235,6 +240,11 @@ export function useLayoutEditor(gameId: string) {
     loadScreen(key)
   }, [state.screens, loadScreen])
 
+  // Update padding
+  const updatePadding = useCallback((patch: Partial<EditorState['padding']>) => {
+    setState((prev) => ({ ...prev, padding: { ...prev.padding, ...patch }, dirty: true }))
+  }, [])
+
   // Reset all gaps
   const resetGaps = useCallback(() => {
     setState((prev) => ({
@@ -263,6 +273,7 @@ export function useLayoutEditor(gameId: string) {
     save,
     createScreen,
     resetGaps,
+    updatePadding,
     updateBg,
   }
 }
