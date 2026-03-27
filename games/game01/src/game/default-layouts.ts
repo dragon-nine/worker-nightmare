@@ -41,4 +41,14 @@ export const DEFAULT_LAYOUTS: Record<string, ScreenLayout> = {
       { id: 'btn-forward', positioning: 'anchor', type: 'image', anchor: 'bottom-right', offsetX: 10, offsetY: 85, widthPx: 140 },
     ],
   },
+  'settings': {
+    screen: 'settings',
+    designWidth: DESIGN_W,
+    groupVAlign: 'top',
+    elements: [
+      { id: 'settings-title', positioning: 'group', type: 'text', order: 0, gapPx: 0, widthPx: 200, label: '설정', textStyle: { fontSizePx: 32, color: '#ffffff' } },
+      { id: 'bgm-toggle', positioning: 'group', type: 'text', order: 1, gapPx: 20, widthPx: 240, label: '음악 OFF', textStyle: { fontSizePx: 28, color: '#ffffff' } },
+      { id: 'sfx-toggle', positioning: 'group', type: 'text', order: 2, gapPx: 20, widthPx: 240, label: '효과음 OFF', textStyle: { fontSizePx: 28, color: '#ffffff' } },
+    ],
+  },
 }

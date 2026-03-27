@@ -39,6 +39,7 @@ export function useLayout(
     const loaded = await loadLayoutFull('game01', screen);
     const els = loaded.elements;
     const vAlign = loaded.groupVAlign;
+    const padding = loaded.padding;
     setElements(els);
     const base = import.meta.env.BASE_URL || '/';
 
@@ -59,6 +60,7 @@ export function useLayout(
       null,
       excludeIds,
       vAlign,
+      padding,
     );
 
     const map = new Map<string, ComputedPosition>();

@@ -9,7 +9,7 @@
 ├── scripts/        — 빌드/동기화 스크립트
 ├── games/game01/   — 직장인 잔혹사 (Phaser 3 + React 하이브리드)
 ├── vercel.json     — 라우팅 + 빌드 커맨드
-└── .claude/agents/ — 범용 에이전트 (게임 개발, admin, 배포, 에셋)
+└── 에이전트: 상위 DragonNine/.claude/agents/ 에 위치 (레포 밖)
 ```
 
 ## 빌드

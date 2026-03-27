@@ -1,57 +1,87 @@
 {
   "screen": "gameplay",
   "designWidth": 390,
-  "groupVAlign": "top",
   "elements": [
     {
-      "id": "gauge-bar",
-      "positioning": "group",
-      "type": "image",
-      "order": 0,
-      "gapPx": 15,
-      "widthPx": 315,
-      "hGapPx": 10
-    },
-    {
       "id": "btn-pause",
-      "positioning": "group",
       "type": "image",
-      "order": 0,
-      "gapPx": 15,
+      "widthMode": "fixed",
       "widthPx": 40,
-      "hGapPx": 10
-    },
-    {
-      "id": "scoreText",
-      "positioning": "group",
-      "type": "text",
-      "order": 1,
-      "gapPx": 8,
-      "widthPx": 390,
-      "textStyle": {
-        "fontSizePx": 90,
-        "color": "#ffffff",
-        "strokeColor": "#000000",
-        "strokeWidth": 5
-      }
-    },
-    {
-      "id": "btn-switch",
+      "visible": true,
+      "locked": false,
       "positioning": "anchor",
-      "type": "image",
-      "anchor": "bottom-left",
-      "offsetX": 15,
-      "offsetY": 15,
-      "widthPx": 140
+      "assetKey": "game01/ui/btn-pause.png",
+      "anchor": "top-right",
+      "offsetX": 22,
+      "offsetY": 19
     },
     {
       "id": "btn-forward",
-      "positioning": "anchor",
       "type": "image",
+      "widthMode": "fixed",
+      "widthPx": 150,
+      "visible": true,
+      "locked": false,
+      "positioning": "anchor",
+      "assetKey": "game01/ui/btn-forward.png",
       "anchor": "bottom-right",
-      "offsetX": 15,
-      "offsetY": 15,
-      "widthPx": 140
+      "offsetX": 0,
+      "offsetY": 0
+    },
+    {
+      "id": "btn-switch",
+      "type": "image",
+      "widthMode": "fixed",
+      "widthPx": 150,
+      "visible": true,
+      "locked": false,
+      "positioning": "anchor",
+      "assetKey": "game01/ui/btn-switch.png",
+      "anchor": "bottom-left",
+      "offsetX": 0,
+      "offsetY": 0
+    },
+    {
+      "id": "gauge-bar",
+      "type": "image",
+      "widthMode": "fixed",
+      "widthPx": 300,
+      "visible": true,
+      "locked": false,
+      "positioning": "anchor",
+      "assetKey": "game01/ui/gauge-full.png",
+      "anchor": "top-left",
+      "offsetX": 20,
+      "offsetY": 15
+    },
+    {
+      "id": "scoreText",
+      "type": "text",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "anchor",
+      "label": "score",
+      "textStyle": {
+        "fontSizePx": 76,
+        "color": "#ffffff",
+        "scaleKey": "3xl",
+        "strokeWidth": 6
+      },
+      "anchor": "top-left",
+      "offsetX": 24,
+      "offsetY": 60
     }
-  ]
+  ],
+  "groupVAlign": "center",
+  "padding": {
+    "top": 60,
+    "right": 24,
+    "bottom": 40,
+    "left": 24
+  },
+  "bgType": "solid",
+  "bgColor": "#000000",
+  "bgGradient": "Wine → Black"
 }

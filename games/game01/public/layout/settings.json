@@ -1,0 +1,162 @@
+{
+  "screen": "설정",
+  "designWidth": 390,
+  "elements": [
+    {
+      "id": "el-mn71q09r-yffj",
+      "type": "modal",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 0,
+      "gapPx": 0,
+      "heightPx": 480,
+      "label": "모달",
+      "innerPadding": {
+        "top": 55,
+        "right": 20,
+        "bottom": 40,
+        "left": 20
+      }
+    },
+    {
+      "id": "el-mn71q4mn-gm2y",
+      "type": "text",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 1,
+      "gapPx": 4,
+      "label": "설정",
+      "textStyle": {
+        "fontSizePx": 32,
+        "color": "#ffffff",
+        "scaleKey": "lg",
+        "strokeWidth": 0
+      },
+      "parentId": "el-mn71q09r-yffj"
+    },
+    {
+      "id": "el-mn71q5k2-lfjp",
+      "type": "card",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 2,
+      "gapPx": 4,
+      "heightPx": 300,
+      "label": "카드",
+      "innerPadding": {
+        "top": 40,
+        "right": 20,
+        "bottom": 40,
+        "left": 20
+      },
+      "parentId": "el-mn71q09r-yffj",
+      "buttonStyle": {
+        "styleType": "flat",
+        "bgColor": "#1a1a1f"
+      }
+    },
+    {
+      "id": "el-mn75wlue-m5il",
+      "type": "toggle",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 3,
+      "gapPx": 4,
+      "heightPx": 44,
+      "label": "토글",
+      "parentId": "el-mn71q5k2-lfjp"
+    },
+    {
+      "id": "el-mn75ws33-5bwz",
+      "type": "text",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 3,
+      "gapPx": 4,
+      "label": "음악 OFF",
+      "textStyle": {
+        "fontSizePx": 28,
+        "color": "#ffffff",
+        "scaleKey": "md",
+        "strokeWidth": 0
+      },
+      "parentId": "el-mn71q5k2-lfjp"
+    },
+    {
+      "id": "el-mn75xebg-5f1p",
+      "type": "toggle",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 4,
+      "gapPx": 4,
+      "heightPx": 44,
+      "label": "토글",
+      "parentId": "el-mn71q5k2-lfjp"
+    },
+    {
+      "id": "el-mn75xgke-bj91",
+      "type": "text",
+      "widthMode": "full",
+      "widthPx": 370,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 4,
+      "gapPx": 4,
+      "label": "효과음 OFF",
+      "textStyle": {
+        "fontSizePx": 28,
+        "color": "#ffffff",
+        "scaleKey": "md",
+        "strokeWidth": 0
+      },
+      "parentId": "el-mn71q5k2-lfjp"
+    },
+    {
+      "id": "el-mn8ippzv-z2qx",
+      "type": "text",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 5,
+      "gapPx": 10,
+      "label": "화면 터치 시 이전으로 이동",
+      "textStyle": {
+        "fontSizePx": 13,
+        "color": "#434750",
+        "scaleKey": "2xs",
+        "strokeWidth": 0
+      }
+    }
+  ],
+  "groupVAlign": "center",
+  "padding": {
+    "top": 80,
+    "right": 24,
+    "bottom": 80,
+    "left": 24
+  },
+  "bgType": "solid",
+  "bgColor": "#000000",
+  "bgGradient": "Wine → Black"
+}

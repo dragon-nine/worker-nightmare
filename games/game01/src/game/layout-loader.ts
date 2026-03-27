@@ -5,24 +5,30 @@ import { DEFAULT_LAYOUTS } from './default-layouts'
 import mainScreenLayout from '../../public/layout/main-screen.json'
 import gameOverLayout from '../../public/layout/game-over.json'
 import gameplayLayout from '../../public/layout/gameplay.json'
+import settingsLayout from '../../public/layout/settings.json'
+import pauseLayout from '../../public/layout/pause.json'
 
 const BUNDLED_LAYOUTS: Record<string, unknown> = {
   'main-screen': mainScreenLayout,
   'game-over': gameOverLayout,
   'gameplay': gameplayLayout,
+  'settings': settingsLayout,
+  'pause': pauseLayout,
 }
 
 interface LoadedLayout {
   elements: LayoutElement[]
   groupVAlign: 'center' | 'top'
+  padding: { top: number; right: number; bottom: number; left: number }
 }
 
 const layoutCache = new Map<string, LoadedLayout>()
 
-function parseLayout(data: ScreenLayout | { elements?: LayoutElement[]; groupVAlign?: string }): LoadedLayout {
+function parseLayout(data: ScreenLayout | { elements?: LayoutElement[]; groupVAlign?: string; padding?: { top: number; right: number; bottom: number; left: number } }): LoadedLayout {
   return {
     elements: data.elements || [],
-    groupVAlign: (data as ScreenLayout).groupVAlign === 'top' ? 'top' : 'center',
+    groupVAlign: (data as any).groupVAlign === 'top' ? 'top' : 'center',
+    padding: (data as any).padding || { top: 0, right: 0, bottom: 0, left: 0 },
   }
 }
 

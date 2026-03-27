@@ -7,47 +7,66 @@
       "positioning": "group",
       "type": "image",
       "order": 0,
-      "gapPx": 25,
-      "widthPx": 400
+      "gapPx": 0,
+      "widthPx": 342,
+      "widthMode": "fixed"
     },
     {
       "id": "main-char",
       "positioning": "group",
       "type": "image",
       "order": 1,
-      "gapPx": 22,
-      "widthPx": 175
+      "gapPx": 16,
+      "widthPx": 175,
+      "widthMode": "fixed"
     },
     {
       "id": "bestScore",
       "positioning": "group",
       "type": "text",
       "order": 2,
-      "gapPx": 37,
-      "widthPx": 200,
+      "gapPx": 16,
+      "widthPx": 342,
       "textStyle": {
         "fontSizePx": 22,
         "color": "#ffffff",
         "strokeColor": "#000000",
         "strokeWidth": 0
-      }
+      },
+      "widthMode": "full"
     },
     {
       "id": "main-btn",
       "positioning": "group",
       "type": "image",
       "order": 3,
-      "gapPx": -14,
-      "widthPx": 214
+      "gapPx": 16,
+      "widthPx": 214,
+      "widthMode": "fixed"
     },
     {
       "id": "btn-settings",
-      "positioning": "anchor",
       "type": "image",
+      "widthMode": "fixed",
+      "widthPx": 40,
+      "visible": true,
+      "locked": false,
+      "positioning": "anchor",
+      "assetKey": "game01/ui/btn-settings.png",
       "anchor": "top-right",
       "offsetX": 15,
-      "offsetY": 15,
-      "widthPx": 40
+      "offsetY": 15
     }
-  ]
+  ],
+  "groupVAlign": "center",
+  "padding": {
+    "top": 80,
+    "right": 24,
+    "bottom": 80,
+    "left": 24
+  },
+  "bgType": "image",
+  "bgColor": "#000000",
+  "bgGradient": "Wine → Black",
+  "bgAssetKey": "game01/main-screen/main-bg.png"
 }
