@@ -49,7 +49,7 @@
       "positioning": "group",
       "order": 2,
       "gapPx": 16,
-      "label": "부활 시 광고 없이\n바로 이어서 퇴근할 수 있어요",
+      "label": "광고 없이 바로 부활!\n퇴근길을 방해하지 않아요",
       "textStyle": {
         "fontSizePx": 22,
         "color": "#ffffff",
@@ -91,7 +91,7 @@
       "positioning": "group",
       "order": 4,
       "gapPx": 16,
-      "label": "구매하기",
+      "label": "1,900원으로 광고 제거",
       "buttonStyle": {
         "styleType": "flat",
         "scaleKey": "lg",
@@ -109,7 +109,7 @@
       "positioning": "group",
       "order": 5,
       "gapPx": 16,
-      "label": "v 부활시 광고 영구 제거",
+      "label": "✓ 부활 시 광고 영구 제거",
       "textStyle": {
         "fontSizePx": 20,
         "color": "#ffffff",
@@ -128,7 +128,7 @@
       "positioning": "group",
       "order": 6,
       "gapPx": 16,
-      "label": "v 부활시 광고 영구 제거",
+      "label": "✓ 한 번 구매로 평생 적용",
       "textStyle": {
         "fontSizePx": 20,
         "color": "#ffffff",
@@ -147,7 +147,7 @@
       "positioning": "group",
       "order": 7,
       "gapPx": 16,
-      "label": "v 부활시 광고 영구 제거",
+      "label": "✓ 쾌적한 퇴근길 보장",
       "textStyle": {
         "fontSizePx": 20,
         "color": "#ffffff",
