@@ -61,7 +61,16 @@ export class HUD {
     this.emitTimer();
   }
 
-  startTimer() { this.timerRunning = true; }
+  startTimer() {
+    const god = localStorage.getItem('godMode') === 'true';
+    if (god) {
+      this.timerRunning = false;
+      this.timeLeft = MAX_TIME;
+      this.emitTimer();
+      return;
+    }
+    this.timerRunning = true;
+  }
   stopTimer() { this.timerRunning = false; }
   isBgmMuted() { return this.bgmMuted; }
   isSfxMuted() { return this.sfxMuted; }
