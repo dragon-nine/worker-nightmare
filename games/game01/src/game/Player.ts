@@ -42,8 +42,8 @@ export class Player {
   animateSwitch(targetScreenX: number) {
     const goingRight = targetScreenX > this.sprite.x;
     this.sprite.setTexture('rabbit-side');
-    this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(!goingRight);
+    this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setAngle(0);
     this.scene.tweens.add({
       targets: this.sprite,
@@ -72,13 +72,32 @@ export class Player {
     });
   }
 
-  /** 전진 성공: 뒷면 → scrollTo */
+  /** 전진 성공 */
   animateForward(onDone: () => void) {
     this.sprite.setTexture('rabbit-back');
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
     this.sprite.setAngle(0);
     onDone();
+  }
+
+  /** 다음 타일 방향을 바라보도록 스프라이트 변경 */
+  faceNextTile(nextLane: number) {
+    if (nextLane > this.currentLane) {
+      // 다음이 오른쪽
+      this.sprite.setTexture('rabbit-side');
+      this.sprite.setFlipX(false);
+    } else if (nextLane < this.currentLane) {
+      // 다음이 왼쪽
+      this.sprite.setTexture('rabbit-side');
+      this.sprite.setFlipX(true);
+    } else {
+      // 같은 레인 (직진)
+      this.sprite.setTexture('rabbit-back');
+      this.sprite.setFlipX(false);
+    }
+    this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
+    this.sprite.setAngle(0);
   }
 
   /** 전진 충돌: 한 칸 전진 → 떨어짐 */

@@ -296,6 +296,11 @@ export class CommuteScene extends Phaser.Scene {
 
     const targetScreenX = this.laneScreenX(targetLane);
     this.player.animateSwitch(targetScreenX);
+
+    // 전환 완료 후 — 옆모습 잠깐 보여준 뒤 뒷모습으로
+    this.time.delayedCall(350, () => {
+      this.player.faceNextTile(this.player.currentLane);
+    });
   }
 
   private moveForward() {
