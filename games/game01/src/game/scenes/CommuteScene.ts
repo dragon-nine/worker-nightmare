@@ -8,6 +8,7 @@ import { Player } from '../Player';
 import { HUD } from '../HUD';
 import { submitScore as submitLeaderboardScore } from '../services/leaderboard';
 import { logEvent, logClick, logScreen } from '../services/analytics';
+import { adService } from '../services/ad-service';
 import { gameBus } from '../event-bus';
 
 export class CommuteScene extends Phaser.Scene {
@@ -130,6 +131,10 @@ export class CommuteScene extends Phaser.Scene {
     // 게임플레이 시작 시 React HUD 오버레이 표시
     gameBus.emit('screen-change', 'playing');
 
+    // 광고 서비스: house ad renderer 등록 + 미리 로드
+    adService.setHouseAdRenderer((onComplete) => this.showHouseAd(onComplete));
+    adService.preload();
+
     // React → Phaser 이벤트 리스너
     this.setupReactListeners();
   }
@@ -151,7 +156,8 @@ export class CommuteScene extends Phaser.Scene {
 
     const unsubRevive = gameBus.on('revive', () => {
       logEvent('revive_ad_click', { score: this.score });
-      this.showAd([], null as unknown as Phaser.GameObjects.Rectangle, () => {
+      gameBus.emit('screen-change', 'revive-ad');
+      adService.showRewarded(() => {
         gameBus.emit('screen-change', 'playing');
         this.revive();
       });
@@ -428,23 +434,7 @@ export class CommuteScene extends Phaser.Scene {
     this.endGame();
   }
 
-  /* ── Ad System ── */
-
-  private showAd(
-    _reviveItems: Phaser.GameObjects.GameObject[],
-    _overlay: Phaser.GameObjects.Rectangle | null,
-    onComplete: () => void,
-  ) {
-    const adLoaded = this.tryShowRealAd(onComplete);
-    if (!adLoaded) {
-      logEvent('ad_fallback_house');
-      this.showHouseAd(onComplete);
-    }
-  }
-
-  private tryShowRealAd(_onComplete: () => void): boolean {
-    return false;
-  }
+  /* ── Ad System (house ad fallback) ── */
 
   private showHouseAd(onComplete: () => void) {
     const { width, height } = this.scale;

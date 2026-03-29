@@ -3,7 +3,7 @@
  * Phaser 씬에서 emit → React 컴포넌트에서 subscribe
  */
 
-export type GameScreen = 'main' | 'playing' | 'paused' | 'settings' | 'game-over';
+export type GameScreen = 'main' | 'playing' | 'paused' | 'settings' | 'game-over' | 'revive-ad';
 
 export interface GameOverData {
   score: number;
