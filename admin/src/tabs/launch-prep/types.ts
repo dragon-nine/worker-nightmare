@@ -26,7 +26,7 @@ export function buildGroups(gameId: string): AssetGroup[] {
       label: '앱 아이콘',
       fileBaseName: 'app_icon',
       desc: '600x600',
-      accept: 'image/png',
+      accept: 'image/png,image/jpeg',
       maxCount: 1,
       storeWidth: 600, storeHeight: 600,
       exactOnly: true,
