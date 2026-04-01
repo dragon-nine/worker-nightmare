@@ -1,34 +1,19 @@
 import { useState } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
-import { useLayout } from '../hooks/useLayout';
 import { usePress } from '../hooks/usePress';
-import { LayoutText } from '../components/LayoutText';
+import { DESIGN_W } from '../../game/layout-types';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
 
-const IMAGE_MAP: Record<string, string> = {
-  'main-text': 'main-screen/main-text.png',
-  'main-btn': 'main-screen/main-btn.png',
-  'btn-settings': 'ui/btn-settings.png',
-};
-
-// 텍스트 요소의 실제 표시 내용 오버라이드 (동적 값)
-function getTextContent(id: string): string | null {
-  if (id === 'bestScore') {
-    const best = String(storage.getBestScore());
-    return `최고기록 ${best}`;
-  }
-  return null;
-}
-
 export function MainScreen() {
-  const { positions, elements, scale, ready } = useLayout('main-screen', IMAGE_MAP);
+  const scale = Math.min(window.innerWidth, 500) / DESIGN_W;
   const { handlers, pressStyle } = usePress();
   const [godMode, setGodMode] = useState(storage.getBool('godMode'));
   const [debugOpen, setDebugOpen] = useState(false);
   const tutorialDone = storage.getBool('tutorialDone');
+  const bestScore = storage.getBestScore();
 
   const handleStart = () => {
     gameBus.emit('play-sfx', 'sfx-click');
@@ -50,20 +35,6 @@ export function MainScreen() {
     storage.setBool('godMode', next);
   };
 
-  if (!ready) return null;
-
-  const clickHandlers: Record<string, () => void> = {
-    'main-btn': handleStart,
-    'btn-settings': handleSettings,
-  };
-
-  // fadeIn 딜레이 매핑
-  const fadeDelays: Record<string, string> = {
-    'main-text': styles.fadeInDelayed1,
-    'bestScore': styles.fadeInDelayed3,
-    'btn-settings': styles.fadeInDelayed5,
-  };
-
   return (
     <div className={styles.overlay}>
       {/* 배경 */}
@@ -80,132 +51,174 @@ export function MainScreen() {
         }}
       />
 
-      {/* 레이아웃 요소들 — admin과 동일한 렌더링 구조 */}
-      {elements.map((el) => {
-        const pos = positions.get(el.id);
-        if (!pos) return null;
-
-        const left = pos.x - pos.displayWidth * pos.originX;
-        const rawTop = pos.y - pos.displayHeight * pos.originY;
-        const isTopAnchor = el.positioning === 'anchor' && (el.anchor === 'top-right' || el.anchor === 'top-left');
-        const top = isTopAnchor ? `calc(var(--sat, 0px) + ${rawTop}px)` : rawTop;
-        const onClick = clickHandlers[el.id];
-        const isBtn = !!onClick;
-        const fadeClass = fadeDelays[el.id];
-        const isMainBtn = el.id === 'main-btn';
-
-        const content = el.type === 'image' ? (
-          <img
-            src={`${BASE}${IMAGE_MAP[el.id]}`}
-            alt={el.id}
-            draggable={false}
-            className={isBtn ? styles.imgBtn : undefined}
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'block',
-              objectFit: 'contain',
-            }}
-          />
-        ) : (
-          <LayoutText el={el} scale={scale} overrideText={getTextContent(el.id)} />
-        );
-
-        return (
-          <div
-            key={el.id}
-            className={[
-              isMainBtn ? styles.fadeInThenPulse : styles.fadeInUp,
-              fadeClass,
-            ].filter(Boolean).join(' ')}
-            style={{
-              position: 'absolute',
-              left, top,
-              width: pos.displayWidth,
-              height: pos.displayHeight,
-            }}
-          >
-            {isBtn ? (
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  cursor: 'pointer',
-                  ...pressStyle(el.id),
-                }}
-                onClick={onClick}
-                {...handlers(el.id)}
-              >
-                {content}
-              </div>
-            ) : content}
-          </div>
-        );
-      })}
-
-      {/* 광고제거 버튼 — 왼쪽 상단 */}
+      {/* ── 상단 영역: 아이콘 버튼들 ── */}
       <div
-        className={`${styles.fadeInUp} ${styles.fadeInDelayed5}`}
+        className={styles.fadeInUp}
         style={{
           position: 'absolute',
           top: `calc(var(--sat, 0px) + ${6 * scale}px)`,
-          left: 15 * scale,
-          width: 44 * scale,
-          height: 44 * scale,
+          left: 0,
+          right: 0,
+          padding: `0 ${16 * scale}px`,
+          boxSizing: 'border-box',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
           zIndex: 10,
+          animationDelay: '1.2s',
         }}
       >
+        {/* 광고제거 */}
         <div
           onClick={() => gameBus.emit('show-ad-remove', undefined)}
           {...handlers('icon-ad-remove')}
           style={{
-            width: '100%',
-            height: '100%',
+            width: 42 * scale, height: 42 * scale,
             borderRadius: 999,
-            background: 'rgba(255,255,255,0.15)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            background: 'linear-gradient(135deg, #f0a030, #ffd060)',
+            border: `${2 * scale}px solid #000`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
-            fontSize: 14 * scale,
             ...pressStyle('icon-ad-remove'),
           }}
         >
-          💎
+          <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none">
+            {/* AD 텍스트 */}
+            <text x="12" y="17" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Arial, sans-serif" letterSpacing="1" stroke="#000" strokeWidth="3" fill="#fff" paintOrder="stroke fill">AD</text>
+            {/* 사선 (\) */}
+            <line x1="4" y1="4" x2="20" y2="20" stroke="#000" strokeWidth="3.5" strokeLinecap="round" />
+            <line x1="4" y1="4" x2="20" y2="20" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+
+        {/* 우측: 🛡️ + ⚙ */}
+        <div style={{ display: 'flex', gap: 6 * scale }}>
+          <div
+            onClick={() => setDebugOpen(true)}
+            {...handlers('icon-debug')}
+            style={{
+              width: 42 * scale, height: 42 * scale,
+              borderRadius: 999,
+              background: godMode ? '#4ade80' : '#354a59',
+              border: `${2 * scale}px solid ${godMode ? '#4ade80' : '#000'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              ...pressStyle('icon-debug'),
+            }}
+          >
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="rgba(255,255,255,0.15)" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </div>
+          <div
+            onClick={handleSettings}
+            {...handlers('btn-settings')}
+            style={{
+              width: 42 * scale, height: 42 * scale,
+              borderRadius: 999,
+              background: '#354a59',
+              border: `${2 * scale}px solid #000`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              ...pressStyle('btn-settings'),
+            }}
+          >
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+          </div>
         </div>
       </div>
 
-      {/* 디버그 버튼 — 설정 버튼 왼쪽 */}
+      {/* ── 타이틀 이미지: 상단에서 15% 위치 ── */}
       <div
-        className={`${styles.fadeInUp} ${styles.fadeInDelayed5}`}
+        className={`${styles.fadeInUp}`}
         style={{
           position: 'absolute',
-          top: `calc(var(--sat, 0px) + ${6 * scale}px)`,
-          right: 56 * scale,
-          width: 44 * scale,
-          height: 44 * scale,
-          zIndex: 10,
+          top: '15%',
+          left: 0, right: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          animationDelay: '0.2s',
         }}
       >
+        <img
+          src={`${BASE}main-screen/main-text.png`}
+          alt="직장인 잔혹사"
+          draggable={false}
+          style={{ width: 331 * scale, display: 'block', objectFit: 'contain' }}
+        />
+      </div>
+
+      {/* ── 하단 영역: 최고기록 + 시작 버튼 ── */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 80 * scale,
+          left: 0, right: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0,
+        }}
+      >
+        {/* 최고기록 */}
         <div
-          onClick={() => setDebugOpen(true)}
-          {...handlers('icon-debug')}
+          className={styles.fadeInUp}
           style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: 999,
-            background: godMode ? '#4ade80' : 'rgba(255,255,255,0.15)',
-            border: `2px solid ${godMode ? '#4ade80' : 'rgba(255,255,255,0.3)'}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontSize: 14 * scale,
-            ...pressStyle('icon-debug'),
+            fontFamily: 'GMarketSans, sans-serif',
+            fontWeight: 900,
+            fontSize: 22 * scale,
+            color: '#fff',
+            textAlign: 'center',
+            animationDelay: '0.6s',
+            marginBottom: 2 * scale,
+            WebkitTextStroke: `${3 * scale}px #000`,
+            paintOrder: 'stroke fill',
           }}
         >
-          🛡️
+          최고기록 {bestScore}
+        </div>
+
+        {/* 시작 버튼 (텍스트 겹침) */}
+        <div
+          className={styles.fadeInThenPulse}
+          style={{ width: 214 * scale, position: 'relative' }}
+        >
+          <div
+            onClick={handleStart}
+            {...handlers('main-btn')}
+            style={{
+              cursor: 'pointer',
+              position: 'relative',
+              ...pressStyle('main-btn'),
+            }}
+          >
+            <img
+              src={`${BASE}main-screen/main-btn.png`}
+              alt="시작"
+              draggable={false}
+              style={{ width: '100%', display: 'block', objectFit: 'contain' }}
+            />
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              paddingBottom: 14 * scale,
+              justifyContent: 'center',
+              fontFamily: 'GMarketSans, sans-serif',
+              fontWeight: 900,
+              fontSize: 28 * scale,
+              color: '#fff',
+              WebkitTextStroke: `${5 * scale}px #000`,
+              paintOrder: 'stroke fill',
+              pointerEvents: 'none',
+            }}>
+              시작하기
+            </div>
+          </div>
         </div>
       </div>
 
@@ -235,7 +248,6 @@ export function MainScreen() {
               디버그
             </div>
 
-            {/* 무적 모드 */}
             <div
               onClick={handleToggleGodMode}
               style={{
@@ -253,7 +265,6 @@ export function MainScreen() {
               </span>
             </div>
 
-            {/* 튜토리얼 */}
             <div
               onClick={() => {
                 if (tutorialDone) {

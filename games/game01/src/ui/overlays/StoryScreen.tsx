@@ -67,7 +67,6 @@ export function StoryScreen() {
               src={`${BASE}main-screen/main-btn.png`}
               alt=""
               draggable={false}
-              className={styles.imgBtn}
               style={{ width: '100%', display: 'block', objectFit: 'contain' }}
             />
             <div style={{
@@ -75,7 +74,7 @@ export function StoryScreen() {
               inset: 0,
               display: 'flex',
               alignItems: 'center',
-              paddingBottom: 8 * scale,
+              paddingBottom: 14 * scale,
               justifyContent: 'center',
               fontFamily: 'GMarketSans, sans-serif',
               fontWeight: 900,
