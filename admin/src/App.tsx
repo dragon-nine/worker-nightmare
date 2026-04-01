@@ -3,7 +3,6 @@ import TabNav from './components/TabNav'
 import GameAssetsTab from './tabs/GameAssetsTab'
 import PlaceholderTab from './tabs/PlaceholderTab'
 import SharedFilesTab from './tabs/SharedFilesTab'
-// import LayoutEditorLegacyTab from './tabs/LayoutEditorLegacyTab'  // game02용 레거시
 import LayoutEditorTab from './tabs/layout-editor'
 import GameDashboard from './tabs/GameDashboard'
 import TodoHomePage from './tabs/TodoHomePage'

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { DESIGN_W } from '../../game/layout-types';
 import { LayoutRenderer } from '../components/LayoutRenderer';
+import type { ScreenLayoutJSON } from '../types/screen-layout';
 import adRemoveLayout from '../../../public/layout/ad-remove.json';
 import styles from './overlay.module.css';
 
@@ -32,12 +33,12 @@ export function AdRemoveOverlay({ onClose }: Props) {
       <div className={styles.dim} />
       <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
         <LayoutRenderer
-          elements={adRemoveLayout.elements as any}
+          elements={(adRemoveLayout as ScreenLayoutJSON).elements}
           scale={scale}
           screenW={Math.min(window.innerWidth, MAX_W)}
           screenH={window.innerHeight}
-          screenPadding={adRemoveLayout.padding as any}
-          groupVAlign={(adRemoveLayout as any).groupVAlign || 'center'}
+          screenPadding={(adRemoveLayout as ScreenLayoutJSON).padding}
+          groupVAlign={(adRemoveLayout as ScreenLayoutJSON).groupVAlign || 'center'}
           clickHandlers={{
             'el-mn7e58qt-fdki': handlePurchase,
           }}

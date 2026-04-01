@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadLayoutFull } from '../../game/layout-loader';
 import { computeLayout, DESIGN_W, type LayoutElement, type ComputedPosition } from '../../game/layout-types';
+import { gameConfig } from '../../game/game.config';
 
+const MAX_CACHE_SIZE = 100;
 const imgSizeCache = new Map<string, { w: number; h: number }>();
 
 function getImageSizeAsync(src: string): Promise<{ w: number; h: number }> {
@@ -10,6 +12,10 @@ function getImageSizeAsync(src: string): Promise<{ w: number; h: number }> {
     const img = new Image();
     img.onload = () => {
       const size = { w: img.naturalWidth, h: img.naturalHeight };
+      if (imgSizeCache.size >= MAX_CACHE_SIZE) {
+        const firstKey = imgSizeCache.keys().next().value!;
+        imgSizeCache.delete(firstKey);
+      }
       imgSizeCache.set(src, size);
       resolve(size);
     };
@@ -35,8 +41,18 @@ export function useLayout(
   const [ready, setReady] = useState(false);
   const [scale, setScale] = useState(Math.min(window.innerWidth, 500) / DESIGN_W);
 
+  // 안정적 참조: 객체를 ref로 유지하고 키 기반으로 변경 감지
+  const imageMapRef = useRef(imageMap);
+  imageMapRef.current = imageMap;
+  const excludeIdsRef = useRef(excludeIds);
+  excludeIdsRef.current = excludeIds;
+
+  // imageMap/excludeIds의 변경 감지용 안정적 키
+  const imageMapKey = Object.keys(imageMap).sort().join(',');
+  const excludeIdsKey = excludeIds?.sort().join(',') ?? '';
+
   const compute = useCallback(async () => {
-    const loaded = await loadLayoutFull('game01', screen);
+    const loaded = await loadLayoutFull(gameConfig.gameId, screen);
     const els = loaded.elements;
     const vAlign = loaded.groupVAlign;
     const padding = loaded.padding;
@@ -45,7 +61,7 @@ export function useLayout(
 
     const imgSizes = new Map<string, { w: number; h: number }>();
     await Promise.all(
-      Object.entries(imageMap).map(async ([id, path]) => {
+      Object.entries(imageMapRef.current).map(async ([id, path]) => {
         const size = await getImageSizeAsync(`${base}${path}`);
         imgSizes.set(id, size);
       })
@@ -58,7 +74,7 @@ export function useLayout(
       els, w, h,
       (id) => imgSizes.get(id) || null,
       null,
-      excludeIds,
+      excludeIdsRef.current,
       vAlign,
       padding,
     );
@@ -71,7 +87,7 @@ export function useLayout(
     setScale(result.scale);
 
     setReady(true);
-  }, [screen, JSON.stringify(imageMap), JSON.stringify(excludeIds)]);
+  }, [screen, imageMapKey, excludeIdsKey]);
 
   useEffect(() => {
     compute();

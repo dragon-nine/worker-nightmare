@@ -25,6 +25,11 @@
 
         </activity>
 
+        <!-- AdMob 앱 ID — TODO: AdMob 콘솔에서 발급받은 실제 앱 ID로 교체 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3788530115276232~5768824892" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

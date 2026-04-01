@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { gameBus } from '../../game/event-bus';
+import { storage } from '../../game/services/storage';
 import { DESIGN_W } from '../../game/layout-types';
 import { LayoutRenderer } from '../components/LayoutRenderer';
 import { getRandomChallengeQuote } from '../../game/challenge-quotes';
+import type { ScreenLayoutJSON } from '../types/screen-layout';
 import challengeLayout from '../../../public/layout/challenge.json';
 import styles from './overlay.module.css';
 
@@ -19,7 +21,7 @@ interface Props {
 }
 
 export function ChallengeOverlay({ score, onClose }: Props) {
-  const bestScore = Number(localStorage.getItem('bestScore') || '0');
+  const bestScore = storage.getBestScore();
   const isNewRecord = score >= bestScore && bestScore > 0;
   const [message, setMessage] = useState(() => getRandomChallengeQuote(score, isNewRecord));
 
@@ -47,12 +49,12 @@ export function ChallengeOverlay({ score, onClose }: Props) {
       <div className={styles.dim} />
       <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
         <LayoutRenderer
-          elements={challengeLayout.elements as any}
+          elements={(challengeLayout as ScreenLayoutJSON).elements}
           scale={scale}
           screenW={Math.min(window.innerWidth, MAX_W)}
           screenH={window.innerHeight}
-          screenPadding={challengeLayout.padding as any}
-          groupVAlign={(challengeLayout as any).groupVAlign || 'center'}
+          screenPadding={(challengeLayout as ScreenLayoutJSON).padding}
+          groupVAlign={(challengeLayout as ScreenLayoutJSON).groupVAlign || 'center'}
           imageMap={IMAGE_MAP}
           textOverrides={{
             'el-mn77cn6d-10ow': `${score}`,

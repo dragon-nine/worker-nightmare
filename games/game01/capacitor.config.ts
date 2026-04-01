@@ -7,11 +7,17 @@ const config: CapacitorConfig = {
   android: {
     backgroundColor: '#0a0a14',
     allowMixedContent: true,
-    captureInput: true,
+    captureInput: false,
     webContentsDebuggingEnabled: false,
   },
   server: {
     androidScheme: 'https',
+  },
+  plugins: {
+    SystemBars: {
+      insetsHandling: 'disable',
+      style: 'DARK',
+    },
   },
 };
 

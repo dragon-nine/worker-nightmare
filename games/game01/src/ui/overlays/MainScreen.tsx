@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { gameBus } from '../../game/event-bus';
+import { storage } from '../../game/services/storage';
 import { useLayout } from '../hooks/useLayout';
-import type { LayoutElement } from '../../game/layout-types';
+import { usePress } from '../hooks/usePress';
+import { LayoutText } from '../components/LayoutText';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -16,7 +18,7 @@ const IMAGE_MAP: Record<string, string> = {
 // 텍스트 요소의 실제 표시 내용 오버라이드 (동적 값)
 function getTextContent(id: string): string | null {
   if (id === 'bestScore') {
-    const best = localStorage.getItem('bestScore') || '0';
+    const best = String(storage.getBestScore());
     return `최고기록 ${best}`;
   }
   return null;
@@ -24,9 +26,10 @@ function getTextContent(id: string): string | null {
 
 export function MainScreen() {
   const { positions, elements, scale, ready } = useLayout('main-screen', IMAGE_MAP);
-  const [godMode, setGodMode] = useState(localStorage.getItem('godMode') === 'true');
+  const { handlers, pressStyle } = usePress();
+  const [godMode, setGodMode] = useState(storage.getBool('godMode'));
   const [debugOpen, setDebugOpen] = useState(false);
-  const tutorialDone = localStorage.getItem('tutorialDone') === 'true';
+  const tutorialDone = storage.getBool('tutorialDone');
 
   const handleStart = () => {
     gameBus.emit('play-sfx', 'sfx-click');
@@ -41,7 +44,7 @@ export function MainScreen() {
   const handleToggleGodMode = () => {
     const next = !godMode;
     setGodMode(next);
-    localStorage.setItem('godMode', String(next));
+    storage.setBool('godMode', next);
   };
 
   if (!ready) return null;
@@ -81,11 +84,30 @@ export function MainScreen() {
         if (!pos) return null;
 
         const left = pos.x - pos.displayWidth * pos.originX;
-        const top = pos.y - pos.displayHeight * pos.originY;
+        const rawTop = pos.y - pos.displayHeight * pos.originY;
+        const isTopAnchor = el.positioning === 'anchor' && (el.anchor === 'top-right' || el.anchor === 'top-left');
+        const top = isTopAnchor ? `calc(var(--sat, 0px) + ${rawTop}px)` : rawTop;
         const onClick = clickHandlers[el.id];
         const isBtn = !!onClick;
         const fadeClass = fadeDelays[el.id];
         const isMainBtn = el.id === 'main-btn';
+
+        const content = el.type === 'image' ? (
+          <img
+            src={`${BASE}${IMAGE_MAP[el.id]}`}
+            alt={el.id}
+            draggable={false}
+            className={isBtn ? styles.imgBtn : undefined}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              objectFit: 'contain',
+            }}
+          />
+        ) : (
+          <LayoutText el={el} scale={scale} overrideText={getTextContent(el.id)} />
+        );
 
         return (
           <div
@@ -99,74 +121,90 @@ export function MainScreen() {
               left, top,
               width: pos.displayWidth,
               height: pos.displayHeight,
-              cursor: isBtn ? 'pointer' : undefined,
             }}
-            onClick={onClick}
           >
-            {el.type === 'image' ? (
-              <img
-                src={`${BASE}${IMAGE_MAP[el.id]}`}
-                alt={el.id}
-                draggable={false}
-                className={isBtn ? styles.imgBtn : undefined}
+            {isBtn ? (
+              <div
                 style={{
                   width: '100%',
                   height: '100%',
-                  display: 'block',
-                  objectFit: 'contain',
+                  cursor: 'pointer',
+                  ...pressStyle(el.id),
                 }}
-              />
-            ) : (
-              <LayoutText el={el} scale={scale} overrideText={getTextContent(el.id)} />
-            )}
+                onClick={onClick}
+                {...handlers(el.id)}
+              >
+                {content}
+              </div>
+            ) : content}
           </div>
         );
       })}
 
       {/* 광고제거 버튼 — 왼쪽 상단 */}
       <div
-        onClick={() => gameBus.emit('show-ad-remove', undefined)}
+        className={`${styles.fadeInUp} ${styles.fadeInDelayed5}`}
         style={{
           position: 'absolute',
-          top: 15 * scale,
+          top: `calc(var(--sat, 0px) + ${15 * scale}px)`,
           left: 15 * scale,
-          width: 35 * scale,
-          height: 35 * scale,
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.15)',
-          border: '2px solid rgba(255,255,255,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: 14 * scale,
+          width: 44 * scale,
+          height: 44 * scale,
           zIndex: 10,
         }}
       >
-        💎
+        <div
+          onClick={() => gameBus.emit('show-ad-remove', undefined)}
+          {...handlers('icon-ad-remove')}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.15)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: 14 * scale,
+            ...pressStyle('icon-ad-remove'),
+          }}
+        >
+          💎
+        </div>
       </div>
 
       {/* 디버그 버튼 — 설정 버튼 왼쪽 */}
       <div
-        onClick={() => setDebugOpen(true)}
+        className={`${styles.fadeInUp} ${styles.fadeInDelayed5}`}
         style={{
           position: 'absolute',
-          top: 15 * scale,
-          right: 60 * scale,
-          width: 35 * scale,
-          height: 35 * scale,
-          borderRadius: 999,
-          background: godMode ? '#4ade80' : 'rgba(255,255,255,0.15)',
-          border: `2px solid ${godMode ? '#4ade80' : 'rgba(255,255,255,0.3)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: 14 * scale,
+          top: `calc(var(--sat, 0px) + ${15 * scale}px)`,
+          right: 56 * scale,
+          width: 44 * scale,
+          height: 44 * scale,
           zIndex: 10,
         }}
       >
-        🛡️
+        <div
+          onClick={() => setDebugOpen(true)}
+          {...handlers('icon-debug')}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: 999,
+            background: godMode ? '#4ade80' : 'rgba(255,255,255,0.15)',
+            border: `2px solid ${godMode ? '#4ade80' : 'rgba(255,255,255,0.3)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: 14 * scale,
+            ...pressStyle('icon-debug'),
+          }}
+        >
+          🛡️
+        </div>
       </div>
 
       {/* 디버그 모달 */}
@@ -217,9 +255,9 @@ export function MainScreen() {
             <div
               onClick={() => {
                 if (tutorialDone) {
-                  localStorage.removeItem('tutorialDone');
+                  storage.removeBool('tutorialDone');
                 } else {
-                  localStorage.setItem('tutorialDone', 'true');
+                  storage.setBool('tutorialDone', true);
                 }
                 setDebugOpen(false);
               }}
@@ -244,45 +282,6 @@ export function MainScreen() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/** admin의 .le-el-text와 동일한 텍스트 렌더링 */
-function LayoutText({ el, scale, overrideText }: { el: LayoutElement; scale: number; overrideText?: string | null }) {
-  const fontSizePx = el.textStyle?.fontSizePx || 14;
-  const color = el.textStyle?.color || '#fff';
-  const strokeWidth = el.textStyle?.strokeWidth || 0;
-  const strokeColor = el.textStyle?.strokeColor || '#000';
-  const gradient = el.textStyle?.gradientColors;
-
-  return (
-    <div
-      style={{
-        color: gradient ? undefined : color,
-        textAlign: 'center',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'GMarketSans, sans-serif',
-        fontWeight: 700,
-        whiteSpace: 'pre-line',
-        lineHeight: 1.4,
-        fontSize: `${Math.max(6, fontSizePx * scale)}px`,
-        WebkitTextStroke: strokeWidth
-          ? `${strokeWidth * scale}px ${strokeColor}`
-          : undefined,
-        paintOrder: strokeWidth ? 'stroke fill' : undefined,
-        ...(gradient ? {
-          background: `linear-gradient(to bottom, ${gradient[0]}, ${gradient[1]})`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        } : {}),
-      }}
-    >
-      {overrideText ?? el.label ?? el.id}
     </div>
   );
 }

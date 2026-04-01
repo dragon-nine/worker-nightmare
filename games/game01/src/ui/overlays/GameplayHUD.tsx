@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { gameBus } from '../../game/event-bus';
+import { storage } from '../../game/services/storage';
 import { useLayout } from '../hooks/useLayout';
 import styles from './overlay.module.css';
 
@@ -17,7 +18,7 @@ export function GameplayHUD() {
   const [score, setScore] = useState(0);
   const [timerPct, setTimerPct] = useState(1);
   const [pressedBtn, setPressedBtn] = useState<string | null>(null);
-  const tutorialDone = localStorage.getItem('tutorialDone') === 'true';
+  const tutorialDone = storage.getBool('tutorialDone');
   const [guideHint, setGuideHint] = useState<'forward' | 'switch' | null>(tutorialDone ? null : 'forward');
 
   useEffect(() => {

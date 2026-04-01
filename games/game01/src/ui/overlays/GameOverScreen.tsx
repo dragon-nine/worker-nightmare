@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { gameBus, type GameOverData } from '../../game/event-bus';
 import { useLayout } from '../hooks/useLayout';
+import { usePress } from '../hooks/usePress';
 import { openLeaderboard } from '../../game/services/leaderboard';
 import { logClick } from '../../game/services/analytics';
 import { getRandomQuote } from '../../game/game-over-quotes';
-import type { LayoutElement } from '../../game/layout-types';
+import { LayoutText } from '../components/LayoutText';
+import { LayoutButton } from '../components/LayoutButton';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -55,6 +57,8 @@ export function GameOverScreen({ data }: Props) {
     },
   }), []);
 
+  const { handlers, pressStyle } = usePress();
+
   if (!ready) return null;
 
   // 버튼 vs 텍스트/이미지 분류 → 딜레이 다르게
@@ -84,6 +88,25 @@ export function GameOverScreen({ data }: Props) {
         const finalDelay = (el.id === 'go-btn-challenge' || el.id === 'go-btn-ranking')
           ? (canRevive ? '1.1s' : '0.95s') : delay;
 
+        const content = el.type === 'image' ? (
+          <img
+            src={`${BASE}${IMAGE_MAP[el.id]}`}
+            alt={el.id}
+            draggable={false}
+            className={isBtn ? styles.imgBtn : undefined}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              objectFit: 'contain',
+            }}
+          />
+        ) : el.type === 'button' ? (
+          <LayoutButton el={el} scale={scale} />
+        ) : (
+          <LayoutText el={el} scale={scale} overrideText={textOverrides[el.id]} />
+        );
+
         return (
           <div
             key={el.id}
@@ -93,138 +116,26 @@ export function GameOverScreen({ data }: Props) {
               left, top,
               width: pos.displayWidth,
               height: pos.displayHeight,
-              cursor: isBtn ? 'pointer' : undefined,
               animationDelay: finalDelay,
             }}
-            onClick={onClick}
           >
-            {el.type === 'image' ? (
-              <img
-                src={`${BASE}${IMAGE_MAP[el.id]}`}
-                alt={el.id}
-                draggable={false}
-                className={isBtn ? styles.imgBtn : undefined}
+            {isBtn ? (
+              <div
                 style={{
                   width: '100%',
                   height: '100%',
-                  display: 'block',
-                  objectFit: 'contain',
+                  cursor: 'pointer',
+                  ...pressStyle(el.id),
                 }}
-              />
-            ) : el.type === 'button' ? (
-              <LayoutButton el={el} scale={scale} />
-            ) : (
-              <LayoutText el={el} scale={scale} overrideText={textOverrides[el.id]} />
-            )}
+                onClick={onClick}
+                {...handlers(el.id)}
+              >
+                {content}
+              </div>
+            ) : content}
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function LayoutText({ el, scale, overrideText }: { el: LayoutElement; scale: number; overrideText?: string }) {
-  const fontSizePx = el.textStyle?.fontSizePx || 14;
-  const color = el.textStyle?.color || '#fff';
-  const strokeWidth = el.textStyle?.strokeWidth || 0;
-  const strokeColor = el.textStyle?.strokeColor || '#000';
-  const gradient = el.textStyle?.gradientColors;
-
-  return (
-    <div
-      style={{
-        color: gradient ? undefined : color,
-        textAlign: 'center',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'GMarketSans, sans-serif',
-        fontWeight: 700,
-        whiteSpace: 'pre-line',
-        lineHeight: 1.4,
-        fontSize: `${Math.max(6, fontSizePx * scale)}px`,
-        WebkitTextStroke: strokeWidth
-          ? `${strokeWidth * scale}px ${strokeColor}`
-          : undefined,
-        paintOrder: strokeWidth ? 'stroke fill' : undefined,
-        ...(gradient ? {
-          background: `linear-gradient(to bottom, ${gradient[0]}, ${gradient[1]})`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        } : {}),
-      }}
-    >
-      {overrideText ?? el.label ?? el.id}
-    </div>
-  );
-}
-
-/** 타입 스케일 (에디터 design-tokens와 동일) */
-const _typeScale: Record<string, { fontSize: number; fontWeight: number; stroke: number }> = {
-  '3xl': { fontSize: 76, fontWeight: 900, stroke: 6 },
-  '2xl': { fontSize: 56, fontWeight: 900, stroke: 6 },
-  xl: { fontSize: 44, fontWeight: 900, stroke: 4 },
-  lg: { fontSize: 32, fontWeight: 900, stroke: 3 },
-  md: { fontSize: 28, fontWeight: 900, stroke: 3 },
-  sm: { fontSize: 20, fontWeight: 700, stroke: 2 },
-  xs: { fontSize: 16, fontWeight: 700, stroke: 0 },
-  '2xs': { fontSize: 13, fontWeight: 400, stroke: 0 },
-};
-
-const _buttonStyleDefaults: Record<string, { borderWidth: number; borderColor: string; innerLineWidth: number; innerLineColor: string; borderRadius: number }> = {
-  flat: { borderWidth: 0, borderColor: 'transparent', innerLineWidth: 0, innerLineColor: 'transparent', borderRadius: 12 },
-  outline: { borderWidth: 3, borderColor: '#000000', innerLineWidth: 0, innerLineColor: 'transparent', borderRadius: 12 },
-  doubleLine: { borderWidth: 3, borderColor: '#000000', innerLineWidth: 2, innerLineColor: '#4d4340', borderRadius: 12 },
-  pill: { borderWidth: 0, borderColor: 'transparent', innerLineWidth: 0, innerLineColor: 'transparent', borderRadius: 9999 },
-};
-
-const _gradients: Record<string, { from: string; to: string; direction: string }> = {
-  'White → Ice Blue': { from: '#ffffff', to: '#c1e5ff', direction: 'to bottom' },
-  'Crimson → Maroon': { from: '#e5332f', to: '#771615', direction: '135deg' },
-  'Wine → Black': { from: '#2a0c10', to: '#000000', direction: 'to bottom' },
-};
-
-function LayoutButton({ el, scale }: { el: LayoutElement; scale: number }) {
-  const bs = el.buttonStyle;
-  const scaleKey = bs?.scaleKey || 'lg';
-  const ts = _typeScale[scaleKey] || _typeScale.lg;
-  const bsd = _buttonStyleDefaults[bs?.styleType || 'outline'];
-  const bgGrad = bs?.bgGradient ? _gradients[bs.bgGradient] : null;
-  const bgStyle = bgGrad
-    ? `linear-gradient(${bgGrad.direction}, ${bgGrad.from}, ${bgGrad.to})`
-    : bs?.bgColor || '#24282c';
-
-  return (
-    <div style={{
-      width: '100%', height: '100%',
-      background: bgStyle,
-      borderRadius: bsd.borderRadius * scale,
-      border: bsd.borderWidth > 0 ? `${bsd.borderWidth * scale}px solid ${bsd.borderColor}` : 'none',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: bs?.styleType === 'doubleLine' ? `${3 * scale}px` : undefined,
-    }}>
-      {bs?.styleType === 'doubleLine' ? (
-        <div style={{
-          width: '100%', height: '100%',
-          border: `${bsd.innerLineWidth * scale}px solid ${bsd.innerLineColor}`,
-          borderRadius: (bsd.borderRadius - 4) * scale,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <span style={{
-            fontFamily: 'GMarketSans, sans-serif', fontSize: ts.fontSize * scale, fontWeight: ts.fontWeight,
-            color: '#fff', WebkitTextStroke: ts.stroke ? `${ts.stroke * scale}px #000` : undefined,
-            paintOrder: 'stroke fill',
-          }}>{el.label || '버튼'}</span>
-        </div>
-      ) : (
-        <span style={{
-          fontFamily: 'GMarketSans, sans-serif', fontSize: ts.fontSize * scale, fontWeight: ts.fontWeight,
-          color: '#fff', WebkitTextStroke: ts.stroke ? `${ts.stroke * scale}px #000` : undefined,
-          paintOrder: 'stroke fill',
-        }}>{el.label || '버튼'}</span>
-      )}
     </div>
   );
 }

@@ -18,8 +18,22 @@ function openToss(): void {
 }
 
 // ── Google Play Games Services ──
-// TODO: Google Play Console에서 게임 생성 후 leaderboardId 설정
-const GPGS_LEADERBOARD_ID = '';
+import { gameConfig } from '../game.config';
+const GPGS_LEADERBOARD_ID = gameConfig.gpgsLeaderboardId;
+
+let gpgsSignedIn = false;
+
+/** 앱 시작 시 Google Play Games 자동 로그인 */
+export async function initGPGS(): Promise<void> {
+  try {
+    const { PlayGames } = await import('../plugins/play-games');
+    const result = await PlayGames.signIn();
+    gpgsSignedIn = result.isSignedIn;
+    console.log('[GPGS] 로그인:', gpgsSignedIn ? '성공' : '실패');
+  } catch (e) {
+    console.warn('[GPGS] 로그인 실패:', e);
+  }
+}
 
 async function submitGPGS(score: number): Promise<void> {
   if (!GPGS_LEADERBOARD_ID) {
@@ -28,6 +42,7 @@ async function submitGPGS(score: number): Promise<void> {
   }
   try {
     const { PlayGames } = await import('../plugins/play-games');
+    if (!gpgsSignedIn) await initGPGS();
     await PlayGames.submitScore({
       leaderboardId: GPGS_LEADERBOARD_ID,
       score,
@@ -44,6 +59,7 @@ async function openGPGS(): Promise<void> {
   }
   try {
     const { PlayGames } = await import('../plugins/play-games');
+    if (!gpgsSignedIn) await initGPGS();
     await PlayGames.showLeaderboard({ leaderboardId: GPGS_LEADERBOARD_ID });
   } catch (e) {
     console.warn('[GPGS] 리더보드 열기 실패:', e);

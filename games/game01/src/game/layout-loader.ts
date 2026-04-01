@@ -1,4 +1,4 @@
-import type { LayoutElement, ScreenLayout } from './layout-types'
+import type { LayoutElement } from './layout-types'
 import { DEFAULT_LAYOUTS } from './default-layouts'
 
 // Vite JSON import — 빌드 시 인라인됨 (배포 환경에서도 확실히 동작)
@@ -28,11 +28,17 @@ interface LoadedLayout {
 
 const layoutCache = new Map<string, LoadedLayout>()
 
-function parseLayout(data: ScreenLayout | { elements?: LayoutElement[]; groupVAlign?: string; padding?: { top: number; right: number; bottom: number; left: number } }): LoadedLayout {
+interface RawLayout {
+  elements?: LayoutElement[];
+  groupVAlign?: string;
+  padding?: { top: number; right: number; bottom: number; left: number };
+}
+
+function parseLayout(data: RawLayout): LoadedLayout {
   return {
     elements: data.elements || [],
-    groupVAlign: (data as any).groupVAlign === 'top' ? 'top' : 'center',
-    padding: (data as any).padding || { top: 0, right: 0, bottom: 0, left: 0 },
+    groupVAlign: data.groupVAlign === 'top' ? 'top' : 'center',
+    padding: data.padding || { top: 0, right: 0, bottom: 0, left: 0 },
   }
 }
 
@@ -42,18 +48,14 @@ export async function loadLayoutFull(_gameId: string, screen: string): Promise<L
   // 1. 번들된 JSON (public/layout/*.json → import)
   const bundled = BUNDLED_LAYOUTS[screen]
   if (bundled) {
-    const loaded = parseLayout(bundled as ScreenLayout)
+    const loaded = parseLayout(bundled as RawLayout)
     layoutCache.set(screen, loaded)
     return loaded
   }
 
   // 2. 하드코딩 기본값
   const defaults = DEFAULT_LAYOUTS[screen]
-  const loaded: LoadedLayout = {
-    elements: defaults?.elements || [],
-    groupVAlign: defaults?.groupVAlign === 'top' ? 'top' : 'center',
-    padding: (defaults as any)?.padding || { top: 0, right: 0, bottom: 0, left: 0 },
-  }
+  const loaded = parseLayout((defaults || {}) as RawLayout)
   layoutCache.set(screen, loaded)
   return loaded
 }

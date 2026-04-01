@@ -75,13 +75,13 @@ export default function LayoutEditorTab({ gameId, onBanner }: Props) {
         editor.removeElement(editor.selectedId)
       }
       if (el.positioning === 'group') {
-        if (e.key === 'ArrowUp') { e.preventDefault(); editor.updateElement(el.id, { gapPx: (el as any).gapPx - step }) }
-        if (e.key === 'ArrowDown') { e.preventDefault(); editor.updateElement(el.id, { gapPx: (el as any).gapPx + step }) }
+        if (e.key === 'ArrowUp') { e.preventDefault(); editor.updateElement(el.id, { gapPx: el.gapPx - step }) }
+        if (e.key === 'ArrowDown') { e.preventDefault(); editor.updateElement(el.id, { gapPx: el.gapPx + step }) }
       } else if (el.positioning === 'anchor') {
-        if (e.key === 'ArrowLeft') { e.preventDefault(); editor.updateElement(el.id, { offsetX: (el as any).offsetX - step }) }
-        if (e.key === 'ArrowRight') { e.preventDefault(); editor.updateElement(el.id, { offsetX: (el as any).offsetX + step }) }
-        if (e.key === 'ArrowUp') { e.preventDefault(); editor.updateElement(el.id, { offsetY: (el as any).offsetY - step }) }
-        if (e.key === 'ArrowDown') { e.preventDefault(); editor.updateElement(el.id, { offsetY: (el as any).offsetY + step }) }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); editor.updateElement(el.id, { offsetX: el.offsetX - step }) }
+        if (e.key === 'ArrowRight') { e.preventDefault(); editor.updateElement(el.id, { offsetX: el.offsetX + step }) }
+        if (e.key === 'ArrowUp') { e.preventDefault(); editor.updateElement(el.id, { offsetY: el.offsetY - step }) }
+        if (e.key === 'ArrowDown') { e.preventDefault(); editor.updateElement(el.id, { offsetY: el.offsetY + step }) }
       }
     }
     window.addEventListener('keydown', handler)

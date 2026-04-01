@@ -3,6 +3,8 @@ import Phaser from 'phaser';
 import { createGameConfig } from '../../game/config';
 import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
 import { loadQuotes } from '../../game/game-over-quotes';
+import { adService } from '../../game/services/ad-service';
+import { isGoogle } from '../../game/platform';
 import { MainScreen } from '../overlays/MainScreen';
 import { SettingsOverlay } from '../overlays/SettingsOverlay';
 import { PauseOverlay } from '../overlays/PauseOverlay';
@@ -24,6 +26,16 @@ export function GameContainer() {
     if (gameRef.current) return;
 
     loadQuotes(); // R2에서 게임오버 멘트 미리 로드
+
+    // Google(Capacitor) 환경에서 AdMob + GPGS 초기화
+    if (isGoogle()) {
+      import('../../game/services/admob-provider').then(({ AdMobProvider }) => {
+        adService.setProvider(new AdMobProvider());
+      }).catch((e) => console.warn('[AdMob] 초기화 실패:', e));
+      import('../../game/services/leaderboard').then(({ initGPGS }) => {
+        initGPGS();
+      }).catch((e) => console.warn('[GPGS] 초기화 실패:', e));
+    }
 
     const config = createGameConfig(GAME_CONTAINER_ID);
     gameRef.current = new Phaser.Game(config);

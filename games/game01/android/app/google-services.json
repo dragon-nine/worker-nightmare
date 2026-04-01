@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "828024076505",
+    "project_id": "dragon-nine",
+    "storage_bucket": "dragon-nine.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828024076505:android:bf6f81081445d5706466c8",
+        "android_client_info": {
+          "package_name": "com.dragonnine.game01"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxLBvYrk463XZqHZyQ3rdUkF8M7VdSX5M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

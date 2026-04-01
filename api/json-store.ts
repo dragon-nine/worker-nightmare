@@ -6,7 +6,8 @@ async function readJson(key: string): Promise<unknown> {
     const result = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
     const text = await result.Body!.transformToString();
     return JSON.parse(text);
-  } catch {
+  } catch (e) {
+    console.error(`[json-store] readJson failed for key="${key}":`, e);
     return null;
   }
 }
@@ -33,6 +34,11 @@ export async function POST(req: Request) {
   const { key, data } = await req.json();
   if (!key) return Response.json({ error: 'key required' }, { status: 400 });
 
-  await writeJson(key, data);
-  return Response.json({ ok: true });
+  try {
+    await writeJson(key, data);
+    return Response.json({ ok: true });
+  } catch (e) {
+    console.error(`[json-store] writeJson failed for key="${key}":`, e);
+    return Response.json({ error: 'write failed' }, { status: 500 });
+  }
 }

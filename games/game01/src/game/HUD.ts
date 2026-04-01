@@ -1,5 +1,6 @@
 import { MAX_TIME, START_TIME } from './constants';
 import { gameBus } from './event-bus';
+import { storage } from './services/storage';
 
 /**
  * HUD 로직 전용 — 렌더링은 React GameplayHUD에서 담당
@@ -13,8 +14,8 @@ export class HUD {
   timeLeft = START_TIME;
   paused = false;
 
-  private bgmMuted = localStorage.getItem('bgmMuted') === 'true';
-  private sfxMuted = localStorage.getItem('sfxMuted') === 'true';
+  private bgmMuted = storage.getBool('bgmMuted');
+  private sfxMuted = storage.getBool('sfxMuted');
 
   private onTimeUp: () => void;
   private warningPlayed = false;
@@ -28,10 +29,10 @@ export class HUD {
   create() {
     // React에서 토글 변경 시 반영
     const unsubToggleBgm = gameBus.on('toggle-bgm', () => {
-      this.bgmMuted = localStorage.getItem('bgmMuted') === 'true';
+      this.bgmMuted = storage.getBool('bgmMuted');
     });
     const unsubToggleSfx = gameBus.on('toggle-sfx', () => {
-      this.sfxMuted = localStorage.getItem('sfxMuted') === 'true';
+      this.sfxMuted = storage.getBool('sfxMuted');
     });
 
     // React HUD에서 일시정지 버튼 클릭
@@ -62,7 +63,7 @@ export class HUD {
   }
 
   startTimer() {
-    const god = localStorage.getItem('godMode') === 'true';
+    const god = storage.getBool('godMode');
     if (god) {
       this.timerRunning = false;
       this.timeLeft = MAX_TIME;

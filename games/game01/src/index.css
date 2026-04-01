@@ -11,6 +11,7 @@
 
   /* Fonts */
   --font-main: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 }
 
 * {
@@ -19,7 +20,7 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -30,6 +31,12 @@ html, body, #root {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Prevent pull-to-refresh and bounce on mobile */

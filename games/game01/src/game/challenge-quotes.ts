@@ -1,4 +1,5 @@
 /** 도전장 멘트 — 일반 / 신기록 구분, {s}=현재점수, {b}=최고기록 치환 */
+import { storage } from './services/storage';
 
 interface ChallengeQuote {
   text: string
@@ -66,7 +67,7 @@ const CHALLENGE_QUOTES: ChallengeQuote[] = [
  * @param isNewRecord 신기록 여부 — true면 신기록 멘트 우선, false면 일반 멘트만
  */
 export function getRandomChallengeQuote(score: number, isNewRecord: boolean): string {
-  const bestScore = Number(localStorage.getItem('bestScore') || '0')
+  const bestScore = storage.getBestScore()
 
   const pool = isNewRecord
     ? CHALLENGE_QUOTES.filter((q) => q.type === 'record')

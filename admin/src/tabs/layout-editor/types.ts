@@ -1,9 +1,24 @@
-/** 레이아웃 에디터 데이터 모델 — game01 layout-types.ts와 호환 */
+/**
+ * 레이아웃 에디터 타입 — shared/layout/types.ts 기반
+ * admin 전용 타입 축소(TypeScaleKey 등)만 여기서 재정의
+ */
 
+// shared에서 공통 타입 re-export
+export type {
+  AnchorCorner,
+  ButtonStyleType,
+  GroupElement,
+  AnchorElement,
+  LayoutElement,
+  ScreenLayout,
+  LayoutIndex,
+  ComputedPosition,
+} from '../../../../shared/layout/types'
+
+export { DESIGN_W } from '../../../../shared/layout/types'
+
+// admin 전용: TypeScaleKey로 축소된 스타일 타입
 import type { TypeScaleKey } from '../../components/common/design-spec'
-
-export type AnchorCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-export type ButtonStyleType = 'flat' | 'outline' | 'doubleLine'
 
 export interface TextStyle {
   fontSizePx?: number
@@ -15,56 +30,8 @@ export interface TextStyle {
 }
 
 export interface ButtonStyle {
-  styleType: ButtonStyleType
+  styleType: 'flat' | 'outline' | 'doubleLine'
   bgColor?: string
   bgGradient?: string
   scaleKey?: TypeScaleKey
-}
-
-interface LayoutElementBase {
-  id: string
-  type: 'text' | 'image' | 'button' | 'card' | 'modal' | 'toggle' | 'close' | 'gauge' | 'circle-btn'
-  widthMode?: 'full' | 'fixed'
-  widthPx: number
-  heightPx?: number
-  parentId?: string
-  innerPadding?: { top: number; right: number; bottom: number; left: number }
-  label?: string
-  textStyle?: TextStyle
-  buttonStyle?: ButtonStyle
-  assetKey?: string
-  visible?: boolean
-  locked?: boolean
-}
-
-export interface GroupElement extends LayoutElementBase {
-  positioning: 'group'
-  order: number
-  gapPx: number
-  hGapPx?: number
-}
-
-export interface AnchorElement extends LayoutElementBase {
-  positioning: 'anchor'
-  anchor: AnchorCorner
-  offsetX: number
-  offsetY: number
-}
-
-export type LayoutElement = GroupElement | AnchorElement
-
-export interface ScreenLayout {
-  screen: string
-  designWidth: number
-  elements: LayoutElement[]
-  groupVAlign?: 'center' | 'top'
-  padding?: { top: number; right: number; bottom: number; left: number }
-  bgType?: 'transparent' | 'solid' | 'gradient' | 'image'
-  bgColor?: string
-  bgGradient?: string
-  bgAssetKey?: string
-}
-
-export interface LayoutIndex {
-  screens: { key: string; label: string; updatedAt: string }[]
 }

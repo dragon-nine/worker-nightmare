@@ -5,6 +5,8 @@
  */
 import type { LayoutElement, GroupElement, AnchorElement } from '../../game/layout-types';
 import { DESIGN_W } from '../../game/layout-types';
+import { LayoutText } from './LayoutText';
+import { LayoutButton } from './LayoutButton';
 
 const BASE = import.meta.env.BASE_URL || '/';
 
@@ -194,11 +196,11 @@ function ElementNode({
 
   // 너비 결정
   const compSize = COMPONENT_SIZES[el.type];
-  let width: string | number;
+  let width: string | number | undefined;
   if (compSize) {
     width = compSize.w * scale;
   } else if (el.widthMode === 'full') {
-    width = rowElCount > 1 ? undefined as any : '100%'; // flex: 1 for multi
+    width = rowElCount > 1 ? undefined : '100%'; // flex: 1 for multi
   } else {
     width = el.widthPx * scale;
   }
@@ -312,29 +314,7 @@ function RenderElement({ el, scale, imageMap, textOverrides, toggleStates }: {
   toggleStates: Record<string, boolean>;
 }) {
   if (el.type === 'text') {
-    const ts = el.textStyle;
-    const fontSize = (ts?.fontSizePx || 14) * scale;
-    const color = ts?.color || '#fff';
-    const gradient = ts?.gradientColors;
-    const text = textOverrides[el.id] ?? el.label ?? el.id;
-
-    return (
-      <div style={{
-        fontFamily: 'GMarketSans, sans-serif', fontWeight: 700,
-        fontSize, color: gradient ? undefined : color,
-        textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.4,
-        padding: `${4 * scale}px 0`,
-        WebkitTextStroke: ts?.strokeWidth ? `${ts.strokeWidth * scale}px ${ts.strokeColor || '#000'}` : undefined,
-        paintOrder: ts?.strokeWidth ? 'stroke fill' : undefined,
-        ...(gradient ? {
-          background: `linear-gradient(to bottom, ${gradient[0]}, ${gradient[1]})`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        } : {}),
-      }}>
-        {text}
-      </div>
-    );
+    return <LayoutText el={el} scale={scale} overrideText={textOverrides[el.id]} compact />;
   }
 
   if (el.type === 'image') {
@@ -344,49 +324,7 @@ function RenderElement({ el, scale, imageMap, textOverrides, toggleStates }: {
   }
 
   if (el.type === 'button') {
-    const bs = el.buttonStyle;
-    const scaleKey = bs?.scaleKey || 'lg';
-    const ts = typeScale[scaleKey] || typeScale.lg;
-    const bsd = buttonStyleDefaults[bs?.styleType || 'outline'];
-    const bgGrad = bs?.bgGradient ? gradientTokens[bs.bgGradient] : null;
-    const bgStyle = bgGrad
-      ? `linear-gradient(${bgGrad.direction}, ${bgGrad.from}, ${bgGrad.to})`
-      : bs?.bgColor || '#24282c';
-    const text = textOverrides[el.id] ?? el.label ?? '버튼';
-
-    return (
-      <div style={{
-        background: bgStyle,
-        borderRadius: bsd.borderRadius * scale,
-        border: bsd.borderWidth > 0 ? `${bsd.borderWidth * scale}px solid ${bsd.borderColor}` : 'none',
-        padding: bs?.styleType === 'doubleLine' ? `${3 * scale}px` : undefined,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {bs?.styleType === 'doubleLine' ? (
-          <div style={{
-            width: '100%',
-            border: `${bsd.innerLineWidth * scale}px solid ${bsd.innerLineColor}`,
-            borderRadius: (bsd.borderRadius - 4) * scale,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: `${14 * scale}px ${20 * scale}px`,
-          }}>
-            <span style={{
-              fontFamily: 'GMarketSans, sans-serif', fontSize: ts.fontSize * scale, fontWeight: ts.fontWeight,
-              color: '#fff', WebkitTextStroke: ts.stroke ? `${ts.stroke * scale}px #000` : undefined,
-              paintOrder: 'stroke fill',
-            }}>{text}</span>
-          </div>
-        ) : (
-          <div style={{ padding: `${14 * scale}px ${20 * scale}px` }}>
-            <span style={{
-              fontFamily: 'GMarketSans, sans-serif', fontSize: ts.fontSize * scale, fontWeight: ts.fontWeight,
-              color: '#fff', WebkitTextStroke: ts.stroke ? `${ts.stroke * scale}px #000` : undefined,
-              paintOrder: 'stroke fill',
-            }}>{text}</span>
-          </div>
-        )}
-      </div>
-    );
+    return <LayoutButton el={el} scale={scale} overrideText={textOverrides[el.id]} withPadding />;
   }
 
   if (el.type === 'toggle') {
@@ -454,29 +392,3 @@ function RenderElement({ el, scale, imageMap, textOverrides, toggleStates }: {
   return null;
 }
 
-/** 타입 스케일 (에디터 design-tokens와 동일) */
-const typeScale: Record<string, { fontSize: number; fontWeight: number; stroke: number }> = {
-  '3xl': { fontSize: 76, fontWeight: 900, stroke: 6 },
-  '2xl': { fontSize: 56, fontWeight: 900, stroke: 6 },
-  xl: { fontSize: 44, fontWeight: 900, stroke: 4 },
-  lg: { fontSize: 32, fontWeight: 900, stroke: 3 },
-  md: { fontSize: 28, fontWeight: 900, stroke: 3 },
-  sm: { fontSize: 20, fontWeight: 700, stroke: 2 },
-  xs: { fontSize: 16, fontWeight: 700, stroke: 0 },
-  '2xs': { fontSize: 13, fontWeight: 400, stroke: 0 },
-}
-
-/** 버튼 스타일 기본값 (에디터 design-tokens와 동일) */
-const buttonStyleDefaults: Record<string, { borderWidth: number; borderColor: string; innerLineWidth: number; innerLineColor: string; borderRadius: number }> = {
-  flat: { borderWidth: 0, borderColor: 'transparent', innerLineWidth: 0, innerLineColor: 'transparent', borderRadius: 12 },
-  outline: { borderWidth: 3, borderColor: '#000000', innerLineWidth: 0, innerLineColor: 'transparent', borderRadius: 12 },
-  doubleLine: { borderWidth: 3, borderColor: '#000000', innerLineWidth: 2, innerLineColor: '#4d4340', borderRadius: 12 },
-  pill: { borderWidth: 0, borderColor: 'transparent', innerLineWidth: 0, innerLineColor: 'transparent', borderRadius: 9999 },
-}
-
-/** 그라데이션 토큰 (에디터 design-tokens와 동일) */
-const gradientTokens: Record<string, { from: string; to: string; direction: string }> = {
-  'White → Ice Blue': { from: '#ffffff', to: '#c1e5ff', direction: 'to bottom' },
-  'Crimson → Maroon': { from: '#e5332f', to: '#771615', direction: '135deg' },
-  'Wine → Black': { from: '#2a0c10', to: '#000000', direction: 'to bottom' },
-}
