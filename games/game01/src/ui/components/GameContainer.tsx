@@ -27,7 +27,7 @@ export function GameContainer() {
 
     loadQuotes(); // R2에서 게임오버 멘트 미리 로드
 
-    // Google(Capacitor) 환경에서 AdMob + GPGS 초기화
+    // Google(Capacitor) 환경에서 AdMob + GPGS + 구매복원 초기화
     if (isGoogle()) {
       import('../../game/services/admob-provider').then(({ AdMobProvider }) => {
         adService.setProvider(new AdMobProvider());
@@ -35,6 +35,9 @@ export function GameContainer() {
       import('../../game/services/leaderboard').then(({ initGPGS }) => {
         initGPGS();
       }).catch((e) => console.warn('[GPGS] 초기화 실패:', e));
+      import('../../game/services/billing').then(({ restoreAdRemove }) => {
+        restoreAdRemove();
+      }).catch((e) => console.warn('[Billing] 복원 실패:', e));
     }
 
     const config = createGameConfig(GAME_CONTAINER_ID);

@@ -8,6 +8,7 @@
  */
 
 import { logEvent } from './analytics';
+import { isAdRemoved } from './billing';
 
 export interface AdProvider {
   /** 광고 미리 로드 (AdMob: admob.rewardedAd.load()) */
@@ -47,6 +48,12 @@ class AdService {
    * @param onFail 광고 실패/없음 → fallback house ad
    */
   showRewarded(onReward: () => void) {
+    // 광고 제거 구매 완료 시 바로 부활
+    if (isAdRemoved()) {
+      onReward();
+      return;
+    }
+
     // 실제 광고 프로바이더가 있고 준비됐으면 사용
     if (this.provider?.isReady()) {
       logEvent('ad_rewarded_show', { provider: 'admob' });

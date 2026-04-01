@@ -1,8 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { DESIGN_W } from '../../game/layout-types';
 import { LayoutRenderer } from '../components/LayoutRenderer';
 import type { ScreenLayoutJSON } from '../types/screen-layout';
+import { purchaseAdRemove } from '../../game/services/billing';
 import adRemoveLayout from '../../../public/layout/ad-remove.json';
 import styles from './overlay.module.css';
 
@@ -14,15 +15,27 @@ interface Props {
 }
 
 export function AdRemoveOverlay({ onClose }: Props) {
+  const [purchasing, setPurchasing] = useState(false);
+
   const handleClose = useCallback(() => {
     gameBus.emit('play-sfx', 'sfx-click');
     onClose();
   }, [onClose]);
 
-  const handlePurchase = useCallback(() => {
+  const handlePurchase = useCallback(async () => {
+    if (purchasing) return;
     gameBus.emit('play-sfx', 'sfx-click');
-    alert('구매 기능은 추후 연동 예정입니다.');
-  }, []);
+    setPurchasing(true);
+    try {
+      const success = await purchaseAdRemove();
+      if (success) {
+        onClose();
+        // 광고 제거 완료 — 다음 광고부터 적용
+      }
+    } finally {
+      setPurchasing(false);
+    }
+  }, [purchasing, onClose]);
 
   return (
     <div
