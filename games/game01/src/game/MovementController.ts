@@ -95,7 +95,7 @@ export function emitGuideHint(deps: MovementDeps) {
     gameBus.emit('guide-hint', null);
     return;
   }
-  if (deps.getGuideCount() >= 5) {
+  if (deps.getGuideCount() >= 20) {
     storage.setBool('tutorialDone', true);
     gameBus.emit('guide-hint', null);
     return;
@@ -162,6 +162,11 @@ export function moveForward(deps: MovementDeps) {
   if (!canPass) {
     deps.onForwardCrash();
     return;
+  }
+
+  // 튜토리얼: 첫 전진 시 타이머 시작
+  if (!deps.hud.isTimerRunning()) {
+    deps.hud.startTimer();
   }
 
   deps.playSfx('sfx-forward', 0.4);

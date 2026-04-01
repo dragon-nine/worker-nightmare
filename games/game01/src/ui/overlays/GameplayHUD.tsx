@@ -19,14 +19,19 @@ export function GameplayHUD() {
   const [timerPct, setTimerPct] = useState(1);
   const [pressedBtn, setPressedBtn] = useState<string | null>(null);
   const tutorialDone = storage.getBool('tutorialDone');
+  const [showIntro, setShowIntro] = useState(!tutorialDone);
   const [guideHint, setGuideHint] = useState<'forward' | 'switch' | null>(tutorialDone ? null : 'forward');
 
   useEffect(() => {
     const unsub1 = gameBus.on('score-update', setScore);
     const unsub2 = gameBus.on('timer-update', setTimerPct);
-    const unsub3 = gameBus.on('guide-hint', setGuideHint);
+    const unsub3 = gameBus.on('guide-hint', (hint) => {
+      setGuideHint(hint);
+      // 첫 전진 시 인트로 메시지 제거
+      if (showIntro) setShowIntro(false);
+    });
     return () => { unsub1(); unsub2(); unsub3(); };
-  }, []);
+  }, [showIntro]);
 
   const handleSwitch = useCallback(() => {
     gameBus.emit('action-switch', undefined);
@@ -184,20 +189,46 @@ export function GameplayHUD() {
           draggable={false}
         />
       </div>
+      {/* 튜토리얼 애니메이션 스타일 */}
+      {(!tutorialDone) && (
+        <style>{`
+          @keyframes guideGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+          }
+          @keyframes guideFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}</style>
+      )}
+      {/* 튜토리얼 인트로 — 화면 중앙 텍스트 */}
+      {showIntro && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+          animation: 'guideFadeIn 0.5s ease-out',
+        }}>
+          <span style={{
+            color: '#fff', fontSize: 28 * scale, fontWeight: 900,
+            fontFamily: 'GMarketSans, sans-serif',
+            textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
+            WebkitTextStroke: `${2 * scale}px #000`,
+            paintOrder: 'stroke fill',
+            textAlign: 'center',
+            lineHeight: 1.5,
+          }}>
+            제한 시간 동안<br />최대한 전진!
+          </span>
+        </div>
+      )}
       {/* 튜토리얼 가이드 — 눌러야 할 버튼만 표시 */}
       {guideHint && (
         <>
-          <style>{`
-            @keyframes guideGlow {
-              0%, 100% { opacity: 0.5; }
-              50% { opacity: 1; }
-            }
-            @keyframes guideFadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-          `}</style>
-
           {guideHint === 'forward' && pos('btn-forward') && (() => {
             const p = pos('btn-forward')!;
             const left = p.x - p.displayWidth * p.originX;

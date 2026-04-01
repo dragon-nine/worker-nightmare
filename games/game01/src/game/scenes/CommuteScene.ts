@@ -126,13 +126,18 @@ export class CommuteScene extends Phaser.Scene {
   private startGame() {
     if (this.gameStarted) return;
     this.gameStarted = true;
-    this.hud.startTimer();
 
     this.bgm = this.sound.get('bgm-menu') ?? undefined;
 
     logScreen('screen_game');
     logEvent('game_start');
     this.guideCount = 0;
+
+    const tutorialDone = storage.getBool('tutorialDone');
+    if (tutorialDone) {
+      this.hud.startTimer();
+    }
+    // 타이머 미시작 시 첫 moveForward에서 시작됨
     this.time.delayedCall(100, () => emitGuideHint(this.movementDeps()));
   }
 

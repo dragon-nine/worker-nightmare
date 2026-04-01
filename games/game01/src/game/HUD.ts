@@ -73,6 +73,7 @@ export class HUD {
     this.timerRunning = true;
   }
   stopTimer() { this.timerRunning = false; }
+  isTimerRunning() { return this.timerRunning; }
   isBgmMuted() { return this.bgmMuted; }
   isSfxMuted() { return this.sfxMuted; }
 
