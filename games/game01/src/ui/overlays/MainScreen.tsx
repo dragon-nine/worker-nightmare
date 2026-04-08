@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
 import { usePress } from '../hooks/usePress';
@@ -11,8 +10,6 @@ const BASE = import.meta.env.BASE_URL || '/';
 export function MainScreen() {
   const scale = Math.min(window.innerWidth, 500) / DESIGN_W;
   const { handlers, pressStyle } = usePress();
-  const [godMode, setGodMode] = useState(storage.getBool('godMode'));
-  const [debugOpen, setDebugOpen] = useState(false);
   const tutorialDone = storage.getBool('tutorialDone');
   const bestScore = storage.getBestScore();
 
@@ -28,12 +25,6 @@ export function MainScreen() {
   const handleSettings = () => {
     gameBus.emit('play-sfx', 'sfx-click');
     gameBus.emit('screen-change', 'settings');
-  };
-
-  const handleToggleGodMode = () => {
-    const next = !godMode;
-    setGodMode(next);
-    storage.setBool('godMode', next);
   };
 
   return (
@@ -92,25 +83,8 @@ export function MainScreen() {
           </svg>
         </div>
 
-        {/* 우측: 🛡️ + ⚙ */}
+        {/* 우측: ⚙ */}
         <div style={{ display: 'flex', gap: 6 * scale }}>
-          <div
-            onClick={() => setDebugOpen(true)}
-            {...handlers('icon-debug')}
-            style={{
-              width: 42 * scale, height: 42 * scale,
-              borderRadius: 999,
-              background: godMode ? '#4ade80' : '#354a59',
-              border: `${2 * scale}px solid ${godMode ? '#4ade80' : '#000'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              ...pressStyle('icon-debug'),
-            }}
-          >
-            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="rgba(255,255,255,0.15)" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
           <div
             onClick={handleSettings}
             {...handlers('btn-settings')}
@@ -186,79 +160,6 @@ export function MainScreen() {
         <StartButton label="시작하기" scale={scale} onClick={handleStart} />
       </div>
 
-      {/* 디버그 모달 */}
-      {debugOpen && (
-        <div
-          onClick={() => setDebugOpen(false)}
-          style={{
-            position: 'absolute', inset: 0, zIndex: 100,
-            background: 'rgba(0,0,0,0.7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#2a292e', borderRadius: 16 * scale,
-              padding: `${24 * scale}px`,
-              display: 'flex', flexDirection: 'column', gap: 12 * scale,
-              minWidth: 240 * scale,
-            }}
-          >
-            <div style={{
-              fontFamily: 'GMarketSans, sans-serif', fontWeight: 700,
-              fontSize: 20 * scale, color: '#fff', textAlign: 'center',
-            }}>
-              디버그
-            </div>
-
-            <div
-              onClick={handleToggleGodMode}
-              style={{
-                background: godMode ? '#1a3a1a' : '#1a1a1f',
-                borderRadius: 10 * scale, padding: `${14 * scale}px`,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontFamily: 'GMarketSans, sans-serif', fontWeight: 700, fontSize: 16 * scale, color: '#fff' }}>
-                무적 모드
-              </span>
-              <span style={{ fontSize: 14 * scale, color: godMode ? '#4ade80' : '#666' }}>
-                {godMode ? 'ON' : 'OFF'}
-              </span>
-            </div>
-
-            <div
-              onClick={() => {
-                if (tutorialDone) {
-                  storage.removeBool('tutorialDone');
-                } else {
-                  storage.setBool('tutorialDone', true);
-                }
-                setDebugOpen(false);
-              }}
-              style={{
-                background: !tutorialDone ? '#1a2a3a' : '#1a1a1f',
-                borderRadius: 10 * scale, padding: `${14 * scale}px`,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontFamily: 'GMarketSans, sans-serif', fontWeight: 700, fontSize: 16 * scale, color: '#fff' }}>
-                튜토리얼
-              </span>
-              <span style={{ fontSize: 14 * scale, color: !tutorialDone ? '#00e5ff' : '#666' }}>
-                {!tutorialDone ? 'ON' : 'OFF'}
-              </span>
-            </div>
-
-            <div style={{ fontSize: 11 * scale, color: '#555', textAlign: 'center' }}>
-              튜토리얼 ON → 다음 게임에 가이드 표시
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

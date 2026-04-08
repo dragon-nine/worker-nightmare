@@ -120,15 +120,15 @@ export default function LaunchGroup({ group, onBanner }: Props) {
       const origName = getFilename(blob.pathname)
       const ext = origName.match(/\.\w+$/)?.[0] || '.png'
       const platformTag = opt.platform === '토스' ? 'toss' : opt.platform === 'Google Play 원형' ? 'google_play_round' : 'google_play'
-      const dlName = `${group.fileBaseName}_${platformTag}${ext}`
+      const baseName = `${group.fileBaseName}_${platformTag}`
       if (opt.mode === 'circle') {
-        await downloadCircle(dlUrl, dlName.replace(ext, '.png'), opt.width)
+        await downloadCircle(dlUrl, `${baseName}.png`, opt.width)
       } else if (opt.width === group.storeWidth && opt.height === group.storeHeight) {
-        await downloadOriginal(dlUrl, dlName)
+        await downloadOriginal(dlUrl, `${baseName}${ext}`)
       } else if (opt.mode === 'resize') {
-        await downloadResized(dlUrl, dlName, opt.width, opt.height)
+        await downloadResized(dlUrl, `${baseName}.png`, opt.width, opt.height)
       } else {
-        setDownloadCropUrl({ url: dlUrl, filename: dlName, opt })
+        setDownloadCropUrl({ url: dlUrl, filename: `${baseName}.png`, opt })
       }
     } finally {
       setDownloading(null)

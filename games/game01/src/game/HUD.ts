@@ -63,13 +63,7 @@ export class HUD {
   }
 
   startTimer() {
-    const god = storage.getBool('godMode');
-    if (god) {
-      this.timerRunning = false;
-      this.timeLeft = MAX_TIME;
-      this.emitTimer();
-      return;
-    }
+    // god mode removed for production
     this.timerRunning = true;
   }
   stopTimer() { this.timerRunning = false; }
