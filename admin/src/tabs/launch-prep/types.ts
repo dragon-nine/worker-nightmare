@@ -45,6 +45,7 @@ export function buildGroups(gameId: string): AssetGroup[] {
       accept: 'image/png,image/jpeg',
       maxCount: 1,
       storeWidth: 1932, storeHeight: 828,
+      exactOnly: true,
       prefix: `${gameId}/assets/launch/feature/`,
       downloads: [
         { platform: '토스', width: 1932, height: 828, mode: 'resize' },
