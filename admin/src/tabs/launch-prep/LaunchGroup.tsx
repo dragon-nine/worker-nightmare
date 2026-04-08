@@ -121,11 +121,12 @@ export default function LaunchGroup({ group, onBanner }: Props) {
       const ext = origName.match(/\.\w+$/)?.[0] || '.png'
       const platformTag = opt.platform === '토스' ? 'toss' : opt.platform === 'Google Play 원형' ? 'google_play_round' : 'google_play'
       const baseName = `${group.fileBaseName}_${platformTag}`
+      const isPng = ext.toLowerCase() === '.png'
       if (opt.mode === 'circle') {
         await downloadCircle(dlUrl, `${baseName}.png`, opt.width)
-      } else if (opt.width === group.storeWidth && opt.height === group.storeHeight) {
-        await downloadOriginal(dlUrl, `${baseName}${ext}`)
-      } else if (opt.mode === 'resize') {
+      } else if (opt.width === group.storeWidth && opt.height === group.storeHeight && isPng) {
+        await downloadOriginal(dlUrl, `${baseName}.png`)
+      } else if (opt.mode === 'resize' || (opt.width === group.storeWidth && opt.height === group.storeHeight)) {
         await downloadResized(dlUrl, `${baseName}.png`, opt.width, opt.height)
       } else {
         setDownloadCropUrl({ url: dlUrl, filename: `${baseName}.png`, opt })
