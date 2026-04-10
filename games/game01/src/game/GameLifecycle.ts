@@ -1,4 +1,4 @@
-import { START_TIME } from './constants';
+import { START_TIME, PLAYER_Y_RATIO } from './constants';
 import { submitScore as submitLeaderboardScore } from './services/leaderboard';
 import { logEvent } from './services/analytics';
 import { gameBus } from './event-bus';
@@ -20,6 +20,7 @@ export interface LifecycleDeps extends MovementDeps {
 export function onForwardCrash(deps: LifecycleDeps) {
   if (deps.getGodMode()) return;
   deps.setIsFalling(true);
+  deps.hud.stopTimer();
   deps.player.setHurt(true);
   deps.playSfx('sfx-crash', 0.7);
   deps.vibrate([30, 40, 60]);
@@ -61,7 +62,6 @@ export function revive(deps: LifecycleDeps) {
   deps.player.resetSprite();
 
   const { height } = deps.scene.scale;
-  const PLAYER_Y_RATIO = 3 / 4;
   const playerScreenY = height * PLAYER_Y_RATIO - deps.tileH / 2;
   deps.player.scrollTo(deps.player.x, playerScreenY);
 

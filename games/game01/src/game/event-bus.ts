@@ -3,7 +3,7 @@
  * Phaser 씬에서 emit → React 컴포넌트에서 subscribe
  */
 
-export type GameScreen = 'main' | 'story' | 'playing' | 'paused' | 'settings' | 'game-over' | 'revive-ad';
+export type GameScreen = 'loading' | 'main' | 'story' | 'playing' | 'paused' | 'settings' | 'game-over' | 'revive-ad';
 
 export interface GameOverData {
   score: number;
@@ -35,6 +35,12 @@ type EventMap = {
   'guide-hint': 'forward' | 'switch' | null;
   // Modals
   'show-ad-remove': void;
+  // 부활 광고 실패/스킵 알림 → ReviveFailModal 표시
+  'revive-fail': 'skipped' | 'failed';
+  // Mock 광고 표시 요청 (DEV 전용 — MockAdModal 트리거)
+  'mock-ad-show': void;
+  // Toast 알림 (React 오버레이로 렌더)
+  'toast': string;
   // Debug
   'toggle-godmode': void;
 };

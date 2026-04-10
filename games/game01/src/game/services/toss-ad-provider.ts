@@ -3,9 +3,14 @@
  *
  * 토스 인앱 광고 2.0 ver2 — load → show 패턴
  * 테스트용 adGroupId: 'ait-ad-test-rewarded-id'
+ *
+ * 결과 처리:
+ *   - userEarnedReward 이벤트 → earned 플래그 set
+ *   - dismissed 이벤트 → earned 여부에 따라 rewarded/skipped
+ *   - failedToShow / onError → failed
  */
 
-import type { AdProvider } from './ad-service';
+import type { AdProvider, AdResult } from './ad-service';
 import { gameConfig } from '../game.config';
 
 const TEST_AD_GROUP_ID = 'ait-ad-test-rewarded-id';
@@ -43,50 +48,46 @@ export class TossAdProvider implements AdProvider {
     });
   }
 
-  async showRewarded(): Promise<void> {
-    // 로드 안 됐으면 먼저 로드 시도
+  async showRewarded(): Promise<AdResult> {
     if (!this.loaded) {
       await this.preload();
     }
     if (!this.loaded) {
-      throw new Error('Ad not loaded');
+      return { kind: 'failed', error: new Error('not_loaded') };
     }
 
     const { showFullScreenAd } = await import('@apps-in-toss/web-framework');
 
-    return new Promise<void>((resolve, reject) => {
-      let rewarded = false;
+    return new Promise<AdResult>((resolve) => {
+      let earned = false;
       let settled = false;
+
+      const settle = (result: AdResult) => {
+        if (settled) return;
+        settled = true;
+        this.loaded = false;
+        // 다음 광고 미리 로드
+        this.preload();
+        resolve(result);
+      };
 
       showFullScreenAd({
         options: { adGroupId: this.getAdGroupId() },
         onEvent: (event) => {
           if (event.type === 'userEarnedReward') {
-            rewarded = true;
+            earned = true;
           } else if (event.type === 'dismissed') {
-            if (settled) return;
-            settled = true;
-            this.loaded = false;
-            // 다음 광고 미리 로드
-            this.preload();
-            if (rewarded) {
-              resolve();
-            } else {
-              reject(new Error('Ad dismissed without reward'));
-            }
+            settle(earned ? { kind: 'rewarded' } : { kind: 'skipped' });
           } else if (event.type === 'failedToShow') {
-            if (settled) return;
-            settled = true;
-            this.loaded = false;
-            reject(new Error('Ad failed to show'));
+            settle({ kind: 'failed', error: new Error('failed_to_show') });
           }
         },
         onError: (error) => {
-          if (settled) return;
-          settled = true;
-          this.loaded = false;
           console.warn('[TossAd] 광고 표시 실패:', error);
-          reject(error);
+          settle({
+            kind: 'failed',
+            error: error instanceof Error ? error : new Error(String(error)),
+          });
         },
       });
     });

@@ -75,7 +75,10 @@ export class HUD {
   update(delta: number) {
     if (!this.timerRunning || this.paused) return;
 
-    const dt = delta / 1000;
+    // delta cap (250ms) — 백그라운드 복귀, GC, RAF jitter 등으로 인한 spiral of death 방지.
+    // 부활 광고 직후 첫 프레임 delta가 광고 길이만큼 폭주해서 즉사하는 버그 방지가 주 목적.
+    const cappedDelta = Math.min(delta, 250);
+    const dt = cappedDelta / 1000;
     this.elapsed += dt;
     this.timeLeft -= dt;
 

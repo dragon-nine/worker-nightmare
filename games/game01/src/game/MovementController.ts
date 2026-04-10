@@ -1,4 +1,4 @@
-import { NUM_LANES, VISIBLE_LANES, PADDING } from './constants';
+import { NUM_LANES, VISIBLE_LANES, PADDING, PLAYER_Y_RATIO } from './constants';
 import { Road } from './Road';
 import { Player } from './Player';
 import { HUD } from './HUD';
@@ -69,7 +69,6 @@ export function scrollToCurrentRow(deps: MovementDeps) {
   const { height } = deps.scene.scale;
   const row = deps.road.rows[deps.getCurrentRowIdx()];
   if (!row) return;
-  const PLAYER_Y_RATIO = 3 / 4;
   const screenY = height * PLAYER_Y_RATIO;
   const targetContainerY = -(row.y - screenY);
 
@@ -118,6 +117,7 @@ export function switchLane(deps: MovementDeps) {
   if (!canSwitch) {
     if (deps.getGodMode()) return;
     deps.setIsFalling(true);
+    deps.hud.stopTimer();
     deps.playSfx('sfx-crash', 0.7);
     const lane = deps.player.currentLane;
     const crashLane = lane < NUM_LANES - 1 ? lane + 1 : lane - 1;

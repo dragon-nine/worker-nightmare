@@ -1,13 +1,12 @@
 import { useState, useCallback } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
-import { DESIGN_W } from '../../game/layout-types';
-import { usePress } from '../hooks/usePress';
+import { useResponsiveScale } from '../hooks/useResponsiveScale';
+import { ModalShell } from '../components/ModalShell';
+import { TapButton } from '../components/TapButton';
+import { Text } from '../components/Text';
 import { getRandomChallengeQuote } from '../../game/challenge-quotes';
-import styles from './overlay.module.css';
 
-const MAX_W = 500;
-const scale = Math.min(window.innerWidth, MAX_W) / DESIGN_W;
 const BASE = import.meta.env.BASE_URL || '/';
 
 interface Props {
@@ -16,10 +15,10 @@ interface Props {
 }
 
 export function ChallengeOverlay({ score, onClose }: Props) {
+  const scale = useResponsiveScale();
   const bestScore = storage.getBestScore();
   const isNewRecord = score >= bestScore && bestScore > 0;
   const [message, setMessage] = useState(() => getRandomChallengeQuote(score, isNewRecord));
-  const { handlers, pressStyle } = usePress();
 
   const handleRefresh = useCallback(() => {
     gameBus.emit('play-sfx', 'sfx-click');
@@ -47,149 +46,62 @@ export function ChallengeOverlay({ score, onClose }: Props) {
   }, [onClose]);
 
   return (
-    <div
-      className={`${styles.overlay} ${styles.fadeIn}`}
-      style={{ zIndex: 200 }}
-      onClick={handleClose}
-    >
-      <div className={styles.dim} />
+    <ModalShell onClose={handleClose} zIndex={200}>
+      {/* 점수 */}
+      <Text size={48 * scale} weight={900} align="center" style={{ marginBottom: 8 * scale }}>
+        {score}
+      </Text>
 
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: `0 ${20 * scale}px`,
-      }}>
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            background: '#2a292e',
-            borderRadius: 20 * scale,
-            padding: `${32 * scale}px ${24 * scale}px ${24 * scale}px`,
-            width: '100%',
-            maxWidth: 360 * scale,
-            position: 'relative',
-          }}
-        >
-          {/* X 버튼 */}
-          <div
-            onClick={handleClose}
-            {...handlers('challenge-close', handleClose)}
-            style={{
-              position: 'absolute',
-              top: 12 * scale, right: 12 * scale,
-              width: 28 * scale, height: 28 * scale,
-              borderRadius: 999,
-              background: '#000',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              ...pressStyle('challenge-close'),
-            }}
-          >
-            <span style={{ color: '#fff', fontSize: 14 * scale, fontWeight: 700, lineHeight: 1 }}>✕</span>
-          </div>
-
-          {/* 점수 */}
-          <div style={{
-            fontFamily: 'GMarketSans, sans-serif',
-            fontWeight: 900,
-            fontSize: 48 * scale,
-            color: '#fff',
-            textAlign: 'center',
-            marginBottom: 8 * scale,
-          }}>
-            {score}
-          </div>
-
-          {/* 캐릭터 이미지 */}
-          <div style={{ textAlign: 'center', marginBottom: 12 * scale }}>
-            <img
-              src={`${BASE}challenge/challenge-rabbit.png`}
-              alt=""
-              draggable={false}
-              style={{ width: 140 * scale, objectFit: 'contain' }}
-            />
-          </div>
-
-          {/* 멘트 카드 */}
-          <div style={{
-            background: '#1a1a1f',
-            borderRadius: 14 * scale,
-            padding: `${14 * scale}px ${16 * scale}px`,
-            marginBottom: 10 * scale,
-            textAlign: 'center',
-          }}>
-            <span style={{
-              fontFamily: 'GMarketSans, sans-serif',
-              fontWeight: 400,
-              fontSize: 14 * scale,
-              color: '#ccc',
-              lineHeight: 1.5,
-            }}>
-              {message}
-            </span>
-          </div>
-
-          {/* 다른 멘트로 바꾸기 */}
-          <div
-            onClick={handleRefresh}
-            {...handlers('challenge-refresh', handleRefresh)}
-            style={{
-              textAlign: 'center',
-              marginBottom: 20 * scale,
-              cursor: 'pointer',
-              ...pressStyle('challenge-refresh'),
-            }}
-          >
-            <span style={{
-              fontFamily: 'GMarketSans, sans-serif',
-              fontWeight: 400,
-              fontSize: 12 * scale,
-              color: '#888',
-            }}>
-              ↻ 다른 멘트로 바꾸기
-            </span>
-          </div>
-
-          {/* 카카오톡 보내기 버튼 */}
-          <div
-            onClick={handleCTA}
-            {...handlers('challenge-cta', handleCTA)}
-            style={{
-              background: '#000',
-              borderRadius: 12 * scale,
-              padding: `${14 * scale}px`,
-              textAlign: 'center',
-              cursor: 'pointer',
-              ...pressStyle('challenge-cta'),
-            }}
-          >
-            <span style={{
-              fontFamily: 'GMarketSans, sans-serif',
-              fontWeight: 700,
-              fontSize: 17 * scale,
-              color: '#fff',
-              whiteSpace: 'nowrap',
-            }}>
-              도전장 보내기
-            </span>
-          </div>
-        </div>
-
-        {/* 안내 텍스트 */}
-        <div style={{
-          fontFamily: 'GMarketSans, sans-serif',
-          fontSize: 13 * scale,
-          color: '#434750',
-          textAlign: 'center',
-          marginTop: 12 * scale,
-        }}>
-          화면 터치 시 이전으로 이동
-        </div>
+      {/* 캐릭터 이미지 */}
+      <div style={{ textAlign: 'center', marginBottom: 12 * scale }}>
+        <img
+          src={`${BASE}challenge/challenge-rabbit.png`}
+          alt=""
+          draggable={false}
+          style={{ width: 140 * scale, objectFit: 'contain' }}
+        />
       </div>
-    </div>
+
+      {/* 멘트 카드 */}
+      <div style={{
+        background: '#1a1a1f',
+        borderRadius: 14 * scale,
+        padding: `${14 * scale}px ${16 * scale}px`,
+        marginBottom: 10 * scale,
+        textAlign: 'center',
+      }}>
+        <Text size={14 * scale} color="#ccc" lineHeight={1.5} as="span">
+          {message}
+        </Text>
+      </div>
+
+      {/* 다른 멘트로 바꾸기 */}
+      <TapButton
+        onTap={handleRefresh}
+        style={{
+          textAlign: 'center',
+          marginBottom: 20 * scale,
+        }}
+      >
+        <Text size={12 * scale} color="#888" as="span">
+          ↻ 다른 멘트로 바꾸기
+        </Text>
+      </TapButton>
+
+      {/* 카카오톡 보내기 버튼 */}
+      <TapButton
+        onTap={handleCTA}
+        style={{
+          background: '#000',
+          borderRadius: 12 * scale,
+          padding: `${14 * scale}px`,
+          textAlign: 'center',
+        }}
+      >
+        <Text size={17 * scale} weight={700} as="span" style={{ whiteSpace: 'nowrap' }}>
+          도전장 보내기
+        </Text>
+      </TapButton>
+    </ModalShell>
   );
 }

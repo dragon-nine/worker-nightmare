@@ -159,9 +159,13 @@ export function computeLayout(
   const contentAreaH = screenH - padTop - padBottom
   const totalH = rows.reduce((sum, r, i) => sum + r.height + (i > 0 ? r.gapPx * scale : 0), 0)
 
+  // 'top' 정렬은 항상 padTop부터 시작 (overflow도 아래로만).
+  // 'center' 정렬은 사용 가능한 영역의 정중앙에 배치 — 콘텐츠가 넘치면
+  // overflow가 위/아래로 균등하게 분배됨 (과거에는 Math.max로 padTop에 고정해
+  // 모든 overflow가 아래로 쏠렸음).
   let curY = groupVAlign === 'top'
     ? padTop
-    : Math.max(padTop, padTop + (contentAreaH - totalH) / 2)
+    : padTop + (contentAreaH - totalH) / 2
 
   for (let ri = 0; ri < rows.length; ri++) {
     const row = rows[ri]

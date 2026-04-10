@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { gameBus, type GameOverData } from '../../game/event-bus';
 import { useLayout } from '../hooks/useLayout';
-import { usePress } from '../hooks/usePress';
+import { TapButton } from '../components/TapButton';
 import { openLeaderboard } from '../../game/services/leaderboard';
 import { isAdRemoved } from '../../game/services/billing';
 import { logClick } from '../../game/services/analytics';
@@ -58,8 +58,6 @@ export function GameOverScreen({ data }: Props) {
       openLeaderboard();
     },
   }), []);
-
-  const { handlers, pressStyle } = usePress();
 
   if (!ready) return null;
 
@@ -121,19 +119,16 @@ export function GameOverScreen({ data }: Props) {
               animationDelay: finalDelay,
             }}
           >
-            {isBtn ? (
-              <div
+            {isBtn && onClick ? (
+              <TapButton
+                onTap={onClick}
                 style={{
                   width: '100%',
                   height: '100%',
-                  cursor: 'pointer',
-                  ...pressStyle(el.id),
                 }}
-                onClick={onClick}
-                {...handlers(el.id, onClick)}
               >
                 {content}
-              </div>
+              </TapButton>
             ) : content}
           </div>
         );

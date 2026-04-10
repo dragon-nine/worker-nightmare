@@ -1,15 +1,15 @@
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
-import { usePress } from '../hooks/usePress';
+import { useResponsiveScale } from '../hooks/useResponsiveScale';
+import { TapButton } from '../components/TapButton';
 import { StartButton } from '../components/StartButton';
-import { DESIGN_W } from '../../game/layout-types';
+import { Text } from '../components/Text';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
 
 export function MainScreen() {
-  const scale = Math.min(window.innerWidth, 500) / DESIGN_W;
-  const { handlers, pressStyle } = usePress();
+  const scale = useResponsiveScale();
   const tutorialDone = storage.getBool('tutorialDone');
   const bestScore = storage.getBestScore();
 
@@ -61,17 +61,14 @@ export function MainScreen() {
         }}
       >
         {/* 광고제거 */}
-        <div
-          onClick={() => gameBus.emit('show-ad-remove', undefined)}
-          {...handlers('icon-ad-remove', () => gameBus.emit('show-ad-remove', undefined))}
+        <TapButton
+          onTap={() => gameBus.emit('show-ad-remove', undefined)}
           style={{
             width: 42 * scale, height: 42 * scale,
             borderRadius: 999,
             background: 'linear-gradient(135deg, #f0a030, #ffd060)',
             border: `${2 * scale}px solid #000`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer',
-            ...pressStyle('icon-ad-remove'),
           }}
         >
           <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none">
@@ -81,28 +78,25 @@ export function MainScreen() {
             <line x1="4" y1="4" x2="20" y2="20" stroke="#000" strokeWidth="3.5" strokeLinecap="round" />
             <line x1="4" y1="4" x2="20" y2="20" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
           </svg>
-        </div>
+        </TapButton>
 
         {/* 우측: ⚙ */}
         <div style={{ display: 'flex', gap: 6 * scale }}>
-          <div
-            onClick={handleSettings}
-            {...handlers('btn-settings', handleSettings)}
+          <TapButton
+            onTap={handleSettings}
             style={{
               width: 42 * scale, height: 42 * scale,
               borderRadius: 999,
               background: '#354a59',
               border: `${2 * scale}px solid #000`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              ...pressStyle('btn-settings'),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
             <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
             </svg>
-          </div>
+          </TapButton>
         </div>
       </div>
 
@@ -126,38 +120,43 @@ export function MainScreen() {
         />
       </div>
 
-      {/* ── 하단 영역: 최고기록 + 시작 버튼 ── */}
+      {/* ── 하단 영역: 최고기록 + 시작 버튼 ──
+          타이틀(top:15%) 아래부터 화면 끝까지의 영역에서 수직 중앙 정렬.
+          토끼(배경 이미지)와 충분한 시각적 거리 확보. */}
       <div
         style={{
           position: 'absolute',
-          bottom: 80 * scale,
+          top: '52%',
           left: 0, right: 0,
+          bottom: 0,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 0,
+          justifyContent: 'center',
+          paddingBottom: `calc(var(--sab, 0px) + ${40 * scale}px)`,
+          gap: 16 * scale,
+          pointerEvents: 'none',
         }}
       >
         {/* 최고기록 */}
-        <div
+        <Text
+          size={22 * scale}
+          weight={900}
+          align="center"
           className={styles.fadeInUp}
           style={{
-            fontFamily: 'GMarketSans, sans-serif',
-            fontWeight: 900,
-            fontSize: 22 * scale,
-            color: '#fff',
-            textAlign: 'center',
             animationDelay: '0.6s',
-            marginBottom: 2 * scale,
             WebkitTextStroke: `${3 * scale}px #000`,
             paintOrder: 'stroke fill',
           }}
         >
           최고기록 {bestScore}
-        </div>
+        </Text>
 
-        {/* 시작 버튼 */}
-        <StartButton label="시작하기" scale={scale} onClick={handleStart} />
+        {/* 시작 버튼 — 래퍼는 pointerEvents none이라 버튼만 활성화 */}
+        <div style={{ pointerEvents: 'auto' }}>
+          <StartButton label="시작하기" scale={scale} onClick={handleStart} />
+        </div>
       </div>
 
     </div>

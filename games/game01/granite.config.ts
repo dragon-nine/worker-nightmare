@@ -11,7 +11,7 @@ export default defineConfig({
     host: 'localhost',
     port: 5173,
     commands: {
-      dev: 'vite',
+      dev: 'vite --base /',
       build: 'tsc -b && vite build --outDir dist --base /',
     },
   },

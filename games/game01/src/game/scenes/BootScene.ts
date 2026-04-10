@@ -42,15 +42,15 @@ export class BootScene extends Phaser.Scene {
 
     logScreen('screen_boot');
 
-    // React에서 메인 화면 렌더링 → 'main' 스크린 표시
-    gameBus.emit('screen-change', 'main');
-
-    // React → Phaser 이벤트 리스너
+    // 중요: 리스너부터 먼저 등록 (메인 화면 표시 전에 준비 완료)
     const unsubStart = gameBus.on('start-game', () => {
       // BGM은 멈추지 않고 계속 재생
       this.scene.start('CommuteScene');
       unsubStart();
     });
+
+    // React에서 메인 화면 렌더링 → 'main' 스크린 표시 (리스너 등록 후)
+    gameBus.emit('screen-change', 'main');
 
     const unsubPlaySfx = gameBus.on('play-sfx', (key) => {
       if (key && !storage.getBool('sfxMuted')) {

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
-import { isToss } from '../../game/platform';
 import { useLayout } from '../hooks/useLayout';
+import { TapButton } from '../components/TapButton';
+import { Text } from '../components/Text';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -17,7 +18,6 @@ const IMAGE_MAP: Record<string, string> = {
 export function GameplayHUD() {
   const { positions, elements, scale, ready } = useLayout('gameplay', IMAGE_MAP);
   const [score, setScore] = useState(0);
-  const [pressedBtn, setPressedBtn] = useState<string | null>(null);
   const gaugeFillRef = useRef<HTMLDivElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
   const [showIntro, setShowIntro] = useState(!tutorialDone);
@@ -53,14 +53,6 @@ export function GameplayHUD() {
   const handlePause = useCallback(() => {
     gameBus.emit('action-pause', undefined);
   }, []);
-
-  const handleBtnDown = useCallback((id: string) => {
-    setPressedBtn(id);
-    setTimeout(() => setPressedBtn(null), 80);
-  }, []);
-
-  const toss = isToss();
-
 
   if (!ready) return null;
 
@@ -135,9 +127,9 @@ export function GameplayHUD() {
       )}
 
       {/* 일시정지 버튼 */}
-      <div
-        style={{ ...boxStyle('btn-pause'), pointerEvents: 'auto', cursor: 'pointer', touchAction: 'manipulation' }}
-        onPointerDown={handlePause}
+      <TapButton
+        onTap={handlePause}
+        style={{ ...boxStyle('btn-pause'), pointerEvents: 'auto' }}
       >
         <img
           src={`${BASE}ui/btn-pause.png`}
@@ -145,39 +137,32 @@ export function GameplayHUD() {
           style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
           draggable={false}
         />
-      </div>
+      </TapButton>
 
       {/* 점수 */}
       {pos('scoreText') && (
-        <div style={{
-          ...boxStyle('scoreText'),
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          fontSize: scoreFontSize,
-          fontWeight: 700,
-          fontFamily: 'GMarketSans, sans-serif',
-          color: scoreEl?.textStyle?.color || '#fff',
-          WebkitTextStroke: `${scoreStrokeW}px ${scoreStrokeColor}`,
-          paintOrder: 'stroke fill',
-        }}>
+        <Text
+          size={scoreFontSize}
+          weight={700}
+          color={scoreEl?.textStyle?.color || '#fff'}
+          style={{
+            ...boxStyle('scoreText'),
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            WebkitTextStroke: `${scoreStrokeW}px ${scoreStrokeColor}`,
+            paintOrder: 'stroke fill',
+          }}
+        >
           {score}
-        </div>
+        </Text>
       )}
 
       {/* 좌측 버튼 (방향 전환) */}
-      <div
-        style={{
-          ...boxStyle('btn-switch'),
-          pointerEvents: 'auto',
-          cursor: 'pointer',
-          transform: pressedBtn === 'btn-switch' ? 'scale(0.85)' : undefined,
-          transition: 'transform 0.08s ease-out',
-          touchAction: 'manipulation',
-        }}
-        {...(toss
-          ? { onTouchStart: () => { handleBtnDown('btn-switch'); handleSwitch(); } }
-          : { onPointerDown: () => { handleBtnDown('btn-switch'); handleSwitch(); } })}
+      <TapButton
+        onTap={handleSwitch}
+        pressScale={0.85}
+        style={{ ...boxStyle('btn-switch'), pointerEvents: 'auto' }}
       >
         <img
           src={`${BASE}ui/btn-switch.png`}
@@ -185,21 +170,13 @@ export function GameplayHUD() {
           style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
           draggable={false}
         />
-      </div>
+      </TapButton>
 
       {/* 우측 버튼 (전진) */}
-      <div
-        style={{
-          ...boxStyle('btn-forward'),
-          pointerEvents: 'auto',
-          cursor: 'pointer',
-          transform: pressedBtn === 'btn-forward' ? 'scale(0.85)' : undefined,
-          transition: 'transform 0.08s ease-out',
-          touchAction: 'manipulation',
-        }}
-        {...(toss
-          ? { onTouchStart: () => { handleBtnDown('btn-forward'); handleForward(); } }
-          : { onPointerDown: () => { handleBtnDown('btn-forward'); handleForward(); } })}
+      <TapButton
+        onTap={handleForward}
+        pressScale={0.85}
+        style={{ ...boxStyle('btn-forward'), pointerEvents: 'auto' }}
       >
         <img
           src={`${BASE}ui/btn-forward.png`}
@@ -207,7 +184,7 @@ export function GameplayHUD() {
           style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
           draggable={false}
         />
-      </div>
+      </TapButton>
       {/* 튜토리얼 애니메이션 스타일 */}
       {(!tutorialDone) && (
         <style>{`
@@ -232,17 +209,20 @@ export function GameplayHUD() {
           pointerEvents: 'none',
           animation: 'guideFadeIn 0.5s ease-out',
         }}>
-          <span style={{
-            color: '#fff', fontSize: 28 * scale, fontWeight: 900,
-            fontFamily: 'GMarketSans, sans-serif',
-            textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
-            WebkitTextStroke: `${2 * scale}px #000`,
-            paintOrder: 'stroke fill',
-            textAlign: 'center',
-            lineHeight: 1.5,
-          }}>
+          <Text
+            size={28 * scale}
+            weight={900}
+            align="center"
+            lineHeight={1.5}
+            as="span"
+            style={{
+              textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
+              WebkitTextStroke: `${2 * scale}px #000`,
+              paintOrder: 'stroke fill',
+            }}
+          >
             제한 시간 동안<br />최대한 전진!
-          </span>
+          </Text>
         </div>
       )}
       {/* 튜토리얼 가이드 — 눌러야 할 버튼만 표시 */}
@@ -269,15 +249,18 @@ export function GameplayHUD() {
                   position: 'absolute', left, top: top - 40 * scale, width: p.displayWidth,
                   textAlign: 'center', animation: 'guideFadeIn 0.5s ease-out',
                 }}>
-                  <span style={{
-                    color: '#fff', fontSize: 28 * scale, fontWeight: 900,
-                    fontFamily: 'GMarketSans, sans-serif',
-                    textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
-                    WebkitTextStroke: `${2 * scale}px #000`,
-                    paintOrder: 'stroke fill',
-                  }}>
+                  <Text
+                    size={28 * scale}
+                    weight={900}
+                    as="span"
+                    style={{
+                      textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
+                      WebkitTextStroke: `${2 * scale}px #000`,
+                      paintOrder: 'stroke fill',
+                    }}
+                  >
                     앞으로!
-                  </span>
+                  </Text>
                 </div>
               </>
             );
@@ -304,15 +287,18 @@ export function GameplayHUD() {
                   position: 'absolute', left, top: top - 40 * scale, width: p.displayWidth,
                   textAlign: 'center', animation: 'guideFadeIn 0.5s ease-out',
                 }}>
-                  <span style={{
-                    color: '#fff', fontSize: 28 * scale, fontWeight: 900,
-                    fontFamily: 'GMarketSans, sans-serif',
-                    textShadow: '0 0 10px #ff3b3b, 0 0 20px #ff3b3b60',
-                    WebkitTextStroke: `${2 * scale}px #000`,
-                    paintOrder: 'stroke fill',
-                  }}>
+                  <Text
+                    size={28 * scale}
+                    weight={900}
+                    as="span"
+                    style={{
+                      textShadow: '0 0 10px #ff3b3b, 0 0 20px #ff3b3b60',
+                      WebkitTextStroke: `${2 * scale}px #000`,
+                      paintOrder: 'stroke fill',
+                    }}
+                  >
                     회전!
-                  </span>
+                  </Text>
                 </div>
               </>
             );

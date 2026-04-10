@@ -10,10 +10,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 모든 모달의 공통 dim — 반투명 + backdrop blur */
 .dim {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px) saturate(140%);
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  /* GPU 레이어 미리 준비 — 첫 paint 가속 */
+  will-change: backdrop-filter, opacity;
+  transform: translateZ(0);
 }
 
 .gradient {
@@ -30,9 +36,9 @@
   align-items: center;
 }
 
-/* 페이드인 애니메이션 */
+/* 페이드인 애니메이션 — 모달 등장 (200ms로 단축, blur 응답성 개선) */
 .fadeIn {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.2s ease-out forwards;
 }
 
 .fadeInUp {

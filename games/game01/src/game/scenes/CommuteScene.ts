@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import {
   NUM_LANES, VISIBLE_LANES,
-  PADDING,
+  PADDING, PLAYER_Y_RATIO,
 } from '../constants';
 import { Road } from '../Road';
 import { Player } from '../Player';
@@ -83,7 +83,6 @@ export class CommuteScene extends Phaser.Scene {
     this.viewLeft = 0;
 
     this.road = new Road(this, this.laneWorldX, this.laneW, this.tileH, NUM_LANES);
-    const PLAYER_Y_RATIO = 3 / 4;
     const playerScreenY = height * PLAYER_Y_RATIO - this.tileH / 2;
     this.road.generateInitialStand(height, startLane, height * PLAYER_Y_RATIO);
 
@@ -96,10 +95,7 @@ export class CommuteScene extends Phaser.Scene {
     this.hud = new HUD(this, () => onDeath(this.lifecycleDeps()));
     this.hud.create();
 
-    gameBus.emit('screen-change', 'playing');
-
-    adService.preload();
-
+    // 중요: 리스너부터 먼저 등록 (GameplayHUD 표시 전에 준비 완료)
     setupReactListeners({
       scene: this,
       hud: this.hud,
@@ -111,6 +107,11 @@ export class CommuteScene extends Phaser.Scene {
       moveForward: () => doMoveForward(this.movementDeps()),
       getLifecycleDeps: () => this.lifecycleDeps(),
     });
+
+    // 그 다음 React에 playing 화면 표시
+    gameBus.emit('screen-change', 'playing');
+
+    adService.preload();
   }
 
   update(_time: number, delta: number) {

@@ -28,8 +28,7 @@ const GPGS_LEADERBOARD_ID = gameConfig.gpgsLeaderboardId;
 export async function initGPGS(): Promise<void> {
   try {
     const { PlayGames } = await import('../plugins/play-games');
-    const result = await PlayGames.signIn(); // isAuthenticated() 확인만
-    console.log('[GPGS] 인증 상태:', result.isSignedIn ? '인증됨' : '미인증');
+    await PlayGames.signIn(); // isAuthenticated() 확인만
   } catch (e) {
     console.warn('[GPGS] 인증 확인 실패:', e);
   }

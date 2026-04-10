@@ -22,6 +22,9 @@ function trailingSlashRedirect(): Plugin {
 export default defineConfig({
   plugins: [react(), trailingSlashRedirect()],
   base: '/game01/',
+  server: {
+    host: '0.0.0.0',
+  },
   build: {
     outDir: '../../dist/game01',
     emptyOutDir: true,

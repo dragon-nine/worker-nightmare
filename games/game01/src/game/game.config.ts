@@ -9,9 +9,6 @@ export const gameConfig = {
   /** 게임 제목 */
   title: '직장인 잔혹사',
 
-  /** 하우스 광고 문구 */
-  houseAdText: '직장인 잔혹시를\n홈 화면에 추가해보세요!',
-
   /** Google Play Games 리더보드 ID */
   gpgsLeaderboardId: 'CgkIqPj85N0LEAIQAA',
 

@@ -1,11 +1,12 @@
 import { gameBus } from '../../game/event-bus';
+import { useResponsiveScale } from '../hooks/useResponsiveScale';
+import { Text } from '../components/Text';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
-const DESIGN_W = 390;
 
 export function StoryScreen() {
-  const scale = Math.min(window.innerWidth, 500) / DESIGN_W;
+  const scale = useResponsiveScale();
 
   const handleTap = () => {
     gameBus.emit('play-sfx', 'sfx-click');
@@ -51,16 +52,17 @@ export function StoryScreen() {
           marginTop: 20 * scale,
           animation: 'blink 1.5s ease-in-out infinite',
         }}>
-          <span style={{
-            fontFamily: 'GMarketSans, sans-serif',
-            fontWeight: 700,
-            fontSize: 18 * scale,
-            color: '#fff',
-            WebkitTextStroke: `${2 * scale}px #000`,
-            paintOrder: 'stroke fill',
-          }}>
+          <Text
+            size={18 * scale}
+            weight={700}
+            as="span"
+            style={{
+              WebkitTextStroke: `${2 * scale}px #000`,
+              paintOrder: 'stroke fill',
+            }}
+          >
             화면을 터치하고 시작
-          </span>
+          </Text>
         </div>
       </div>
 

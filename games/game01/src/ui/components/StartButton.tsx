@@ -1,4 +1,4 @@
-import { usePress } from '../hooks/usePress';
+import { TapButton } from './TapButton';
 import styles from '../overlays/overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -10,27 +10,20 @@ interface Props {
 }
 
 export function StartButton({ label, scale, onClick }: Props) {
-  const { handlers, pressStyle } = usePress();
-
   return (
     <div
       className={styles.fadeInThenPulse}
       style={{ width: 214 * scale, position: 'relative' }}
     >
-      <div
-        onClick={onClick}
-        {...handlers('start-btn', onClick)}
-        style={{
-          cursor: 'pointer',
-          position: 'relative',
-          ...pressStyle('start-btn'),
-        }}
+      <TapButton
+        onTap={onClick}
+        style={{ position: 'relative' }}
       >
         <img
           src={`${BASE}main-screen/main-btn.png`}
           alt=""
           draggable={false}
-          style={{ width: '100%', display: 'block', objectFit: 'contain' }}
+          style={{ width: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
         />
         <div style={{
           position: 'absolute',
@@ -49,7 +42,7 @@ export function StartButton({ label, scale, onClick }: Props) {
         }}>
           {label}
         </div>
-      </div>
+      </TapButton>
     </div>
   );
 }
