@@ -4,6 +4,7 @@ import { storage } from '../../game/services/storage';
 import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
 import { Text } from '../components/Text';
+import { DebugPanel } from './DebugPanel';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -83,6 +84,7 @@ export function GameplayHUD() {
 
   return (
     <div className={styles.overlay} style={{ pointerEvents: 'none' }}>
+      {import.meta.env.DEV && <DebugPanel />}
       {/* 게이지바 */}
       {gaugePos && (
         <div style={boxStyle('gauge-bar')}>

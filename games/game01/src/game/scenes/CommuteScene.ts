@@ -32,7 +32,7 @@ export class CommuteScene extends Phaser.Scene {
   private currentRowIdx = 0;
   private score = 0;
   private gameOver = false;
-  private get godMode() { return false; }
+  private get godMode() { return storage.getBool('godMode'); }
   private guideCount = 0;
   private isFalling = false;
   private comboCount = 0;
