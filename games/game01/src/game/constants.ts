@@ -17,4 +17,6 @@ export interface RoadRow {
   y: number;
   tiles: Phaser.GameObjects.Image[];
   decoration?: Phaser.GameObjects.Container;
+  coin?: Phaser.GameObjects.Image;
+  coinCollected?: boolean;
 }

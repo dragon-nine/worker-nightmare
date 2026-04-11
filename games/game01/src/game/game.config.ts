@@ -46,6 +46,10 @@ export const gameConfig = {
       ['gauge-full', 'ui/gauge-full.png'],
       ['go-rabbit', 'game-over-screen/gameover-rabbit.png'],
     ] as [string, string][],
+    svgs: [
+      // [key, path, width, height]
+      ['coin', 'items/coin.svg', 128, 128],
+    ] as [string, string, number, number][],
     audio: [
       ['bgm-menu', 'audio/bgm/menu.mp3'],
       ['sfx-click', 'audio/sfx/click.ogg'],

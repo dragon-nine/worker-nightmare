@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="coinFace" cx="38%" cy="32%" r="75%">
+      <stop offset="0%" stop-color="#fffbe0"/>
+      <stop offset="35%" stop-color="#ffe566"/>
+      <stop offset="75%" stop-color="#f5b324"/>
+      <stop offset="100%" stop-color="#a76a08"/>
+    </radialGradient>
+    <radialGradient id="coinInner" cx="42%" cy="38%" r="60%">
+      <stop offset="0%" stop-color="#fff4a8"/>
+      <stop offset="60%" stop-color="#ffd23a"/>
+      <stop offset="100%" stop-color="#c98a10"/>
+    </radialGradient>
+  </defs>
+  <!-- outer rim -->
+  <circle cx="64" cy="64" r="58" fill="url(#coinFace)" stroke="#6b4504" stroke-width="4"/>
+  <!-- inner ring -->
+  <circle cx="64" cy="64" r="46" fill="url(#coinInner)" stroke="#8a5a08" stroke-width="3"/>
+  <!-- highlight -->
+  <ellipse cx="48" cy="44" rx="18" ry="10" fill="#ffffff" opacity="0.55"/>
+  <!-- ₩ symbol -->
+  <text x="64" y="88" font-family="Arial Black, Arial, sans-serif" font-size="64" font-weight="900" text-anchor="middle" fill="#6b4504" stroke="#3d2700" stroke-width="1.5">₩</text>
+</svg>

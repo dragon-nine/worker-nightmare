@@ -13,6 +13,9 @@ export class BootScene extends Phaser.Scene {
     for (const [key, path] of gameConfig.assets.images) {
       if (!this.textures.exists(key)) this.load.image(key, path);
     }
+    for (const [key, path, w, h] of gameConfig.assets.svgs) {
+      if (!this.textures.exists(key)) this.load.svg(key, path, { width: w, height: h });
+    }
     for (const [key, path] of gameConfig.assets.audio) {
       this.load.audio(key, path);
     }

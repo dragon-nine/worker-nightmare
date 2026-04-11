@@ -184,6 +184,26 @@ export function moveForward(deps: MovementDeps) {
     deps.road.addNextRow();
   }
 
+  // 코인 수집
+  if (nextRow.coin && !nextRow.coinCollected) {
+    nextRow.coinCollected = true;
+    const coin = nextRow.coin;
+    deps.scene.tweens.killTweensOf(coin);
+    deps.playSfx('sfx-combo', 0.5);
+    deps.setScore(deps.getScore() + 2);
+    deps.hud.updateScore(deps.getScore());
+    deps.hud.addTime();
+    deps.scene.tweens.add({
+      targets: coin,
+      y: coin.y - deps.tileH * 0.6,
+      scale: coin.scale * 1.6,
+      alpha: 0,
+      duration: 320,
+      ease: 'Quad.easeOut',
+      onComplete: () => coin.destroy(),
+    });
+  }
+
   deps.player.animateForward(() => scrollToCurrentRow(deps));
 
   if (deps.getComboCount() > 0 && deps.getComboCount() % 10 === 0) {

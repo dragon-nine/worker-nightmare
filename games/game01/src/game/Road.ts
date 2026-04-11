@@ -85,6 +85,7 @@ export class Road {
       const old = this.rows.shift()!;
       old.tiles.forEach(t => t.destroy());
       old.decoration?.destroy();
+      old.coin?.destroy();
       currentRowIdx--;
     }
     return currentRowIdx;
@@ -120,9 +121,43 @@ export class Road {
       const road = this.createTile(this.laneWorldX[type], y, 'tile-straight');
       row.tiles.push(road);
       this.container.add(road);
+
+      // 직선 타일에만 코인 스폰 (시작 직후 몇 줄은 스킵)
+      if (this.rows.length > 3 && Math.random() < 0.28) {
+        this.spawnCoin(row, this.laneWorldX[type], y);
+      }
     }
 
     this.rows.push(row);
+  }
+
+  private spawnCoin(row: RoadRow, x: number, y: number) {
+    const size = this.laneW * 0.5;
+    const coin = this.scene.add.image(x, y - this.tileH * 0.05, 'coin')
+      .setDisplaySize(size, size)
+      .setOrigin(0.5, 0.5)
+      .setDepth(8);
+    this.container.add(coin);
+    row.coin = coin;
+
+    // 회전 효과 (scaleX flip)
+    this.scene.tweens.add({
+      targets: coin,
+      scaleX: { from: coin.scaleX, to: -coin.scaleX },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    // 살짝 위아래로 흔들기
+    this.scene.tweens.add({
+      targets: coin,
+      y: y - this.tileH * 0.18,
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   private createTile(x: number, y: number, key: string): Phaser.GameObjects.Image {
