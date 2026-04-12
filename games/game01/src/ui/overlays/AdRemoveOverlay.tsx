@@ -21,7 +21,7 @@ const BENEFITS = [
 export function AdRemoveOverlay({ onClose }: Props) {
   const scale = useResponsiveScale();
   const tossPrices = useTossProductPrices();
-  const priceLabel = tossPrices.adRemove ?? '₩2,200';
+  const priceLabel = tossPrices.adRemove ?? '₩1,980';
   const [purchasing, setPurchasing] = useState(false);
 
   const handleClose = useCallback(() => {

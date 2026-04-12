@@ -141,61 +141,55 @@ export function GameplayHUD() {
         />
       </TapButton>
 
-      {/* 코인 카운터 — 점수 아래 (테두리/배경 없이 아이콘 + 숫자만) */}
+      {/* 코인 카운터 — 우측 상단 (일시정지 버튼 아래) */}
       {(() => {
-        const scorePos = pos('scoreText');
-        if (!scorePos) return null;
-        const scoreRawTop = scorePos.y - scorePos.displayHeight * scorePos.originY;
-        // 점수 아래 여유 간격
-        const coinTop = scoreRawTop + scoreFontSize + 20 * scale;
+        const pausePos = pos('btn-pause');
+        if (!pausePos) return null;
+        const pauseLeft = pausePos.x - pausePos.displayWidth * pausePos.originX;
+        const pauseTop = pausePos.y - pausePos.displayHeight * pausePos.originY;
+        const pauseRight = pauseLeft + pausePos.displayWidth;
+        const coinTop = pauseTop + pausePos.displayHeight + 10 * scale;
         return (
           <div
             style={{
               position: 'absolute',
               top: `calc(var(--sat, 0px) + ${coinTop}px)`,
-              // 점수와 동일하게 가로 중앙 정렬
-              left: scorePos.x - scorePos.displayWidth * scorePos.originX,
-              width: scorePos.displayWidth,
-              display: 'flex',
-              justifyContent: 'center',
+              // 일시정지 버튼의 우측 가장자리에 우측정렬 (translateX(-100%)로 좌측으로 자라남)
+              left: pauseRight,
+              transform: 'translateX(-100%)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6 * scale,
+              whiteSpace: 'nowrap',
               pointerEvents: 'none',
             }}
           >
-            <div
+            <img
+              src={`${BASE}ui/coin.png`}
+              alt=""
+              draggable={false}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8 * scale,
-                whiteSpace: 'nowrap',
+                width: 26 * scale,
+                height: 26 * scale,
+                display: 'block',
+                objectFit: 'contain',
+                filter: `drop-shadow(0 ${2 * scale}px ${4 * scale}px rgba(0, 0, 0, 0.6))`,
+              }}
+            />
+            <Text
+              size={24 * scale}
+              weight={900}
+              as="span"
+              color="#ffd24a"
+              style={{
+                WebkitTextStroke: `${2 * scale}px #000`,
+                paintOrder: 'stroke fill',
+                letterSpacing: 0.5,
+                lineHeight: 1,
               }}
             >
-              <img
-                src={`${BASE}ui/coin.png`}
-                alt=""
-                draggable={false}
-                style={{
-                  width: 30 * scale,
-                  height: 30 * scale,
-                  display: 'block',
-                  objectFit: 'contain',
-                  filter: `drop-shadow(0 ${2 * scale}px ${4 * scale}px rgba(0, 0, 0, 0.6))`,
-                }}
-              />
-              <Text
-                size={28 * scale}
-                weight={900}
-                as="span"
-                color="#ffd24a"
-                style={{
-                  WebkitTextStroke: `${2.5 * scale}px #000`,
-                  paintOrder: 'stroke fill',
-                  letterSpacing: 0.5,
-                  lineHeight: 1,
-                }}
-              >
-                {coins}
-              </Text>
-            </div>
+              {coins}
+            </Text>
           </div>
         );
       })()}

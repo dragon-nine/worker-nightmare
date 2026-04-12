@@ -389,7 +389,7 @@ export function ShopTab({ scale }: Props) {
                 zIndex: 2,
               }}
             >
-              {tossPrices.adRemove ?? '₩2,200'}
+              {tossPrices.adRemove ?? '₩1,980'}
             </div>
           </TapButton>
         )}

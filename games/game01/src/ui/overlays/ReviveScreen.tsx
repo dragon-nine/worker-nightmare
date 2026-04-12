@@ -84,9 +84,10 @@ export function ReviveScreen({ data, onSkip }: Props) {
     'scoreText': `${score}`,
     // 부활 광고 제거 구매자 → 광고 없이 바로 부활 ("이어서 도전")
     'go-btn-revive': adRemoved ? '이어서 도전' : '광고 보고 부활',
-    'go-btn-home': `보석 ${REVIVE_GEM_COST}개로 부활`,
+    // 보석 부활 — 보유/필요 개수 함께 표시 (예: "보석 쓰고 부활  0/2")
+    'go-btn-home': `보석 쓰고 부활  ${gems}/${REVIVE_GEM_COST}`,
     'go-btn-challenge': '건너뛰기',
-  }), [score, adRemoved]);
+  }), [score, adRemoved, gems]);
 
   const clickHandlers: Record<string, () => void> = useMemo(() => ({
     'go-btn-revive': handleAdRevive,

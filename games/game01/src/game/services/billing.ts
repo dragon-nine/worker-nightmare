@@ -233,7 +233,7 @@ export async function purchaseGemPackage(key: GemPackageKey): Promise<boolean> {
 async function mockPurchaseAdRemove(): Promise<boolean> {
   await new Promise((r) => setTimeout(r, 300));
   const confirmed = window.confirm(
-    '[DEV] 부활 광고 제거 결제 시뮬레이션\n\n₩2,200 결제를 완료할까요?\n(실제 결제 없음)',
+    '[DEV] 부활 광고 제거 결제 시뮬레이션\n\n₩1,980 결제를 완료할까요?\n(실제 결제 없음)',
   );
   if (!confirmed) return false;
   localStorage.setItem(AD_REMOVE_KEY, 'true');
