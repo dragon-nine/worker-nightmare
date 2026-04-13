@@ -104,24 +104,31 @@ export function endGame(deps: LifecycleDeps) {
   }
   deps.setGameOver(true);
   deps.hud.stopTimer();
-  deps.getBgm()?.pause();
-  deps.playSfx('sfx-game-over', 0.6);
-  deps.vibrate([40, 80, 50, 80]);
+
+  // 부가 효과 — 실패해도 게임오버 UI 전환은 반드시 이루어져야 함
+  try { deps.getBgm()?.pause(); } catch { /* 무시 */ }
+  try { deps.playSfx('sfx-game-over', 0.6); } catch { /* 무시 */ }
+  try { deps.vibrate([40, 80, 50, 80]); } catch { /* 무시 */ }
 
   const canRevive = !deps.getHasRevived();
 
-  logEvent('game_over', {
-    score: deps.getScore(),
-    revived: deps.getHasRevived(),
-  });
-  submitLeaderboardScore(deps.getScore());
+  try {
+    logEvent('game_over', {
+      score: deps.getScore(),
+      revived: deps.getHasRevived(),
+    });
+  } catch { /* 무시 */ }
+  try { submitLeaderboardScore(deps.getScore()); } catch { /* 무시 */ }
 
-  const bestScore = storage.updateBestScore(deps.getScore());
-  storage.recordPlayScore(deps.getScore());
-  // 게임 중 누적된 코인/점수 메모리 캐시를 즉시 localStorage에 persist.
-  // (평소엔 200ms 배치 flush이므로, 게임오버 시 확정적 flush 필요)
-  storage.flushNums();
+  // 저장은 실패 시에도 게임오버는 진행 — best/flush 실패는 다음 게임에서 복구
+  let bestScore = deps.getScore();
+  try {
+    bestScore = storage.updateBestScore(deps.getScore());
+    storage.recordPlayScore(deps.getScore());
+    storage.flushNums();
+  } catch { /* 무시 */ }
 
+  // ★ 이 emit은 절대 중단되면 안 됨 — 게임오버 화면 전환의 유일한 트리거
   gameBus.emit('game-over-data', {
     score: deps.getScore(),
     bestScore,

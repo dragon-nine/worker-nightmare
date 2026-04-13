@@ -148,8 +148,9 @@ if (isToss() && isTossNative()) {
 
 function vibrate(pattern: number | number[]) {
   // 토스 네이티브: 캐시된 함수 참조 사용 (동기 호출, Promise X)
+  // ※ try/catch 필수 — 샌드박스 등 일부 환경에서 throw하면 호출부(endGame 등)가 중단될 수 있음
   if (cachedTossHaptic) {
-    cachedTossHaptic({ type: 'tap' });
+    try { cachedTossHaptic({ type: 'tap' }); } catch { /* 미지원 환경 무시 */ }
     return;
   }
   // 토스 환경인데 아직 로드 중이면 스킵 (첫 탭 한정 — 로딩 끝나면 위 분기로)
