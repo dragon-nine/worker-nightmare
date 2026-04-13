@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import { createGameConfig } from '../../game/config';
 import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
-import { loadQuotes } from '../../game/game-over-quotes';
 import { adService } from '../../game/services/ad-service';
 import { logScreen } from '../../game/services/analytics';
 import { isGoogle, isTossNative } from '../../game/platform';
@@ -37,8 +36,6 @@ export function GameContainer() {
 
   useEffect(() => {
     if (gameRef.current) return;
-
-    loadQuotes(); // R2에서 게임오버 멘트 미리 로드
 
     // 플랫폼별 초기화
     // ※ admob/toss-ad/mock-ad provider 는 플랫폼 전용이라 동적 import 유지 (실제 코드 스플릿됨)

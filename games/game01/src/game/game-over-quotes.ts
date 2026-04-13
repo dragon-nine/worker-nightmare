@@ -1,12 +1,16 @@
-/** 게임오버 멘트 — R2 원격 → 로컬 fallback */
+/**
+ * 게임오버 멘트 — 로컬 하드코딩
+ *
+ * 원칙: R2는 admin 관리용, 게임은 로컬만 사용.
+ * 멘트 수정 시 Claude에게 요청 → R2 최신본 기준으로 이 배열을 수동 동기화.
+ */
 
 interface Quote {
   line1: string
   line2?: string
 }
 
-/** 로컬 기본 멘트 (R2 fetch 실패 시 사용) */
-const DEFAULT_QUOTES: Quote[] = [
+const QUOTES: Quote[] = [
   { line1: '괜찮아.', line2: '원래 월요일이 그래.' },
   { line1: '퇴근은 쉬운 게 아니야...', line2: '인생이 원래 그래.' },
   { line1: '아직 짐도 안 쌌잖아.', line2: '다시 도전해봐.' },
@@ -29,25 +33,7 @@ const DEFAULT_QUOTES: Quote[] = [
   { line1: '지하철역이 바로 앞이었어.', line2: '한 번만 더.' },
 ]
 
-let cachedQuotes: Quote[] | null = null
-
-/** 앱 시작 시 R2에서 멘트를 미리 로드 */
-export async function loadQuotes(): Promise<void> {
-  try {
-    const res = await fetch('/api/json-store?key=game01/assets/etc/content/quotes.json')
-    if (res.ok) {
-      const { data } = await res.json()
-      if (Array.isArray(data) && data.length > 0) {
-        cachedQuotes = data
-      }
-    }
-  } catch {
-    // R2 실패 → 로컬 기본값 사용
-  }
-}
-
 export function getRandomQuote(): string {
-  const quotes = cachedQuotes || DEFAULT_QUOTES
-  const q = quotes[Math.floor(Math.random() * quotes.length)]
+  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)]
   return q.line2 ? `${q.line1}\n${q.line2}` : q.line1
 }
