@@ -3,35 +3,32 @@ import { useCallback, useRef } from 'react';
 /**
  * 모든 입력 장치(터치/마우스/펜)에서 단 한 번만 onTap을 발사하는 훅.
  *
- * Pointer Events API를 사용해 touch/mouse/click 이벤트의 중복 발사를 구조적으로 제거.
- * - `pointerdown`이 터치/마우스/펜을 하나의 스트림으로 통합
- * - `click`은 키보드(Enter/Space) 접근성용 폴백
- * - 합성 이벤트로 인한 2중 발사는 `DEDUP_WINDOW_MS` 시간창 내에서 억제
+ * 설계 원칙:
+ * - `touchstart`는 항상 새로운 유저 gesture이므로 무조건 통과 (연타 허용)
+ * - `touchstart` 후 브라우저가 합성한 `mousedown`/`click`/`pointerdown(touch)`
+ *   중복 이벤트는 짧은 잠금 창으로 차단
+ * - 마우스(데스크탑): `mousedown`에서 한 번, 뒤따르는 `click`은 잠금 차단
+ * - 키보드(Enter/Space): `click`만 오므로 정상 발사
  *
- * 모든 타임스탬프는 `performance.now()`로 통일 — 브라우저 간 `Event.timeStamp`
- * 기준시 불일치(UNIX epoch vs DOMHighResTimeStamp)로 인한 억제 실패를 방지.
- *
- * 사용:
- *   const tapRef = useNativeTap(() => { ... });
- *   return <div ref={tapRef}>...</div>;
+ * 이 방식은 Android WebView(갤럭시 Toss 인앱 포함)에서 신뢰도 높음:
+ * 이벤트 경로가 브라우저마다 달라도 touchstart가 게이트, 나머지는 전부 잠금.
  */
 interface Options {
   /**
    * 스크롤 가능한 컨테이너(상점, 리스트 등) 안의 버튼이면 true.
    * - `pointerup`에서 발사 + 이동 거리 검사 → 스크롤과 탭 구분
-   * - 게임 인풋(즉시 반응 필요)에는 사용 X (기본값 false로 `pointerdown`에서 즉시 발사)
+   * - 게임 인풋(즉시 반응 필요)에는 사용 X (기본값 false로 touchstart 즉시 발사)
    */
   scrollSafe?: boolean;
 }
 
 const SCROLL_THRESHOLD_PX = 8;
 /**
- * 중복 발사 억제 시간창.
- * Android WebView(특히 갤럭시 Toss 인앱)에서 touchstart → pointerdown(touch) →
- * pointerup → pointerdown(mouse-synth) → mousedown → click 전체 시퀀스가
- * 느리게 깔리는 경우가 있어 넉넉하게 잡음.
+ * 합성 이벤트 차단 창. 한 번의 유저 gesture에서 브라우저가 뒤따라 쏘는
+ * mouse/click은 보통 300~400ms 안에 도착. 여유를 두고 400ms.
+ * `touchstart`는 이 창을 무시하고 항상 통과하므로 연타에 영향 없음.
  */
-const DEDUP_WINDOW_MS = 700;
+const LOCK_MS = 400;
 
 export function useNativeTap(onTap: () => void, options: Options = {}) {
   const onTapRef = useRef(onTap);
@@ -49,17 +46,16 @@ export function useNativeTap(onTap: () => void, options: Options = {}) {
 }
 
 function attachTap(el: HTMLElement, onTap: () => void, scrollSafe: boolean): () => void {
-  // 단일 타임스탬프 기준으로 중복 억제 — 어떤 이벤트 경로로 들어오든 창 안에서는 1회만 발사.
-  let lastFireAt = -Infinity;
-  const fire = () => {
-    const now = performance.now();
-    if (now - lastFireAt < DEDUP_WINDOW_MS) return;
-    lastFireAt = now;
+  let lockedUntil = 0;
+  const lock = () => { lockedUntil = performance.now() + LOCK_MS; };
+  const isLocked = () => performance.now() < lockedUntil;
+
+  // 키보드(Enter/Space) 및 데스크탑 대체 경로. 터치로 이미 발사됐으면 차단.
+  const onClick = () => {
+    if (isLocked()) return;
+    lock();
     onTap();
   };
-
-  // 키보드(Enter/Space) 및 합성 click 폴백. 최근 pointer 이벤트로 이미 발사됐다면 dedup.
-  const onClick = () => fire();
 
   if (scrollSafe) {
     let startX = 0;
@@ -89,14 +85,13 @@ function attachTap(el: HTMLElement, onTap: () => void, scrollSafe: boolean): () 
       if (!tracking) return;
       tracking = false;
       if (moved) return;
-      fire();
-      // 터치의 경우 후속 합성 click을 막아 dedup 부담을 줄임 (안드로이드 WebView 대비)
-      if (e.pointerType === 'touch') e.preventDefault();
+      if (isLocked()) return;
+      lock();
+      onTap();
+      if (e.pointerType === 'touch' && e.cancelable) e.preventDefault();
     };
 
-    const onPointerCancel = () => {
-      tracking = false;
-    };
+    const onPointerCancel = () => { tracking = false; };
 
     el.addEventListener('pointerdown', onPointerDown);
     el.addEventListener('pointermove', onPointerMove);
@@ -113,20 +108,30 @@ function attachTap(el: HTMLElement, onTap: () => void, scrollSafe: boolean): () 
     };
   }
 
-  // 기본 모드 (게임 인풋): 가능한 모든 입력 경로를 listen하되 단일 dedup으로 1회만 발사.
-  // Android 계열 WebView는 브라우저마다 어떤 이벤트가 먼저 오는지 일관성이 없어,
-  // 특정 경로(예: pointerdown)만 신뢰하면 누락되거나 중복이 새는 경우가 발생.
-  // 모든 경로를 수용 + timestamp 시간창으로 중복 억제가 가장 견고.
+  // 기본 모드 (게임 인풋) ─────────────────────────────────────────
+  // touchstart: 새 유저 gesture → 잠금 우회, 항상 발사, 잠금 갱신
+  // → 연타 허용. 합성 mouse/click은 잠금으로 차단.
   const onTouchStart = (e: TouchEvent) => {
-    // 후속 합성 mouse/click 이벤트를 구조적으로 억제 — dedup 부담을 줄임
-    if (e.cancelable) e.preventDefault();
-    fire();
+    if (e.cancelable) e.preventDefault(); // 합성 이벤트 추가 억제
+    lock();
+    onTap();
   };
+
+  // 마우스 경로 (터치가 아닌 포인터) + 터치 브라우저가 touchstart를 안 쏘고
+  // pointerdown만 쏘는 비정상 케이스의 방어선.
   const onPointerDown = (e: PointerEvent) => {
     if (!e.isPrimary) return;
-    fire();
+    if (isLocked()) return;
+    lock();
+    onTap();
   };
-  const onMouseDown = () => fire();
+
+  // 구형 브라우저 대비 mousedown.
+  const onMouseDown = () => {
+    if (isLocked()) return;
+    lock();
+    onTap();
+  };
 
   el.addEventListener('touchstart', onTouchStart, { passive: false });
   el.addEventListener('pointerdown', onPointerDown);
