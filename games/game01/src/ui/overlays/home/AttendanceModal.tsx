@@ -66,6 +66,7 @@ export function AttendanceModal({ onClose }: Props) {
     // 잔액 충전
     for (const r of reward.rewards) {
       storage.addNum(r.kind === 'coin' ? 'coins' : 'gems', r.amount);
+      if (r.kind === 'coin') storage.recordCoinEarned(r.amount);
     }
     gameBus.emit('play-sfx', 'sfx-click');
     setAttendance(storage.getAttendance());

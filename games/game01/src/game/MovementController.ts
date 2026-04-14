@@ -189,6 +189,7 @@ export function moveForward(deps: MovementDeps) {
     deps.scene.tweens.killTweensOf(coin);
     deps.playSfx('sfx-coin', 0.5);
     storage.addNum('coins', 1);
+    storage.recordCoinEarned(1);
     deps.incrementCoinsEarnedThisGame();
     deps.scene.tweens.add({
       targets: coin,

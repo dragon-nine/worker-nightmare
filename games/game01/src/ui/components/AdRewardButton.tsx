@@ -2,6 +2,7 @@ import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { TapButton } from './TapButton';
 import { adService, type AdRewardType } from '../../game/services/ad-service';
 import { gameBus } from '../../game/event-bus';
+import { storage } from '../../game/services/storage';
 
 interface Props {
   /**
@@ -73,6 +74,7 @@ export function AdRewardButton({
     gameBus.emit('play-sfx', 'sfx-click');
     adService.showRewarded(rewardType, (result) => {
       if (result.kind === 'rewarded') {
+        storage.recordAdWatched();
         onReward();
       } else if (result.kind === 'skipped') {
         if (skippedToast) gameBus.emit('toast', skippedToast);

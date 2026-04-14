@@ -52,6 +52,8 @@ export function GameOverScreen({ data }: Props) {
       if (result.kind === 'rewarded') {
         setBonusClaimed(true);
         storage.addNum('coins', coinsEarned);
+        storage.recordCoinEarned(coinsEarned);
+        storage.recordAdWatched();
         logEvent('reward_2x_claim', { coinsEarned });
         gameBus.emit('show-reward', [{ kind: 'coin', amount: coinsEarned }]);
       } else if (result.kind === 'skipped') {

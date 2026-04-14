@@ -105,6 +105,7 @@ export function ShopTab({ scale }: Props) {
     }
 
     storage.addNum(r.kind === 'coin' ? 'coins' : 'gems', r.amount);
+    if (r.kind === 'coin') storage.recordCoinEarned(r.amount);
     const newCount = storage.incrementFreeRewardCount(r.id);
     refreshBalance();
     refreshFreeRewardCounts();

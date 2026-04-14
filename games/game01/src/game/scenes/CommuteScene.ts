@@ -40,6 +40,8 @@ export class CommuteScene extends Phaser.Scene {
   private justSwitched = false;
   private gameStarted = false;
   private hasRevived = false;
+  /** 부활 시점의 점수 — endGame에서 부활 후 추가 획득량 계산용. -1 = 부활 안 함 */
+  private scoreAtRevive = -1;
   private bgm?: Phaser.Sound.BaseSound;
   private bgManager!: BackgroundManager;
 
@@ -62,6 +64,7 @@ export class CommuteScene extends Phaser.Scene {
     this.justSwitched = false;
     this.gameStarted = false;
     this.hasRevived = false;
+    this.scoreAtRevive = -1;
   }
 
   create() {
@@ -214,6 +217,8 @@ export class CommuteScene extends Phaser.Scene {
       setGameOver: (v) => { this.gameOver = v; },
       getHasRevived: () => this.hasRevived,
       setHasRevived: (v) => { this.hasRevived = v; },
+      getScoreAtRevive: () => this.scoreAtRevive,
+      setScoreAtRevive: (v) => { this.scoreAtRevive = v; },
       getBgm: () => this.bgm,
       showPopup: (msg, color) => this.showPopup(msg, color),
     };

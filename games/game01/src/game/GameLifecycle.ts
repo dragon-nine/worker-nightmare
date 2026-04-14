@@ -13,6 +13,8 @@ export interface LifecycleDeps extends MovementDeps {
   setGameOver(v: boolean): void;
   getHasRevived(): boolean;
   setHasRevived(v: boolean): void;
+  getScoreAtRevive(): number;
+  setScoreAtRevive(v: number): void;
   getBgm(): Phaser.Sound.BaseSound | undefined;
   showPopup(message: string, color: string): void;
 }
@@ -53,6 +55,8 @@ export function onDeath(deps: LifecycleDeps) {
 
 export function revive(deps: LifecycleDeps) {
   deps.setHasRevived(true);
+  // 부활 시점 점수 캡처 — 미션 "부활 후 N점 추가 달성" 판정용
+  deps.setScoreAtRevive(deps.getScore());
   deps.setGameOver(false);
   deps.setIsFalling(false);
   deps.setJustSwitched(false);
@@ -125,6 +129,11 @@ export function endGame(deps: LifecycleDeps) {
   try {
     bestScore = storage.updateBestScore(deps.getScore());
     storage.recordPlayScore(deps.getScore());
+    // 부활 후 추가 획득 점수 — 부활을 사용한 판만 기록 (-1은 미사용)
+    const scoreAtRevive = deps.getScoreAtRevive();
+    if (scoreAtRevive >= 0) {
+      storage.recordPostReviveScore(deps.getScore() - scoreAtRevive);
+    }
     storage.flushNums();
   } catch { /* 무시 */ }
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
-import { getClaimableMissionCount } from '../../../game/services/missions';
+import { ALL_MISSION_IDS, getClaimableMissionCount } from '../../../game/services/missions';
 import { isAdRemoved } from '../../../game/services/billing';
 import { openLeaderboard } from '../../../game/services/leaderboard';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
@@ -39,6 +39,8 @@ export function HomeTab({ scale }: Props) {
     () => (storage.isAttendanceClaimedToday() ? undefined : '!'),
   );
   const [missionBadge, setMissionBadge] = useState<string | undefined>(() => {
+    // 옛 미션 ID 정리 (배지 카운트 정확성을 위해 마운트 시점에 1회)
+    storage.pruneClaimedMissions(ALL_MISSION_IDS);
     const n = getClaimableMissionCount();
     return n > 0 ? String(n) : undefined;
   });

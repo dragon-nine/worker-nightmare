@@ -66,6 +66,7 @@ export function setupReactListeners(deps: ReactListenerDeps) {
       if (bgm) (bgm as Phaser.Sound.WebAudioSound).resume();
 
       if (result.kind === 'rewarded') {
+        storage.recordAdWatched();
         gameBus.emit('screen-change', 'playing');
         doRevive(lifecycleDeps);
       } else {
