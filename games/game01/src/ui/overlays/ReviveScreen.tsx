@@ -48,7 +48,7 @@ export function ReviveScreen({ data, onSkip }: Props) {
   // 부활 화면에서는 멘트와 ranking 버튼 숨김 + 광고 제거 시 보석 부활도 숨김
   const excludeIds = useMemo(
     () => {
-      const ids = ['quoteText', 'go-btn-ranking'];
+      const ids = ['quoteText', 'go-btn-ranking', 'go-btn-restart'];
       if (adRemoved) ids.push('go-btn-home');
       return ids;
     },

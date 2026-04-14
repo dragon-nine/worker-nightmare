@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ModalShell, type ModalTabDef } from '../../components/ModalShell';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { TapButton } from '../../components/TapButton';
@@ -8,6 +8,7 @@ import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { logEvent } from '../../../game/services/analytics';
 import {
+  ALL_MISSION_IDS,
   DAILY_MISSIONS,
   WEEKLY_MISSIONS,
   computeMissionCurrent,
@@ -50,8 +51,15 @@ const TABS: ModalTabDef[] = [
 export function MissionModal({ onClose }: Props) {
   const scale = useResponsiveScale();
   const [tab, setTab] = useState<MissionPeriod>('daily');
-  // 스토리지 미러링 — 마운트 시 한 번 (자동 리셋 포함)
-  const [missionState, setMissionState] = useState(() => storage.getMissionState());
+  // 마운트 시 옛 미션 ID 정리 (현재 정의에 없는 ID는 storage에서 제거)
+  useEffect(() => {
+    storage.pruneClaimedMissions(ALL_MISSION_IDS);
+  }, []);
+  // 스토리지 미러링 — 마운트 시 한 번 (자동 리셋 + prune 후)
+  const [missionState, setMissionState] = useState(() => {
+    storage.pruneClaimedMissions(ALL_MISSION_IDS);
+    return storage.getMissionState();
+  });
   const [stats, setStats] = useState(() => storage.getPlayStats());
 
   const dailyClaimed = new Set(missionState.daily.claimed);
@@ -61,16 +69,19 @@ export function MissionModal({ onClose }: Props) {
 
   const handleClaim = (m: MissionDef, period: MissionPeriod) => {
     const claimed = claimedFor(period);
-    const current = computeMissionCurrent(m, period, stats, claimed);
+    const current = computeMissionCurrent(m, period, stats);
 
     if (current < m.target) {
-      gameBus.emit('toast', m.isAllClear ? '나머지 미션을 모두 받으세요' : '아직 완료되지 않았어요');
+      gameBus.emit('toast', '아직 완료되지 않았어요');
       return;
     }
     if (claimed.has(m.id)) return;
 
     // 잔액 충전
-    if (m.reward.coin) storage.addNum('coins', m.reward.coin);
+    if (m.reward.coin) {
+      storage.addNum('coins', m.reward.coin);
+      storage.recordCoinEarned(m.reward.coin);
+    }
     if (m.reward.gem) storage.addNum('gems', m.reward.gem);
 
     storage.addClaimedMission(period, m.id);
@@ -83,8 +94,10 @@ export function MissionModal({ onClose }: Props) {
       coin: m.reward.coin ?? 0,
       gem: m.reward.gem ?? 0,
     });
-    const summary = formatReward(m.reward);
-    gameBus.emit('toast', `${summary} 받음!`);
+    const items = [];
+    if (m.reward.coin) items.push({ kind: 'coin' as const, amount: m.reward.coin });
+    if (m.reward.gem) items.push({ kind: 'gem' as const, amount: m.reward.gem });
+    if (items.length) gameBus.emit('show-reward', items);
   };
 
   const activeMissions = tab === 'daily' ? DAILY_MISSIONS : WEEKLY_MISSIONS;
@@ -125,7 +138,7 @@ export function MissionModal({ onClose }: Props) {
         }}
       >
         {activeMissions.map((m) => {
-          const current = computeMissionCurrent(m, tab, stats, activeClaimed);
+          const current = computeMissionCurrent(m, tab, stats);
           return (
             <MissionRow
               key={m.id}
@@ -140,13 +153,6 @@ export function MissionModal({ onClose }: Props) {
       </div>
     </ModalShell>
   );
-}
-
-function formatReward(r: MissionReward): string {
-  const parts: string[] = [];
-  if (r.coin) parts.push(`코인 +${r.coin}`);
-  if (r.gem) parts.push(`보석 +${r.gem}`);
-  return parts.join(', ');
 }
 
 /* ── Mission row ── */
@@ -166,26 +172,14 @@ function MissionRow({
 }) {
   const isComplete = current >= mission.target;
   const pct = Math.min(100, (current / mission.target) * 100);
-  const accent = mission.isAllClear ? '#ffd24a' : '#3fdcb0';
+  const accent = '#3fdcb0';
 
   return (
     <div
       style={{
-        background: mission.isAllClear
-          ? isComplete
-            ? 'rgba(255,210,74,0.10)'
-            : 'rgba(255,210,74,0.04)'
-          : isComplete
-          ? 'rgba(63,220,176,0.08)'
-          : 'rgba(255,255,255,0.04)',
+        background: isComplete ? 'rgba(63,220,176,0.08)' : 'rgba(255,255,255,0.04)',
         border: `${1.5 * scale}px solid ${
-          mission.isAllClear
-            ? isComplete
-              ? 'rgba(255,210,74,0.55)'
-              : 'rgba(255,210,74,0.25)'
-            : isComplete
-            ? 'rgba(63,220,176,0.4)'
-            : 'rgba(255,255,255,0.08)'
+          isComplete ? 'rgba(63,220,176,0.4)' : 'rgba(255,255,255,0.08)'
         }`,
         borderRadius: 12 * scale,
         padding: `${10 * scale}px ${12 * scale}px`,
@@ -208,7 +202,7 @@ function MissionRow({
             marginBottom: 3 * scale,
           }}
         >
-          {mission.isAllClear && '⭐ '}{mission.desc}
+          {mission.desc}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 * scale }}>
           <div
@@ -259,7 +253,7 @@ function MissionRow({
           color: isClaimed
             ? 'rgba(255,255,255,0.4)'
             : isComplete
-            ? mission.isAllClear ? '#3a2400' : '#0a3a28'
+            ? '#0a3a28'
             : 'rgba(255,255,255,0.5)',
           fontFamily: 'GMarketSans, sans-serif',
           fontSize: 10 * scale,

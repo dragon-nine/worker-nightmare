@@ -52,8 +52,10 @@ export function GameOverScreen({ data }: Props) {
       if (result.kind === 'rewarded') {
         setBonusClaimed(true);
         storage.addNum('coins', coinsEarned);
+        storage.recordCoinEarned(coinsEarned);
+        storage.recordAdWatched();
         logEvent('reward_2x_claim', { coinsEarned });
-        gameBus.emit('toast', `코인 +${coinsEarned} 추가 획득!`);
+        gameBus.emit('show-reward', [{ kind: 'coin', amount: coinsEarned }]);
       } else if (result.kind === 'skipped') {
         gameBus.emit('toast', '광고를 끝까지 봐주세요');
       } else {
@@ -68,6 +70,10 @@ export function GameOverScreen({ data }: Props) {
     'go-btn-home': () => {
       gameBus.emit('play-sfx', 'sfx-click');
       gameBus.emit('go-home', undefined);
+    },
+    'go-btn-restart': () => {
+      gameBus.emit('play-sfx', 'sfx-click');
+      gameBus.emit('restart-game', undefined);
     },
     'go-btn-challenge': () => {
       gameBus.emit('play-sfx', 'sfx-click');
@@ -85,7 +91,7 @@ export function GameOverScreen({ data }: Props) {
   if (!ready) return null;
 
   // 버튼 vs 텍스트/이미지 분류 → 딜레이 다르게
-  const btnIds = new Set(['go-btn-revive', 'go-btn-home', 'go-btn-challenge', 'go-btn-ranking']);
+  const btnIds = new Set(['go-btn-revive', 'go-btn-home', 'go-btn-restart', 'go-btn-challenge', 'go-btn-ranking']);
 
   return (
     <div className={`${styles.overlay} ${styles.fadeIn}`}>

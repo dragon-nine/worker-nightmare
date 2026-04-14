@@ -82,12 +82,31 @@
       "positioning": "group",
       "order": 9,
       "gapPx": 8,
-      "label": "홈으로 가기",
+      "label": "홈으로",
       "buttonStyle": {
         "styleType": "outline",
         "bgColor": "#24282c",
         "scaleKey": "sm"
-      }
+      },
+      "hGapPx": 8
+    },
+    {
+      "id": "go-btn-restart",
+      "type": "button",
+      "widthMode": "full",
+      "widthPx": 342,
+      "visible": true,
+      "locked": false,
+      "positioning": "group",
+      "order": 9,
+      "gapPx": 8,
+      "label": "다시 도전",
+      "buttonStyle": {
+        "styleType": "outline",
+        "bgColor": "#24282c",
+        "scaleKey": "sm"
+      },
+      "hGapPx": 8
     },
     {
       "id": "go-btn-challenge",

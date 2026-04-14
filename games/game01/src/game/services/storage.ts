@@ -84,6 +84,16 @@ export interface PlayStatsPeriod {
   bestScore: number;
   /** 도전장 보낸 횟수 */
   challenges: number;
+  /** 보상형 광고 시청 횟수 */
+  adsWatched: number;
+  /** 이 기간 동안 획득한 코인 누적 (gameplay/보상 — 상점 보석 교환 제외) */
+  coinsEarned: number;
+  /** 300점 이상 연속 달성 — 현재 진행 중 연속 카운트 */
+  streak300Current: number;
+  /** 300점 이상 연속 — 이 기간 최대값 (미션 판정용) */
+  streak300Best: number;
+  /** 부활 후 추가 획득 점수 — 이 기간 최대값 (단일 판 기준) */
+  postReviveDeltaBest: number;
   /** 리셋 키 — daily는 YYYY-MM-DD, weekly는 월요일 YYYY-MM-DD */
   resetKey: string;
 }
@@ -114,10 +124,39 @@ function defaultMissionState(): MissionState {
   };
 }
 
+function defaultPeriod(resetKey: string): PlayStatsPeriod {
+  return {
+    plays: 0,
+    bestScore: 0,
+    challenges: 0,
+    adsWatched: 0,
+    coinsEarned: 0,
+    streak300Current: 0,
+    streak300Best: 0,
+    postReviveDeltaBest: 0,
+    resetKey,
+  };
+}
+
 function defaultPlayStats(): PlayStats {
   return {
-    daily: { plays: 0, bestScore: 0, challenges: 0, resetKey: todayStr() },
-    weekly: { plays: 0, bestScore: 0, challenges: 0, resetKey: thisMondayStr() },
+    daily: defaultPeriod(todayStr()),
+    weekly: defaultPeriod(thisMondayStr()),
+  };
+}
+
+/** 옛 PlayStats를 읽었을 때 신규 필드를 0/기본값으로 채워 보존 */
+function fillPeriodDefaults(p: PlayStatsPeriod): PlayStatsPeriod {
+  return {
+    plays: p.plays ?? 0,
+    bestScore: p.bestScore ?? 0,
+    challenges: p.challenges ?? 0,
+    adsWatched: p.adsWatched ?? 0,
+    coinsEarned: p.coinsEarned ?? 0,
+    streak300Current: p.streak300Current ?? 0,
+    streak300Best: p.streak300Best ?? 0,
+    postReviveDeltaBest: p.postReviveDeltaBest ?? 0,
+    resetKey: p.resetKey,
   };
 }
 
@@ -380,12 +419,23 @@ export const storage = {
       state = defaultPlayStats();
     }
     let mutated = false;
+    // 옛 데이터 호환 — 누락된 신규 필드 채움 (validator는 통과했지만 필드는 빠진 상태)
+    const dailyFilled = fillPeriodDefaults(state.daily);
+    const weeklyFilled = fillPeriodDefaults(state.weekly);
+    if (JSON.stringify(dailyFilled) !== JSON.stringify(state.daily)) {
+      state.daily = dailyFilled;
+      mutated = true;
+    }
+    if (JSON.stringify(weeklyFilled) !== JSON.stringify(state.weekly)) {
+      state.weekly = weeklyFilled;
+      mutated = true;
+    }
     if (state.daily.resetKey !== today) {
-      state.daily = { plays: 0, bestScore: 0, challenges: 0, resetKey: today };
+      state.daily = defaultPeriod(today);
       mutated = true;
     }
     if (state.weekly.resetKey !== monday) {
-      state.weekly = { plays: 0, bestScore: 0, challenges: 0, resetKey: monday };
+      state.weekly = defaultPeriod(monday);
       mutated = true;
     }
     if (mutated) this.setPlayStats(state);
@@ -404,11 +454,19 @@ export const storage = {
     this.setPlayStats(state);
   },
 
-  /** 한 판 종료 시 점수 갱신 — 일/주 bestScore에 max 적용 */
+  /** 한 판 종료 시 점수 갱신 — bestScore + 300점 streak 처리 */
   recordPlayScore(score: number): void {
     const state = this.getPlayStats();
-    if (score > state.daily.bestScore) state.daily.bestScore = score;
-    if (score > state.weekly.bestScore) state.weekly.bestScore = score;
+    for (const key of ['daily', 'weekly'] as const) {
+      const p = state[key];
+      if (score > p.bestScore) p.bestScore = score;
+      if (score >= 300) {
+        p.streak300Current += 1;
+        if (p.streak300Current > p.streak300Best) p.streak300Best = p.streak300Current;
+      } else {
+        p.streak300Current = 0;
+      }
+    }
     this.setPlayStats(state);
   },
 
@@ -418,6 +476,50 @@ export const storage = {
     state.daily.challenges += 1;
     state.weekly.challenges += 1;
     this.setPlayStats(state);
+  },
+
+  /** 보상형 광고 시청 완료 시 — 일/주 adsWatched 둘 다 +1 */
+  recordAdWatched(): void {
+    const state = this.getPlayStats();
+    state.daily.adsWatched += 1;
+    state.weekly.adsWatched += 1;
+    this.setPlayStats(state);
+  },
+
+  /** 코인 획득 시 누적 — 상점 보석 교환 코인은 호출 X */
+  recordCoinEarned(amount: number): void {
+    if (amount <= 0) return;
+    const state = this.getPlayStats();
+    state.daily.coinsEarned += amount;
+    state.weekly.coinsEarned += amount;
+    this.setPlayStats(state);
+  },
+
+  /** 부활 사용한 판 종료 시 — 부활 후 추가 획득 점수의 max 갱신 */
+  recordPostReviveScore(delta: number): void {
+    if (delta <= 0) return;
+    const state = this.getPlayStats();
+    for (const key of ['daily', 'weekly'] as const) {
+      if (delta > state[key].postReviveDeltaBest) {
+        state[key].postReviveDeltaBest = delta;
+      }
+    }
+    this.setPlayStats(state);
+  },
+
+  /** 미션 정의에서 사라진 옛 ID들을 claim 리스트에서 정리 (self-healing migration) */
+  pruneClaimedMissions(validIds: ReadonlySet<string>): void {
+    const state = this.getMissionState();
+    const dailyFiltered = state.daily.claimed.filter((id) => validIds.has(id));
+    const weeklyFiltered = state.weekly.claimed.filter((id) => validIds.has(id));
+    if (
+      dailyFiltered.length !== state.daily.claimed.length ||
+      weeklyFiltered.length !== state.weekly.claimed.length
+    ) {
+      state.daily.claimed = dailyFiltered;
+      state.weekly.claimed = weeklyFiltered;
+      this.setMissionState(state);
+    }
   },
 
   /* ──────────────  Free Reward (상점 일 N회 제한)  ────────────── */

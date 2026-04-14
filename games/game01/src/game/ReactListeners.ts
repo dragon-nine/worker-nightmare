@@ -55,17 +55,15 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     logEvent('revive_ad_click', { score: deps.getScore() });
     gameBus.emit('screen-change', 'revive-ad');
 
-    // 광고 동안 게임 시뮬레이션 정지 (delta 폭주 방지)
+    // 광고 동안 게임 시뮬레이션 정지 (delta 폭주 방지) — BGM은 AudioDirector가 처리
     deps.scene.scene.pause();
-    const bgm = lifecycleDeps.getBgm();
-    bgm?.pause();
 
     adService.showRewarded('revive', (result) => {
       // 광고 종료 후 게임 시뮬레이션 재개
       deps.scene.scene.resume();
-      if (bgm) (bgm as Phaser.Sound.WebAudioSound).resume();
 
       if (result.kind === 'rewarded') {
+        storage.recordAdWatched();
         gameBus.emit('screen-change', 'playing');
         doRevive(lifecycleDeps);
       } else {
@@ -74,6 +72,18 @@ export function setupReactListeners(deps: ReactListenerDeps) {
         gameBus.emit('revive-fail', result.kind);
       }
     });
+  });
+
+  const unsubRestart = gameBus.on('restart-game', () => {
+    logClick('game_restart');
+    // go-home와 동일한 정리 + CommuteScene 재시작 (BootScene 경유 X)
+    adService.cancel();
+    deps.hud.forceResume();
+    if (deps.scene.scene.isPaused('CommuteScene')) {
+      deps.scene.scene.resume();
+    }
+    gameBus.emit('screen-change', 'playing');
+    deps.scene.scene.restart();
   });
 
   const unsubHome = gameBus.on('go-home', () => {
@@ -100,10 +110,7 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     }
   });
 
-  const unsubToggleBgm = gameBus.on('toggle-bgm', () => {
-    const bgm = deps.scene.sound.get('bgm-menu');
-    if (bgm) (bgm as Phaser.Sound.WebAudioSound).setMute(storage.getBool('bgmMuted'));
-  });
+  // toggle-bgm 은 AudioDirector 가 단독 처리 (여기서 중복 구독 제거)
 
   const unsubGodMode = gameBus.on('toggle-godmode', () => {
     storage.toggleBool('godMode');
@@ -128,10 +135,10 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     unsubSwitch();
     unsubForward();
     unsubRevive();
+    unsubRestart();
     unsubHome();
     unsubPause();
     unsubPlaySfx();
-    unsubToggleBgm();
     unsubGodMode();
     unsubReviveGem();
   });

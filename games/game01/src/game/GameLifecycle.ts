@@ -13,7 +13,8 @@ export interface LifecycleDeps extends MovementDeps {
   setGameOver(v: boolean): void;
   getHasRevived(): boolean;
   setHasRevived(v: boolean): void;
-  getBgm(): Phaser.Sound.BaseSound | undefined;
+  getScoreAtRevive(): number;
+  setScoreAtRevive(v: number): void;
   showPopup(message: string, color: string): void;
 }
 
@@ -53,6 +54,8 @@ export function onDeath(deps: LifecycleDeps) {
 
 export function revive(deps: LifecycleDeps) {
   deps.setHasRevived(true);
+  // 부활 시점 점수 캡처 — 미션 "부활 후 N점 추가 달성" 판정용
+  deps.setScoreAtRevive(deps.getScore());
   deps.setGameOver(false);
   deps.setIsFalling(false);
   deps.setJustSwitched(false);
@@ -78,11 +81,7 @@ export function revive(deps: LifecycleDeps) {
   deps.hud.elapsed = 30;
   deps.hud.updateTimerBar();
   deps.hud.startTimer();
-
-  const bgm = deps.getBgm();
-  if (bgm) {
-    (bgm as Phaser.Sound.WebAudioSound).resume();
-  }
+  // BGM 재개는 AudioDirector 가 screen-change 'playing' 수신 시 자동 처리
 
   requestAnimationFrame(() => {
     deps.hud.updateScore(deps.getScore());
@@ -106,7 +105,7 @@ export function endGame(deps: LifecycleDeps) {
   deps.hud.stopTimer();
 
   // 부가 효과 — 실패해도 게임오버 UI 전환은 반드시 이루어져야 함
-  try { deps.getBgm()?.pause(); } catch { /* 무시 */ }
+  // BGM ducking 은 AudioDirector 가 screen-change 'game-over' 수신 시 처리
   try { deps.playSfx('sfx-game-over', 0.6); } catch { /* 무시 */ }
   try { deps.vibrate([40, 80, 50, 80]); } catch { /* 무시 */ }
 
@@ -125,6 +124,11 @@ export function endGame(deps: LifecycleDeps) {
   try {
     bestScore = storage.updateBestScore(deps.getScore());
     storage.recordPlayScore(deps.getScore());
+    // 부활 후 추가 획득 점수 — 부활을 사용한 판만 기록 (-1은 미사용)
+    const scoreAtRevive = deps.getScoreAtRevive();
+    if (scoreAtRevive >= 0) {
+      storage.recordPostReviveScore(deps.getScore() - scoreAtRevive);
+    }
     storage.flushNums();
   } catch { /* 무시 */ }
 

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
-import { getClaimableMissionCount } from '../../../game/services/missions';
+import { ALL_MISSION_IDS, getClaimableMissionCount } from '../../../game/services/missions';
 import { isAdRemoved } from '../../../game/services/billing';
+import { openLeaderboard } from '../../../game/services/leaderboard';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
 import { TapButton } from '../../components/TapButton';
@@ -38,6 +39,8 @@ export function HomeTab({ scale }: Props) {
     () => (storage.isAttendanceClaimedToday() ? undefined : '!'),
   );
   const [missionBadge, setMissionBadge] = useState<string | undefined>(() => {
+    // 옛 미션 ID 정리 (배지 카운트 정확성을 위해 마운트 시점에 1회)
+    storage.pruneClaimedMissions(ALL_MISSION_IDS);
     const n = getClaimableMissionCount();
     return n > 0 ? String(n) : undefined;
   });
@@ -145,15 +148,16 @@ export function HomeTab({ scale }: Props) {
         </div>
       </div>
 
-      {/* 좌측 플로팅 메뉴 — 출석 / 미션 */}
+      {/* 우측 플로팅 메뉴 — 출석 / 미션 / 랭킹 */}
       <div
         className={introClass}
         style={{
           position: 'absolute',
-          left: 10 * scale,
+          right: 10 * scale,
           top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
           display: 'flex',
           flexDirection: 'column',
+          alignItems: 'flex-end',
           gap: 8 * scale,
           zIndex: 5,
           pointerEvents: 'auto',
@@ -195,6 +199,24 @@ export function HomeTab({ scale }: Props) {
             setOpenModal('mission');
           }}
         />
+        <FloatingMenuButton
+          icon={
+            <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#ffd24a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+              <path d="M7 4h10v5a5 5 0 01-10 0V4z" />
+              <path d="M7 6H4v2a3 3 0 003 3" />
+              <path d="M17 6h3v2a3 3 0 01-3 3" />
+            </svg>
+          }
+          label="랭킹"
+          accent="#ffd24a"
+          scale={scale}
+          onTap={() => {
+            gameBus.emit('play-sfx', 'sfx-click');
+            openLeaderboard();
+          }}
+        />
       </div>
 
       {/* 모달 */}
@@ -202,14 +224,14 @@ export function HomeTab({ scale }: Props) {
       {openModal === 'mission' && <MissionModal onClose={closeModal} />}
       {openModal === 'debug' && <DebugModal onClose={closeModal} />}
 
-      {/* 우측 플로팅: 디버그 (DEV 전용) — 설정 아래 */}
+      {/* 좌측 플로팅: 디버그 (DEV 전용) */}
       {import.meta.env.DEV && (
         <div
           className={introClass}
           style={{
             position: 'absolute',
-            right: 12 * scale,
-            top: `calc(var(--sat, 0px) + ${64 * scale}px)`,
+            left: 12 * scale,
+            top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
             zIndex: 5,
             pointerEvents: 'auto',
             animationDelay: '1.2s',

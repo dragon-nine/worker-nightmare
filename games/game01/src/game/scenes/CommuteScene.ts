@@ -40,7 +40,8 @@ export class CommuteScene extends Phaser.Scene {
   private justSwitched = false;
   private gameStarted = false;
   private hasRevived = false;
-  private bgm?: Phaser.Sound.BaseSound;
+  /** 부활 시점의 점수 — endGame에서 부활 후 추가 획득량 계산용. -1 = 부활 안 함 */
+  private scoreAtRevive = -1;
   private bgManager!: BackgroundManager;
 
   private laneWorldX: number[] = [];
@@ -62,6 +63,7 @@ export class CommuteScene extends Phaser.Scene {
     this.justSwitched = false;
     this.gameStarted = false;
     this.hasRevived = false;
+    this.scoreAtRevive = -1;
   }
 
   create() {
@@ -129,8 +131,7 @@ export class CommuteScene extends Phaser.Scene {
     if (this.gameStarted) return;
     this.gameStarted = true;
 
-    this.bgm = this.sound.get('bgm-menu') ?? undefined;
-
+    // BGM 은 AudioDirector 가 screen-change 에 맞춰 처리 — scene 레벨에서 touch 안 함
     logEvent('game_start');
     storage.recordPlayStart();
     this.guideCount = 0;
@@ -214,7 +215,8 @@ export class CommuteScene extends Phaser.Scene {
       setGameOver: (v) => { this.gameOver = v; },
       getHasRevived: () => this.hasRevived,
       setHasRevived: (v) => { this.hasRevived = v; },
-      getBgm: () => this.bgm,
+      getScoreAtRevive: () => this.scoreAtRevive,
+      setScoreAtRevive: (v) => { this.scoreAtRevive = v; },
       showPopup: (msg, color) => this.showPopup(msg, color),
     };
   }

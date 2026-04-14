@@ -66,14 +66,15 @@ export function AttendanceModal({ onClose }: Props) {
     // 잔액 충전
     for (const r of reward.rewards) {
       storage.addNum(r.kind === 'coin' ? 'coins' : 'gems', r.amount);
+      if (r.kind === 'coin') storage.recordCoinEarned(r.amount);
     }
     gameBus.emit('play-sfx', 'sfx-click');
     setAttendance(storage.getAttendance());
     setTodayClaimed(true);
-    const summary = reward.rewards
-      .map((r) => `${r.kind === 'coin' ? '코인' : '보석'} +${r.amount}`)
-      .join(', ');
-    gameBus.emit('toast', `${summary} 받음!`);
+    gameBus.emit(
+      'show-reward',
+      reward.rewards.map((r) => ({ kind: r.kind, amount: r.amount })),
+    );
   };
 
   return (

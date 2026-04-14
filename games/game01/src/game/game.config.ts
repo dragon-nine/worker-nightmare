@@ -95,6 +95,7 @@ export const gameConfig = {
       ['sfx-coin', 'audio/sfx/coin.ogg'],
       ['sfx-timer-warning', 'audio/sfx/timer-warning.ogg'],
       ['sfx-game-over', 'audio/sfx/game-over.ogg'],
+      ['sfx-reward', 'audio/sfx/reward.wav'],
     ] as [string, string][],
   },
 } as const;

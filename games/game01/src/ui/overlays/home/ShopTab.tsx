@@ -43,6 +43,8 @@ interface PkgItem {
   extra: string;
   extraNeutral?: boolean;
   price: string;
+  /** 코인 패키지의 보석 가격 (숫자) — 아이콘 + 숫자로 렌더링 */
+  gemPrice?: number;
   highlight?: 'best' | 'hot';
   /** 토스 IAP SKU 매핑 키 (보석 패키지만) */
   skuKey?: GemPackageKey;
@@ -55,9 +57,9 @@ const GEM_PACKAGES: PkgItem[] = [
 ];
 
 const COIN_PACKAGES: PkgItem[] = [
-  { id: 'c1', amount: 1000,  amountLabel: '코인 1,000개', extra: '소량 충전',         extraNeutral: true, price: '보석 10개' },
-  { id: 'c2', amount: 6000,  amountLabel: '코인 6,000개', bonusPct: 20, extra: '5000 + 보너스 1000',  price: '보석 50개' },
-  { id: 'c3', amount: 14000, amountLabel: '코인 14,000개', bonusPct: 40, extra: '10000 + 보너스 4000', price: '보석 100개' },
+  { id: 'c1', amount: 1000,  amountLabel: '코인 1,000개', extra: '소량 충전',         extraNeutral: true, price: '10',  gemPrice: 10 },
+  { id: 'c2', amount: 6000,  amountLabel: '코인 6,000개', bonusPct: 20, extra: '5000 + 보너스 1000',  price: '50',  gemPrice: 50 },
+  { id: 'c3', amount: 14000, amountLabel: '코인 14,000개', bonusPct: 40, extra: '10000 + 보너스 4000', price: '100', gemPrice: 100 },
 ];
 
 /* ── 컴포넌트 ── */
@@ -103,16 +105,12 @@ export function ShopTab({ scale }: Props) {
     }
 
     storage.addNum(r.kind === 'coin' ? 'coins' : 'gems', r.amount);
+    if (r.kind === 'coin') storage.recordCoinEarned(r.amount);
     const newCount = storage.incrementFreeRewardCount(r.id);
     refreshBalance();
     refreshFreeRewardCounts();
     logEvent('free_reward_claim', { kind: r.kind, amount: r.amount, count: newCount });
-    const remaining = r.limit - newCount;
-    const label = r.kind === 'coin' ? '코인' : '보석';
-    gameBus.emit(
-      'toast',
-      `${label} +${r.amount} 받음! (오늘 ${newCount}/${r.limit}회)${remaining === 0 ? ' ✓ 완료' : ''}`,
-    );
+    gameBus.emit('show-reward', [{ kind: r.kind, amount: r.amount }]);
   };
 
   const [gemPurchasing, setGemPurchasing] = useState<string | null>(null);
@@ -122,7 +120,7 @@ export function ShopTab({ scale }: Props) {
 
     if (kind === 'coin') {
       // 코인 충전 — 보석 차감 (확인 모달 먼저)
-      const gemCost = parseInt(p.price.replace(/[^\d]/g, ''), 10);
+      const gemCost = p.gemPrice ?? 0;
       if (!Number.isFinite(gemCost) || gemCost <= 0) {
         gameBus.emit('toast', '가격 정보가 올바르지 않아요');
         return;
@@ -143,7 +141,7 @@ export function ShopTab({ scale }: Props) {
         if (ok) {
           refreshBalance();
           logEvent('gem_purchase_success', { pkg: p.skuKey!, amount: p.amount });
-          gameBus.emit('toast', `보석 +${p.amount.toLocaleString()} 충전 완료!`);
+          gameBus.emit('show-reward', [{ kind: 'gem', amount: p.amount }]);
         } else {
           logEvent('gem_purchase_fail', { pkg: p.skuKey! });
           gameBus.emit('toast', '결제가 취소되거나 실패했어요');
@@ -167,7 +165,7 @@ export function ShopTab({ scale }: Props) {
     storage.addNum('coins', pkg.amount);
     refreshBalance();
     logEvent('coin_purchase_success', { pkg: pkg.id, amount: pkg.amount, cost: gemCost });
-    gameBus.emit('toast', `코인 +${pkg.amount.toLocaleString()} 충전 완료!`);
+    gameBus.emit('show-reward', [{ kind: 'coin', amount: pkg.amount }]);
     setPendingCoinPurchase(null);
   };
 
@@ -973,9 +971,19 @@ function PackageCard({
             whiteSpace: 'nowrap',
             boxShadow: kind === 'gem' ? `0 ${2 * scale}px ${8 * scale}px rgba(232,89,60,0.25)` : 'none',
             flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4 * scale,
           }}
         >
-          {priceOverride ?? item.price}
+          {kind === 'coin' && item.gemPrice !== undefined && priceOverride === undefined ? (
+            <>
+              <GemIcon size={16 * scale} />
+              <span>{item.gemPrice}</span>
+            </>
+          ) : (
+            priceOverride ?? item.price
+          )}
         </div>
       </TapButton>
     </div>

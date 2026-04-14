@@ -22,6 +22,7 @@ import { StoryScreen } from '../overlays/StoryScreen';
 import { ReviveFailModal } from '../overlays/ReviveFailModal';
 import { ReviveScreen } from '../overlays/ReviveScreen';
 import { MockAdModal } from '../overlays/MockAdModal';
+import { RewardPopup } from '../overlays/RewardPopup';
 import { Toast } from './Toast';
 
 const GAME_CONTAINER_ID = 'game-container';
@@ -85,7 +86,8 @@ export function GameContainer() {
     const unsub2 = gameBus.on('game-over-data', (data) => {
       setGameOverData(data);
       // 부활 가능하면 부활 모달 먼저, 아니면 바로 보상/종료 화면
-      setScreen(data.canRevive ? 'revive-prompt' : 'game-over');
+      // screen-change 로 emit → 위 unsub1 이 setScreen + AudioDirector 에도 전파
+      gameBus.emit('screen-change', data.canRevive ? 'revive-prompt' : 'game-over');
     });
     const unsub3 = gameBus.on('show-challenge', (score) => setChallengeScore(score));
     const unsub4 = gameBus.on('show-ad-remove', () => setShowAdRemove(true));
@@ -116,7 +118,7 @@ export function GameContainer() {
       {(screen === 'playing' || screen === 'paused') && <GameplayHUD />}
       {screen === 'paused' && <PauseOverlay />}
       {screen === 'revive-prompt' && gameOverData && (
-        <ReviveScreen data={gameOverData} onSkip={() => setScreen('game-over')} />
+        <ReviveScreen data={gameOverData} onSkip={() => gameBus.emit('screen-change', 'game-over')} />
       )}
       {(screen === 'game-over' || screen === 'revive-ad') && gameOverData && <GameOverScreen data={gameOverData} />}
       {challengeScore !== null && (
@@ -140,6 +142,9 @@ export function GameContainer() {
 
       {/* DEV 전용 — Mock 광고 모달 */}
       {import.meta.env.DEV && <MockAdModal />}
+
+      {/* 전역 보상 팝업 — 항상 마운트, 이벤트 기반 표시 */}
+      <RewardPopup />
 
       {/* 전역 토스트 — 항상 마운트, 이벤트 기반 표시 */}
       <Toast />
