@@ -15,7 +15,6 @@ export interface LifecycleDeps extends MovementDeps {
   setHasRevived(v: boolean): void;
   getScoreAtRevive(): number;
   setScoreAtRevive(v: number): void;
-  getBgm(): Phaser.Sound.BaseSound | undefined;
   showPopup(message: string, color: string): void;
 }
 
@@ -82,11 +81,7 @@ export function revive(deps: LifecycleDeps) {
   deps.hud.elapsed = 30;
   deps.hud.updateTimerBar();
   deps.hud.startTimer();
-
-  const bgm = deps.getBgm();
-  if (bgm) {
-    (bgm as Phaser.Sound.WebAudioSound).resume();
-  }
+  // BGM 재개는 AudioDirector 가 screen-change 'playing' 수신 시 자동 처리
 
   requestAnimationFrame(() => {
     deps.hud.updateScore(deps.getScore());
@@ -110,7 +105,7 @@ export function endGame(deps: LifecycleDeps) {
   deps.hud.stopTimer();
 
   // 부가 효과 — 실패해도 게임오버 UI 전환은 반드시 이루어져야 함
-  try { deps.getBgm()?.pause(); } catch { /* 무시 */ }
+  // BGM ducking 은 AudioDirector 가 screen-change 'game-over' 수신 시 처리
   try { deps.playSfx('sfx-game-over', 0.6); } catch { /* 무시 */ }
   try { deps.vibrate([40, 80, 50, 80]); } catch { /* 무시 */ }
 

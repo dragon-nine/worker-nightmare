@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { gameBus } from '../event-bus';
 import { storage } from '../services/storage';
+import { audioDirector } from '../services/audio-director';
 import { gameConfig } from '../game.config';
 
 export class BootScene extends Phaser.Scene {
@@ -28,23 +29,11 @@ export class BootScene extends Phaser.Scene {
       this.textures.get(key).setFilter(Phaser.Textures.LINEAR);
     });
 
-    // Menu BGM
-    const bgmMuted = storage.getBool('bgmMuted');
-    try {
-      const existing = this.sound.get('bgm-menu');
-      if (existing) {
-        if (!bgmMuted && !existing.isPlaying) {
-          (existing as Phaser.Sound.WebAudioSound).play();
-        }
-      } else {
-        const menuBgm = this.sound.add('bgm-menu', { loop: true, volume: 0.4 });
-        if (!bgmMuted) menuBgm.play();
-      }
-    } catch { /* autoplay 차단 — 무시 */ }
+    // BGM 은 AudioDirector 가 단독 관리 — 화면/광고/가시성/음소거 반영
+    audioDirector.init(this.sound);
 
     // 중요: 리스너부터 먼저 등록 (메인 화면 표시 전에 준비 완료)
     const unsubStart = gameBus.on('start-game', () => {
-      // BGM은 멈추지 않고 계속 재생
       this.scene.start('CommuteScene');
       unsubStart();
     });
@@ -58,34 +47,10 @@ export class BootScene extends Phaser.Scene {
       }
     });
 
-    const unsubToggleBgm = gameBus.on('toggle-bgm', () => {
-      const muted = storage.getBool('bgmMuted');
-      const menuBgm = this.sound.get('bgm-menu');
-      if (muted) {
-        menuBgm?.stop();
-      } else if (menuBgm && !menuBgm.isPlaying) {
-        menuBgm.play();
-      } else if (!menuBgm) {
-        try { this.sound.add('bgm-menu', { loop: true, volume: 0.4 }).play(); } catch { /* 무시 */ }
-      }
-    });
-
-    // 광고 표시 중에는 BGM pause, 종료 시 resume (음소거 상태면 그대로 유지)
-    const unsubAdStart = gameBus.on('ad-show-start', () => {
-      this.sound.get('bgm-menu')?.pause();
-    });
-    const unsubAdEnd = gameBus.on('ad-show-end', () => {
-      if (storage.getBool('bgmMuted')) return;
-      this.sound.get('bgm-menu')?.resume();
-    });
-
     // 씬 전환 시 정리
     this.events.on('shutdown', () => {
       unsubStart();
       unsubPlaySfx();
-      unsubToggleBgm();
-      unsubAdStart();
-      unsubAdEnd();
     });
   }
 }
