@@ -61,7 +61,8 @@ export class HUD {
   }
 
   addTime() {
-    const bonus = Math.max(0.1, 0.4 - (this.elapsed / 60) * 0.3);
+    // 시간 보너스: 시작 시 +0.4초 → 90초 경과 시 +0.15초까지 선형 감소 (이후 0.15 고정)
+    const bonus = Math.max(0.15, 0.4 - (this.elapsed / 90) * 0.25);
     this.timeLeft = Math.min(MAX_TIME, this.timeLeft + bonus);
     this.emitTimer();
   }
@@ -135,5 +136,17 @@ export class HUD {
         this.emitTimer();
       });
     }
+  }
+
+  /**
+   * 일시정지 상태를 강제 해제 (screen-change emit 없이).
+   * 홈으로 이동하는 등 pause 상태 그대로 scene을 떠나기 전에 호출.
+   * togglePause()와 달리 화면 전환 이벤트를 발사하지 않음.
+   */
+  forceResume() {
+    if (!this.paused) return;
+    this.paused = false;
+    this.scene.time.paused = false;
+    this.scene.tweens.resumeAll();
   }
 }

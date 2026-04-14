@@ -73,6 +73,9 @@ function attachRapid(el: HTMLElement, onTap: () => void): () => void {
   // 드롭됨. dedup은 같은 손가락의 같은 버튼 연타만 막도록 pointerId별로 관리.
   const lastFireByPointer = new Map<number, number>();
   const onPointerDown = (e: PointerEvent) => {
+    // 포인터를 이 element에 즉시 명시적 캡처 → OS/브라우저의 제스처 감지 중단 유도.
+    // (iOS Safari 엣지 스와이프 등 외부 제스처로 터치가 드롭되는 엣지케이스 방어)
+    try { el.setPointerCapture(e.pointerId); } catch { /* 일부 환경 미지원 무시 */ }
     const now = performance.now();
     const last = lastFireByPointer.get(e.pointerId) ?? -Infinity;
     if (now - last < RAPID_DEDUP_MS) return;

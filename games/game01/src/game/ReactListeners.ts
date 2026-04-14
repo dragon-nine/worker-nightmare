@@ -80,7 +80,9 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     logClick('game_home');
     // 진행 중인 광고 결과 콜백을 무효화 (stale 콜백 방지)
     adService.cancel();
-    // pause 상태로 BootScene으로 이동 시 문제 방지
+    // pause 상태 그대로 BootScene으로 전환 시 다음 게임에서 tween/time stale 상태로
+    // 시작되는 현상 방지 — HUD가 관리하는 모든 pause 축을 명시적으로 해제.
+    deps.hud.forceResume();
     if (deps.scene.scene.isPaused('CommuteScene')) {
       deps.scene.scene.resume();
     }
@@ -135,14 +137,26 @@ export function setupReactListeners(deps: ReactListenerDeps) {
   });
 }
 
+// 토스 햅틱 — 모듈 레벨에서 1회만 로드해 참조 캐시.
+// 매 탭마다 import() 호출 시 생기는 Promise/microtask 오버헤드로 인한
+// 입력 드롭 현상 회피. (iOS WebKit에서 microtask 중 터치 이벤트 드롭 알려진 이슈)
+type TossHaptic = (opts: { type: 'tap' }) => void;
+let cachedTossHaptic: TossHaptic | null = null;
+if (isToss() && isTossNative()) {
+  import('@apps-in-toss/web-framework')
+    .then((m) => { cachedTossHaptic = m.generateHapticFeedback as TossHaptic; })
+    .catch(() => { /* 미지원 환경 무시 */ });
+}
+
 function vibrate(pattern: number | number[]) {
-  // 토스 네이티브: 자체 햅틱 SDK 사용 (iOS/Android 모두 지원)
-  if (isToss() && isTossNative()) {
-    import('@apps-in-toss/web-framework').then(({ generateHapticFeedback }) => {
-      generateHapticFeedback({ type: 'tap' });
-    }).catch(() => { /* 미지원 환경 무시 */ });
+  // 토스 네이티브: 캐시된 함수 참조 사용 (동기 호출, Promise X)
+  // ※ try/catch 필수 — 샌드박스 등 일부 환경에서 throw하면 호출부(endGame 등)가 중단될 수 있음
+  if (cachedTossHaptic) {
+    try { cachedTossHaptic({ type: 'tap' }); } catch { /* 미지원 환경 무시 */ }
     return;
   }
+  // 토스 환경인데 아직 로드 중이면 스킵 (첫 탭 한정 — 로딩 끝나면 위 분기로)
+  if (isToss() && isTossNative()) return;
   // 그 외(구글/웹): 표준 Vibration API
   try { navigator.vibrate?.(pattern); } catch { /* 미지원 환경 무시 */ }
 }

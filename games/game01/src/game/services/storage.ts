@@ -121,18 +121,64 @@ function defaultPlayStats(): PlayStats {
   };
 }
 
+/* ──────────────  In-memory caches (탭 입력 드롭 방지용)  ────────────── */
+// 게임 핫 패스(코인 획득, tutorial 체크 등)에서 localStorage 동기 I/O가
+// 메인 스레드를 블록해 터치 이벤트가 드롭되는 현상 회피.
+// getBool/getNum은 첫 호출 시 localStorage에서 로드 후 메모리 캐시.
+// setNum은 메모리 즉시 반영 + 200ms 배치 flush (pagehide/visibilitychange 시 즉시 flush).
+// setBool은 메모리 + localStorage 동기 (저빈도라 문제 없음).
+
+const _boolCache: Partial<Record<BoolKey, boolean>> = {};
+const _numCache: Partial<Record<NumKey, number>> = {};
+const _dirtyNums = new Set<NumKey>();
+let _flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function _flushNumsSync(): void {
+  if (_flushTimer != null) {
+    clearTimeout(_flushTimer);
+    _flushTimer = null;
+  }
+  for (const key of _dirtyNums) {
+    const val = _numCache[key];
+    if (val != null) localStorage.setItem(KEYS[key], String(val));
+  }
+  _dirtyNums.clear();
+}
+
+function _scheduleFlushNums(): void {
+  if (_flushTimer != null) return;
+  _flushTimer = setTimeout(() => {
+    _flushTimer = null;
+    _flushNumsSync();
+  }, 200);
+}
+
+// 탭 숨김/페이지 이탈 시 즉시 flush (데이터 유실 방지)
+if (typeof window !== 'undefined') {
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') _flushNumsSync();
+  });
+  window.addEventListener('pagehide', _flushNumsSync);
+}
+
 export const storage = {
-  /* ──────────────  Bool  ────────────── */
+  /* ──────────────  Bool (메모리 캐시된 읽기)  ────────────── */
 
   getBool(key: BoolKey): boolean {
-    return localStorage.getItem(KEYS[key]) === 'true';
+    const cached = _boolCache[key];
+    if (cached !== undefined) return cached;
+    const val = localStorage.getItem(KEYS[key]) === 'true';
+    _boolCache[key] = val;
+    return val;
   },
 
   setBool(key: BoolKey, value: boolean): void {
+    _boolCache[key] = value;
     localStorage.setItem(KEYS[key], String(value));
   },
 
   removeBool(key: BoolKey): void {
+    delete _boolCache[key];
     localStorage.removeItem(KEYS[key]);
   },
 
@@ -142,14 +188,20 @@ export const storage = {
     return next;
   },
 
-  /* ──────────────  Number  ────────────── */
+  /* ──────────────  Number (메모리 캐시 + 배치 flush)  ────────────── */
 
   getNum(key: NumKey): number {
-    return Number(localStorage.getItem(KEYS[key]) || '0');
+    const cached = _numCache[key];
+    if (cached !== undefined) return cached;
+    const val = Number(localStorage.getItem(KEYS[key]) || '0');
+    _numCache[key] = val;
+    return val;
   },
 
   setNum(key: NumKey, value: number): void {
-    localStorage.setItem(KEYS[key], String(value));
+    _numCache[key] = value;
+    _dirtyNums.add(key);
+    _scheduleFlushNums();
   },
 
   addNum(key: NumKey, delta: number): number {
@@ -163,6 +215,11 @@ export const storage = {
     const next = Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, raw));
     this.setNum(key, next);
     return next;
+  },
+
+  /** 수동 flush — 게임오버 등 결정적 시점에 호출해 즉시 persist */
+  flushNums(): void {
+    _flushNumsSync();
   },
 
   /* ──────────────  Best Score (편의 래퍼)  ────────────── */

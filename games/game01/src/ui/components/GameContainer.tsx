@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import { createGameConfig } from '../../game/config';
 import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
-import { loadQuotes } from '../../game/game-over-quotes';
 import { adService } from '../../game/services/ad-service';
 import { logScreen } from '../../game/services/analytics';
 import { isGoogle, isTossNative } from '../../game/platform';
@@ -37,8 +36,6 @@ export function GameContainer() {
 
   useEffect(() => {
     if (gameRef.current) return;
-
-    loadQuotes(); // R2에서 게임오버 멘트 미리 로드
 
     // 플랫폼별 초기화
     // ※ admob/toss-ad/mock-ad provider 는 플랫폼 전용이라 동적 import 유지 (실제 코드 스플릿됨)
@@ -104,6 +101,11 @@ export function GameContainer() {
           width: '100%',
           height: '100%',
           backgroundColor: '#000',
+          // Phaser canvas를 hit-test에서 제외 — 모든 인풋은 React DOM 오버레이에서 처리.
+          // (Phaser config의 input:{touch:false, mouse:false}로 Phaser는 이미 이벤트 무시하지만,
+          //  canvas element 자체는 여전히 hit-test 대상이라 iOS WebKit에서 overlay 자식 버튼의
+          //  pointer-events:auto 오버라이드가 간헐적으로 무시되는 버그 회피)
+          pointerEvents: 'none',
         }}
       />
 
