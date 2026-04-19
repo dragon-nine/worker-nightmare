@@ -148,7 +148,7 @@ export function HomeTab({ scale }: Props) {
     >
       {/* 페이지 배경 */}
       <img
-        src="https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev/shared/%E1%84%86%E1%85%A6%E1%84%8B%E1%85%B5%E1%86%AB%E1%84%87%E1%85%A2%E1%84%80%E1%85%A7%E1%86%BC.jpg"
+        src={`${BASE}main-screen/main-bg.png`}
         alt=""
         style={{
           position: 'absolute',

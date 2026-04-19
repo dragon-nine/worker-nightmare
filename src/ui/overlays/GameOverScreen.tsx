@@ -102,7 +102,7 @@ export function GameOverScreen({ data }: Props) {
         style={{ background: 'linear-gradient(to bottom, #2a0c10, #000000)' }}
       />
 
-      {/* 레이아웃 요소들 — admin과 동일한 렌더링 */}
+      {/* 레이아웃 요소들 */}
       {elements.map((el) => {
         const pos = positions.get(el.id);
         if (!pos) return null;
