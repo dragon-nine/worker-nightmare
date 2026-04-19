@@ -10,6 +10,9 @@ import { storage } from './services/storage';
 export class HUD {
   private scene: Phaser.Scene;
   private timerRunning = false;
+  private maxTime: number;
+  private startTime: number;
+  private allowTimeBonus: boolean;
   elapsed = 0;
 
   timeLeft = START_TIME;
@@ -23,9 +26,17 @@ export class HUD {
   private currentScore = 0;
   private lastEmittedPct = -1;
 
-  constructor(scene: Phaser.Scene, onTimeUp: () => void) {
+  constructor(
+    scene: Phaser.Scene,
+    onTimeUp: () => void,
+    options?: { duration?: number; allowTimeBonus?: boolean },
+  ) {
     this.scene = scene;
     this.onTimeUp = onTimeUp;
+    this.maxTime = options?.duration ?? MAX_TIME;
+    this.startTime = options?.duration ?? START_TIME;
+    this.allowTimeBonus = options?.allowTimeBonus ?? true;
+    this.timeLeft = this.startTime;
   }
 
   create() {
@@ -61,9 +72,10 @@ export class HUD {
   }
 
   addTime() {
+    if (!this.allowTimeBonus) return;
     // 시간 보너스: 시작 시 +0.4초 → 90초 경과 시 +0.15초까지 선형 감소 (이후 0.15 고정)
     const bonus = Math.max(0.15, 0.4 - (this.elapsed / 90) * 0.25);
-    this.timeLeft = Math.min(MAX_TIME, this.timeLeft + bonus);
+    this.timeLeft = Math.min(this.maxTime, this.timeLeft + bonus);
     this.emitTimer();
   }
 
@@ -109,7 +121,7 @@ export class HUD {
   }
 
   private emitTimer() {
-    const pct = Math.max(0, this.timeLeft / MAX_TIME);
+    const pct = Math.max(0, this.timeLeft / this.maxTime);
     // 1% 단위로만 emit → 5초 동안 100번 (초당 ~20번)
     const rounded = Math.round(pct * 100) / 100;
     if (rounded === this.lastEmittedPct) return;

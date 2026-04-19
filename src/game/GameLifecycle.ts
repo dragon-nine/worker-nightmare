@@ -4,6 +4,8 @@ import { logEvent } from './services/analytics';
 import { gameBus } from './event-bus';
 import { storage } from './services/storage';
 import { submitScore as submitApiScore } from './services/api';
+import { settleBattle } from './services/battle-state';
+import { isBattleMode } from './services/game-mode';
 import {
   calcViewLeft, panViewTo, scrollToCurrentRow,
   type MovementDeps,
@@ -21,6 +23,10 @@ export interface LifecycleDeps extends MovementDeps {
 
 export function onForwardCrash(deps: LifecycleDeps) {
   if (deps.getGodMode()) return;
+  if (isBattleMode()) {
+    applyBattlePenalty(deps, 'forward');
+    return;
+  }
   deps.setIsFalling(true);
   deps.hud.stopTimer();
   deps.player.setHurt(true);
@@ -32,11 +38,43 @@ export function onForwardCrash(deps: LifecycleDeps) {
 
 export function onCrash(deps: LifecycleDeps) {
   if (deps.getGodMode()) return;
+  if (isBattleMode()) {
+    applyBattlePenalty(deps, 'switch');
+    return;
+  }
   deps.setIsFalling(true);
   deps.player.setHurt(true);
   deps.vibrate([30, 40, 60]);
   deps.scene.cameras.main.shake(200, 0.015);
   onDeath(deps);
+}
+
+function applyBattlePenalty(deps: LifecycleDeps, type: 'forward' | 'switch') {
+  deps.setIsFalling(true);
+  deps.hud.stopTimer();
+  deps.player.setHurt(true);
+  deps.playSfx('sfx-crash', 0.7);
+  deps.vibrate([20, 40, 20]);
+  deps.scene.cameras.main.shake(120, 0.01);
+  deps.showPopup('실수!', '#ff8b8b');
+
+  const resume = () => {
+    const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
+    const nextLane = currentRow?.isTurn ? currentRow.type : deps.player.currentLane;
+    deps.player.faceNextTile(nextLane);
+    deps.player.setHurt(false);
+    deps.setIsFalling(false);
+    deps.hud.startTimer();
+  };
+
+  if (type === 'forward') {
+    deps.player.animateForwardPenalty(resume);
+    return;
+  }
+
+  const lane = deps.player.currentLane;
+  const direction = lane < 1 ? 'right' : 'left';
+  deps.player.animateSwitchPenalty(direction, resume);
 }
 
 export function onDeath(deps: LifecycleDeps) {
@@ -110,7 +148,7 @@ export function endGame(deps: LifecycleDeps) {
   try { deps.playSfx('sfx-game-over', 0.6); } catch { /* 무시 */ }
   try { deps.vibrate([40, 80, 50, 80]); } catch { /* 무시 */ }
 
-  const canRevive = !deps.getHasRevived();
+  const canRevive = isBattleMode() ? false : !deps.getHasRevived();
 
   try {
     logEvent('game_over', {
@@ -139,10 +177,12 @@ export function endGame(deps: LifecycleDeps) {
   } catch { /* 무시 */ }
 
   // ★ 이 emit은 절대 중단되면 안 됨 — 게임오버 화면 전환의 유일한 트리거
+  const battle = isBattleMode() ? settleBattle(deps.getScore(), deps.hud.elapsed) : null;
   gameBus.emit('game-over-data', {
     score: deps.getScore(),
     bestScore,
     canRevive,
     coinsEarned: deps.getCoinsEarnedThisGame(),
+    battle,
   });
 }

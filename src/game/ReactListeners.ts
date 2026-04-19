@@ -3,6 +3,8 @@ import { adService } from './services/ad-service';
 import { isAdRemoved } from './services/billing';
 import { gameBus } from './event-bus';
 import { storage } from './services/storage';
+import { clearBattle } from './services/battle-state';
+import { resetGameMode } from './services/game-mode';
 import { HUD } from './HUD';
 import { isToss, isTossNative } from './platform';
 import { revive as doRevive, type LifecycleDeps } from './GameLifecycle';
@@ -14,6 +16,7 @@ export interface ReactListenerDeps {
   hud: HUD;
   getGameOver(): boolean;
   getIsFalling(): boolean;
+  getInputLocked(): boolean;
   getScore(): number;
   startGame(): void;
   switchLane(): void;
@@ -23,14 +26,14 @@ export interface ReactListenerDeps {
 
 export function setupReactListeners(deps: ReactListenerDeps) {
   const unsubSwitch = gameBus.on('action-switch', () => {
-    if (deps.getGameOver() || deps.getIsFalling() || deps.hud.paused) return;
+    if (deps.getGameOver() || deps.getIsFalling() || deps.hud.paused || deps.getInputLocked()) return;
     vibrate(10);
     deps.startGame();
     deps.switchLane();
   });
 
   const unsubForward = gameBus.on('action-forward', () => {
-    if (deps.getGameOver() || deps.getIsFalling() || deps.hud.paused) return;
+    if (deps.getGameOver() || deps.getIsFalling() || deps.hud.paused || deps.getInputLocked()) return;
     vibrate(10);
     deps.startGame();
     deps.moveForward();
@@ -88,6 +91,8 @@ export function setupReactListeners(deps: ReactListenerDeps) {
 
   const unsubHome = gameBus.on('go-home', () => {
     logClick('game_home');
+    clearBattle();
+    resetGameMode();
     // 진행 중인 광고 결과 콜백을 무효화 (stale 콜백 방지)
     adService.cancel();
     // pause 상태 그대로 BootScene으로 전환 시 다음 게임에서 tween/time stale 상태로

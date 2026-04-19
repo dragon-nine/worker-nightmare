@@ -4,6 +4,8 @@ import { storage } from '../../../game/services/storage';
 import { ALL_MISSION_IDS, getClaimableMissionCount } from '../../../game/services/missions';
 import { isAdRemoved } from '../../../game/services/billing';
 import { fetchMyRanks, getStoredUserId } from '../../../game/services/api';
+import { clearBattle, startBotBattle } from '../../../game/services/battle-state';
+import { setGameMode } from '../../../game/services/game-mode';
 import { getReward, nextDailyKey, nextWeeklyKey, type RewardPeriod } from '../../../game/services/rewards';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
@@ -122,6 +124,8 @@ export function HomeTab({ scale }: Props) {
 
   const handleStart = () => {
     gameBus.emit('play-sfx', 'sfx-click');
+    clearBattle();
+    setGameMode('normal');
     if (!tutorialDone) {
       gameBus.emit('screen-change', 'story');
     } else {
@@ -132,6 +136,13 @@ export function HomeTab({ scale }: Props) {
   const handleSettings = () => {
     gameBus.emit('play-sfx', 'sfx-click');
     gameBus.emit('screen-change', 'settings');
+  };
+
+  const handleBattleStart = () => {
+    gameBus.emit('play-sfx', 'sfx-click');
+    setGameMode('battle');
+    startBotBattle();
+    gameBus.emit('start-game', undefined);
   };
 
   return (
@@ -251,6 +262,17 @@ export function HomeTab({ scale }: Props) {
             gameBus.emit('play-sfx', 'sfx-click');
             setOpenModal('mission');
           }}
+        />
+        <FloatingMenuButton
+          icon={
+            <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#ffd24a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2L5 13h5l-1 9 8-11h-5l1-9z" fill="#ffd24a" stroke="none" />
+            </svg>
+          }
+          label="대전"
+          accent="#ffd24a"
+          scale={scale}
+          onTap={handleBattleStart}
         />
         <FloatingMenuButton
           icon={
@@ -425,12 +447,17 @@ export function HomeTab({ scale }: Props) {
         </div>
 
         {/* 시작 버튼 */}
-        <div style={{ pointerEvents: 'auto' }}>
+        <div
+          className={introClass}
+          style={{
+            pointerEvents: 'auto',
+            animationDelay: '0.15s',
+          }}
+        >
           <StartButton
             label="시작하기"
             scale={scale}
             onClick={handleStart}
-            animate={playIntroRef.current}
           />
         </div>
       </div>

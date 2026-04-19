@@ -29,12 +29,31 @@ export interface CharacterUnlockPopupData {
   src: string;
 }
 
+export interface BattleResultData {
+  mode: 'bot';
+  opponentName: string;
+  opponentCharacter: 'rabbit' | 'penguin' | 'sheep' | 'cat' | 'koala' | 'lion';
+  playerScore: number;
+  opponentScore: number;
+  outcome: 'win' | 'lose' | 'draw';
+}
+
+export interface BattleHudData {
+  active: boolean;
+  mode: 'bot';
+  opponentName: string;
+  opponentCharacter: 'rabbit' | 'penguin' | 'sheep' | 'cat' | 'koala' | 'lion';
+  playerScore: number;
+  opponentScore: number;
+}
+
 export interface GameOverData {
   score: number;
   bestScore: number;
   canRevive: boolean;
   /** 이번 판에서 획득한 코인 수 */
   coinsEarned: number;
+  battle?: BattleResultData | null;
 }
 
 type EventMap = {
@@ -74,6 +93,9 @@ type EventMap = {
   'show-reward': RewardPopupItem[];
   // 캐릭터 구매 완료 축하 팝업
   'show-character-unlock': CharacterUnlockPopupData;
+  // 대전 HUD 업데이트
+  'battle-update': BattleHudData | null;
+  'battle-countdown': number | null;
   // 광고 표시 라이프사이클 — BGM 덕킹 등 사운드 제어용
   'ad-show-start': void;
   'ad-show-end': void;

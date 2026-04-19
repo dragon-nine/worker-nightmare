@@ -11,6 +11,8 @@ import { adService } from '../services/ad-service';
 import { gameBus } from '../event-bus';
 import { hudState } from '../hud-state';
 import { storage } from '../services/storage';
+import { getBattleHudSnapshot } from '../services/battle-state';
+import { isBattleMode } from '../services/game-mode';
 import { BackgroundManager } from '../BackgroundManager';
 import {
   switchLane as doSwitchLane,
@@ -36,6 +38,8 @@ export class CommuteScene extends Phaser.Scene {
   private gameOver = false;
   private get godMode() { return storage.getBool('godMode'); }
   private guideCount = 0;
+  private lastBattleEmitAt = 0;
+  private inputLocked = false;
   private isFalling = false;
   private justSwitched = false;
   private gameStarted = false;
@@ -59,6 +63,7 @@ export class CommuteScene extends Phaser.Scene {
     hudState.reset();
     this.gameOver = false;
     this.currentRowIdx = 0;
+    this.inputLocked = false;
     this.isFalling = false;
     this.justSwitched = false;
     this.gameStarted = false;
@@ -95,7 +100,10 @@ export class CommuteScene extends Phaser.Scene {
     const characterId = storage.getSelectedCharacter();
     this.player = new Player(this, this.laneW, playerScreenX, playerScreenY, startLane, characterId);
 
-    this.hud = new HUD(this, () => onDeath(this.lifecycleDeps()));
+    this.hud = new HUD(this, () => onDeath(this.lifecycleDeps()), {
+      duration: isBattleMode() ? 30 : undefined,
+      allowTimeBonus: !isBattleMode(),
+    });
     this.hud.create();
 
     // 중요: 리스너부터 먼저 등록 (GameplayHUD 표시 전에 준비 완료)
@@ -104,6 +112,7 @@ export class CommuteScene extends Phaser.Scene {
       hud: this.hud,
       getGameOver: () => this.gameOver,
       getIsFalling: () => this.isFalling,
+      getInputLocked: () => this.inputLocked,
       getScore: () => this.score,
       startGame: () => this.startGame(),
       switchLane: () => doSwitchLane(this.movementDeps()),
@@ -113,6 +122,8 @@ export class CommuteScene extends Phaser.Scene {
 
     // 그 다음 React에 playing 화면 표시
     gameBus.emit('screen-change', 'playing');
+    this.emitBattleHud();
+    if (isBattleMode()) this.startGame();
 
     adService.preload('revive');
     // 코인 광고는 게임오버 "코인 2배" 버튼에서 사용 — 게임플레이 동안 미리 로드
@@ -122,6 +133,10 @@ export class CommuteScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     if (!this.gameOver) {
       this.hud.update(delta);
+      if (_time - this.lastBattleEmitAt >= 120) {
+        this.lastBattleEmitAt = _time;
+        this.emitBattleHud();
+      }
     }
   }
 
@@ -135,6 +150,19 @@ export class CommuteScene extends Phaser.Scene {
     logEvent('game_start');
     storage.recordPlayStart();
     this.guideCount = 0;
+
+    if (isBattleMode()) {
+      this.inputLocked = true;
+      this.time.delayedCall(80, () => gameBus.emit('battle-countdown', 3));
+      this.time.delayedCall(1080, () => gameBus.emit('battle-countdown', 2));
+      this.time.delayedCall(2080, () => gameBus.emit('battle-countdown', 1));
+      this.time.delayedCall(3080, () => {
+        gameBus.emit('battle-countdown', null);
+        this.inputLocked = false;
+        this.hud.startTimer();
+      });
+      return;
+    }
 
     const tutorialDone = storage.getBool('tutorialDone');
     if (tutorialDone) {
@@ -169,6 +197,10 @@ export class CommuteScene extends Phaser.Scene {
     if (!this.hud.isSfxMuted()) {
       try { this.sound.play(key, { volume }); } catch { /* 무시 */ }
     }
+  }
+
+  private emitBattleHud() {
+    gameBus.emit('battle-update', getBattleHudSnapshot(this.score, this.hud.elapsed));
   }
 
   /* ── Deps factories ── */

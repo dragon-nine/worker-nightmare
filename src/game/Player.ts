@@ -132,6 +132,50 @@ export class Player {
     });
   }
 
+  /** 대전 패널티: 잠깐 앞으로 튕겼다가 제자리 복귀 */
+  animateForwardPenalty(onDone: () => void) {
+    const startY = this.sprite.y;
+    this.sprite.setTexture(this.keyBack);
+    this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
+    this.sprite.setAngle(0);
+
+    this.scene.tweens.add({
+      targets: this.sprite,
+      y: startY - this.rabbitSize * 0.22,
+      duration: 90,
+      ease: 'Quad.easeOut',
+      yoyo: true,
+      hold: 180,
+      onComplete: () => {
+        this.sprite.setY(startY);
+        onDone();
+      },
+    });
+  }
+
+  /** 대전 패널티: 잘못된 방향으로 살짝 튕겼다가 제자리 복귀 */
+  animateSwitchPenalty(direction: 'left' | 'right', onDone: () => void) {
+    const startX = this.sprite.x;
+    const offset = this.rabbitSize * 0.18 * (direction === 'right' ? 1 : -1);
+    this.sprite.setTexture(this.keySide);
+    this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
+    this.sprite.setFlipX(direction === 'left');
+    this.sprite.setAngle(0);
+
+    this.scene.tweens.add({
+      targets: this.sprite,
+      x: startX + offset,
+      duration: 90,
+      ease: 'Quad.easeOut',
+      yoyo: true,
+      hold: 180,
+      onComplete: () => {
+        this.sprite.setX(startX);
+        onDone();
+      },
+    });
+  }
+
   /** 공통 낙하: 정면 전환 → 후들후들 → 쏙! 빨려들어감 */
   private animateFall(onDone: () => void) {
     this.sprite.setTexture(this.keyFront);

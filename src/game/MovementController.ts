@@ -5,6 +5,7 @@ import { HUD } from './HUD';
 import { gameBus } from './event-bus';
 import { storage } from './services/storage';
 import { BackgroundManager } from './BackgroundManager';
+import { isBattleMode } from './services/game-mode';
 
 export interface MovementDeps {
   scene: Phaser.Scene;
@@ -115,6 +116,10 @@ export function switchLane(deps: MovementDeps) {
   const canSwitch = !deps.getJustSwitched() && currentRow?.isTurn;
 
   if (!canSwitch) {
+    if (isBattleMode()) {
+      deps.onCrash();
+      return;
+    }
     if (deps.getGodMode()) return;
     deps.setIsFalling(true);
     deps.hud.stopTimer();
@@ -187,10 +192,12 @@ export function moveForward(deps: MovementDeps) {
     nextRow.coinCollected = true;
     const coin = nextRow.coin;
     deps.scene.tweens.killTweensOf(coin);
-    deps.playSfx('sfx-coin', 0.5);
-    storage.addNum('coins', 1);
-    storage.recordCoinEarned(1);
-    deps.incrementCoinsEarnedThisGame();
+    if (!isBattleMode()) {
+      deps.playSfx('sfx-coin', 0.5);
+      storage.addNum('coins', 1);
+      storage.recordCoinEarned(1);
+      deps.incrementCoinsEarnedThisGame();
+    }
     deps.scene.tweens.add({
       targets: coin,
       y: coin.y - deps.tileH * 0.6,
