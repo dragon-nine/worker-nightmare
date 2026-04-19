@@ -15,10 +15,8 @@ export function RewardPopup() {
   const scale = useResponsiveScale();
   const [items, setItems] = useState<RewardPopupItem[] | null>(null);
   const [visible, setVisible] = useState(false);
-  // 표시 후 너무 빨리 입력이 들어와 닫히는 것 방지 (배경 fade-in 끝난 뒤부터 입력 허용)
   const [acceptTap, setAcceptTap] = useState(false);
   const sfxTimersRef = useRef<number[]>([]);
-  const enableTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const unsub = gameBus.on('show-reward', (incoming) => {
@@ -26,28 +24,21 @@ export function RewardPopup() {
       // 기존 타이머 정리
       sfxTimersRef.current.forEach(clearTimeout);
       sfxTimersRef.current = [];
-      if (enableTimerRef.current) clearTimeout(enableTimerRef.current);
 
       setItems(incoming);
       setVisible(true);
-      setAcceptTap(false);
+      setAcceptTap(true);
 
       // 보상 사운드 1회 — 첫 아이템 등장 시점에 재생
       const t = window.setTimeout(() => {
         gameBus.emit('play-sfx', 'sfx-reward');
       }, FADE_MS);
       sfxTimersRef.current.push(t);
-
-      // 마지막 아이템 등장 후 + 살짝 여유 → 입력 허용
-      enableTimerRef.current = window.setTimeout(() => {
-        setAcceptTap(true);
-      }, FADE_MS + incoming.length * ITEM_STAGGER_MS + 200);
     });
 
     return () => {
       unsub();
       sfxTimersRef.current.forEach(clearTimeout);
-      if (enableTimerRef.current) clearTimeout(enableTimerRef.current);
     };
   }, []);
 
