@@ -172,7 +172,13 @@ export function CharactersTab({ scale }: Props) {
       price: item.price,
       currency: item.currency,
     });
-    gameBus.emit('toast', `${item.name} 구매 완료!`);
+    gameBus.emit('show-character-unlock', {
+      id: item.id,
+      name: item.name,
+      jobTitle: item.jobTitle,
+      desc: item.desc,
+      src: item.src,
+    });
     // 서버 보유 목록 싱크 — 실패해도 로컬엔 반영됨. 다음 부팅에 재싱크됨.
     updateMyProfile({ owned_characters: storage.getOwnedCharacters() }).catch((e) => {
       console.warn('[api] owned sync failed:', e);

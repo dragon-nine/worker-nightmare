@@ -22,6 +22,7 @@ import { StoryScreen } from '../overlays/StoryScreen';
 import { ReviveFailModal } from '../overlays/ReviveFailModal';
 import { ReviveScreen } from '../overlays/ReviveScreen';
 import { MockAdModal } from '../overlays/MockAdModal';
+import { CharacterUnlockPopup } from '../overlays/CharacterUnlockPopup';
 import { RewardPopup } from '../overlays/RewardPopup';
 import { Toast } from './Toast';
 
@@ -144,6 +145,7 @@ export function GameContainer() {
       {import.meta.env.DEV && <MockAdModal />}
 
       {/* 전역 보상 팝업 — 항상 마운트, 이벤트 기반 표시 */}
+      <CharacterUnlockPopup />
       <RewardPopup />
 
       {/* 전역 토스트 — 항상 마운트, 이벤트 기반 표시 */}

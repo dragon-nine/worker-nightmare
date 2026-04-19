@@ -21,6 +21,14 @@ export interface RewardPopupItem {
   label?: string;
 }
 
+export interface CharacterUnlockPopupData {
+  id: string;
+  name: string;
+  jobTitle: string;
+  desc: string;
+  src: string;
+}
+
 export interface GameOverData {
   score: number;
   bestScore: number;
@@ -64,6 +72,8 @@ type EventMap = {
   'toast': string;
   // 보상 획득 팝업 (코인/보석 등 획득 직후 연출)
   'show-reward': RewardPopupItem[];
+  // 캐릭터 구매 완료 축하 팝업
+  'show-character-unlock': CharacterUnlockPopupData;
   // 광고 표시 라이프사이클 — BGM 덕킹 등 사운드 제어용
   'ad-show-start': void;
   'ad-show-end': void;
