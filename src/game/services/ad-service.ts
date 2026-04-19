@@ -20,6 +20,7 @@ import { gameBus } from '../event-bus';
 
 /** 리워드 타입 — 각 타입별로 별도 adGroupId/adUnitId 사용 */
 export type AdRewardType = 'revive' | 'gem' | 'coin';
+const ALL_AD_REWARD_TYPES: AdRewardType[] = ['revive', 'gem', 'coin'];
 
 /** 광고 표시 결과 */
 export type AdResult =
@@ -41,6 +42,13 @@ class AdService {
 
   setProvider(provider: AdProvider) {
     this.provider = provider;
+    for (const type of ALL_AD_REWARD_TYPES) {
+      this.preload(type);
+    }
+  }
+
+  isReady(type: AdRewardType): boolean {
+    return this.provider?.isReady(type) === true;
   }
 
   /** 광고 미리 로드 */
@@ -105,11 +113,12 @@ class AdService {
       return { kind: 'failed', error: new Error('no_provider') };
     }
 
-    // 광고 미로드 → 로드 대기 (최대 5초)
+    // 광고 미로드 → 짧게 로드 대기.
+    // UX상 탭 후 오래 붙잡는 것보다, 선로드를 공격적으로 하고 여기선 짧게만 기다린다.
     if (!this.provider.isReady(type)) {
       this.preload(type);
       const timeout = new Promise<void>((_, reject) =>
-        setTimeout(() => reject(new Error('load_timeout')), 5000)
+        setTimeout(() => reject(new Error('load_timeout')), 2000)
       );
       try {
         await Promise.race([this.preloadPromises.get(type) ?? Promise.reject(new Error('no_preload')), timeout]);

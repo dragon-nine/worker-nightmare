@@ -715,7 +715,7 @@ function FreeRewardCard({
     gameBus.emit('toast', '오늘 수령 가능한 횟수를 모두 사용했어요');
   };
 
-  const cardContent = (
+  const renderCardContent = (adState?: { loading: boolean; ready: boolean }) => (
     <>
       {/* 잔여 횟수 뱃지 */}
       <span
@@ -780,9 +780,13 @@ function FreeRewardCard({
           gap: 4 * scale,
           fontFamily: 'GMarketSans, sans-serif',
         }}
-      >
+        >
         {exhausted ? (
           '완료'
+        ) : adState?.loading ? (
+          '광고 불러오는 중...'
+        ) : adState && !adState.ready ? (
+          '광고 준비 중...'
         ) : (
           <>
             <svg width={11 * scale} height={11 * scale} viewBox="0 0 24 24" fill="#fff">
@@ -814,7 +818,7 @@ function FreeRewardCard({
   if (exhausted) {
     return (
       <TapButton onTap={handleTapBlocked} pressScale={0.97} scrollSafe style={cardStyle}>
-        {cardContent}
+        {renderCardContent()}
       </TapButton>
     );
   }
@@ -827,7 +831,7 @@ function FreeRewardCard({
       scrollSafe
       style={cardStyle}
     >
-      {cardContent}
+      {(adState) => renderCardContent(adState)}
     </AdRewardButton>
   );
 }

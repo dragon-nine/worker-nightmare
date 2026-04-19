@@ -1,8 +1,13 @@
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { TapButton } from './TapButton';
 import { adService, type AdRewardType } from '../../game/services/ad-service';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
+
+interface AdRewardButtonRenderState {
+  loading: boolean;
+  ready: boolean;
+}
 
 interface Props {
   /**
@@ -13,7 +18,7 @@ interface Props {
   /** 리워드 타입 — adGroupId 결정. 기본 'gem' */
   rewardType?: AdRewardType;
   /** 자식 요소 — 카드 안의 시각적 컨텐츠. TapButton과 동일하게 사용. */
-  children?: ReactNode;
+  children?: ReactNode | ((state: AdRewardButtonRenderState) => ReactNode);
   /** 추가 스타일 */
   style?: CSSProperties;
   /** className */
@@ -65,14 +70,27 @@ export function AdRewardButton({
   failedToast = '광고를 불러올 수 없어요',
   autoPreload = true,
 }: Props) {
+  const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(() => adService.isReady(rewardType));
+
   // 마운트 시 광고 preload
   useEffect(() => {
     if (autoPreload) adService.preload(rewardType);
+    setReady(adService.isReady(rewardType));
+
+    const id = window.setInterval(() => {
+      setReady(adService.isReady(rewardType));
+    }, 300);
+
+    return () => clearInterval(id);
   }, [autoPreload, rewardType]);
 
   const handleTap = () => {
+    if (loading) return;
     gameBus.emit('play-sfx', 'sfx-click');
+    setLoading(true);
     adService.showRewarded(rewardType, (result) => {
+      setLoading(false);
       if (result.kind === 'rewarded') {
         storage.recordAdWatched();
         onReward();
@@ -87,12 +105,14 @@ export function AdRewardButton({
   return (
     <TapButton
       onTap={handleTap}
-      style={style}
+      style={{
+        ...style,
+      }}
       className={className}
       pressScale={pressScale}
       scrollSafe={scrollSafe}
     >
-      {children}
+      {typeof children === 'function' ? children({ loading, ready }) : children}
     </TapButton>
   );
 }
