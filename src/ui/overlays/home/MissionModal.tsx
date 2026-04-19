@@ -102,6 +102,19 @@ export function MissionModal({ onClose }: Props) {
 
   const activeMissions = tab === 'daily' ? DAILY_MISSIONS : WEEKLY_MISSIONS;
   const activeClaimed = claimedFor(tab);
+  const orderedMissions = [...activeMissions].sort((a, b) => {
+    const aCurrent = computeMissionCurrent(a, tab, stats);
+    const bCurrent = computeMissionCurrent(b, tab, stats);
+    const aClaimed = activeClaimed.has(a.id);
+    const bClaimed = activeClaimed.has(b.id);
+    const aComplete = aCurrent >= a.target;
+    const bComplete = bCurrent >= b.target;
+    const aPriority = !aClaimed && aComplete ? 0 : aClaimed ? 1 : 2;
+    const bPriority = !bClaimed && bComplete ? 0 : bClaimed ? 1 : 2;
+
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return activeMissions.findIndex((m) => m.id === a.id) - activeMissions.findIndex((m) => m.id === b.id);
+  });
   const claimedCount = activeMissions.filter((m) => activeClaimed.has(m.id)).length;
   const totalCount = activeMissions.length;
   const subtitleResetText = tab === 'daily' ? '매일 자정 초기화' : '매주 월요일 초기화';
@@ -137,7 +150,7 @@ export function MissionModal({ onClose }: Props) {
           marginRight: -4 * scale,
         }}
       >
-        {activeMissions.map((m) => {
+        {orderedMissions.map((m) => {
           const current = computeMissionCurrent(m, tab, stats);
           return (
             <MissionRow
