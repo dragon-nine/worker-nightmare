@@ -365,6 +365,7 @@ export function HomeTab({ scale }: Props) {
         }}
       >
         <img
+          className={styles.characterBreathing}
           src={`${BASE}character/${selectedChar}-front.png`}
           alt=""
           draggable={false}

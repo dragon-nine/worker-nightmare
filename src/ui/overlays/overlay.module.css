@@ -80,6 +80,17 @@
   to { transform: scale(1.03); }
 }
 
+.characterBreathing {
+  transform-origin: center bottom;
+  animation: characterBreathing 1.6s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes characterBreathing {
+  from { transform: scale(1); }
+  to { transform: scale(1.045); }
+}
+
 /* 스켈레톤 shimmer — 로딩 플레이스홀더용 */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
