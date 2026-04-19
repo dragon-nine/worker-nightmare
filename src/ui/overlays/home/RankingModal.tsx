@@ -5,6 +5,7 @@ import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { Text } from '../../components/Text';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { fetchLeaderboard, getStoredUserId, type Period as ApiPeriod, type LeaderEntry, type LeaderboardResponse } from '../../../game/services/api';
+import { storage } from '../../../game/services/storage';
 
 // 모달 열려있는 동안 탭 왕복 시 즉시 표시 — 15초 fresh, 넘으면 백그라운드 refresh.
 // 모듈 전역이라 모달 닫았다 다시 열어도 15초 내엔 캐시 적중.
@@ -121,6 +122,7 @@ export function RankingModal({ onClose }: Props) {
   const scale = useResponsiveScale();
   const [tab, setTab] = useState<TabKey>('daily');
   const myUserId = getStoredUserId();
+  const localCharacter = storage.getSelectedCharacter();
 
   const dailyCountdown = useCountdown(useMemo(() => nextMidnight(), []));
   const weeklyCountdown = useCountdown(useMemo(() => nextMonday(), []));
@@ -186,6 +188,9 @@ export function RankingModal({ onClose }: Props) {
     }
   }
 
+  const resolveCharacter = (entry: Pick<LeaderEntry, 'user_id' | 'character'>): CharKey =>
+    normalizeChar(entry.user_id === myUserId ? localCharacter : entry.character);
+
   return createPortal(
     <ModalShell
       onClose={onClose}
@@ -240,7 +245,7 @@ export function RankingModal({ onClose }: Props) {
             rank={entry.rank}
             name={entry.nickname}
             score={entry.score}
-            char={normalizeChar(entry.character)}
+            char={resolveCharacter(entry)}
             reward={getReward(tab, entry.rank)}
             scale={scale}
             isMe={entry.user_id === myUserId}
@@ -269,7 +274,7 @@ export function RankingModal({ onClose }: Props) {
                 rank={entry.rank}
                 name={entry.nickname}
                 score={entry.score}
-                char={normalizeChar(entry.character)}
+                char={resolveCharacter(entry)}
                 reward={getReward(tab, entry.rank)}
                 scale={scale}
               />
@@ -279,7 +284,7 @@ export function RankingModal({ onClose }: Props) {
               rank={me.rank}
               name={me.nickname}
               score={me.score}
-              char={normalizeChar(me.character)}
+              char={resolveCharacter(me)}
               reward={getReward(tab, me.rank)}
               scale={scale}
               isMe
@@ -290,7 +295,7 @@ export function RankingModal({ onClose }: Props) {
                 rank={entry.rank}
                 name={entry.nickname}
                 score={entry.score}
-                char={normalizeChar(entry.character)}
+                char={resolveCharacter(entry)}
                 reward={getReward(tab, entry.rank)}
                 scale={scale}
               />
@@ -432,4 +437,3 @@ function RankRow({
     </div>
   );
 }
-
