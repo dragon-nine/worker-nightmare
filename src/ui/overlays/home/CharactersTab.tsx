@@ -106,6 +106,15 @@ export function CharactersTab({ scale }: Props) {
   const [coins, setCoins] = useState<number>(() => storage.getNum('coins'));
   const [gems, setGems] = useState<number>(() => storage.getNum('gems'));
   const [pendingChar, setPendingChar] = useState<CharItem | null>(null);
+  const selectedItem = CHARACTERS.find((item) => item.id === selected) ?? CHARACTERS[0];
+  const orderedCharacters = [...CHARACTERS].sort((a, b) => {
+    const aOwned = owned.includes(a.id);
+    const bOwned = owned.includes(b.id);
+    if (a.id === selected && b.id !== selected) return -1;
+    if (b.id === selected && a.id !== selected) return 1;
+    if (aOwned !== bOwned) return aOwned ? -1 : 1;
+    return CHARACTERS.findIndex((item) => item.id === a.id) - CHARACTERS.findIndex((item) => item.id === b.id);
+  });
 
   const handleAction = (item: CharItem) => {
     gameBus.emit('play-sfx', 'sfx-click');
@@ -230,6 +239,12 @@ export function CharactersTab({ scale }: Props) {
           padding: `${16 * scale}px ${14 * scale}px calc(var(--sab, 0px) + ${88 * scale}px)`,
         }}
       >
+        <SelectedCharacterHero
+          item={selectedItem}
+          isOwned={owned.includes(selectedItem.id)}
+          scale={scale}
+        />
+
         {/* 캐릭터 전체 — 단일 섹션 */}
         <Section
           title="캐릭터 도감"
@@ -242,7 +257,7 @@ export function CharactersTab({ scale }: Props) {
           }
         >
           <CardGrid scale={scale}>
-            {CHARACTERS.map((item) => (
+            {orderedCharacters.map((item) => (
               <CharCard
                 key={item.id}
                 item={item}
@@ -266,6 +281,98 @@ export function CharactersTab({ scale }: Props) {
           onCancel={cancelPurchase}
         />
       )}
+    </div>
+  );
+}
+
+function SelectedCharacterHero({
+  item,
+  isOwned,
+  scale,
+}: {
+  item: CharItem;
+  isOwned: boolean;
+  scale: number;
+}) {
+  return (
+    <div
+      style={{
+        marginBottom: 18 * scale,
+        padding: `${14 * scale}px`,
+        borderRadius: 18 * scale,
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+        border: `${1.5 * scale}px solid rgba(255,255,255,0.08)`,
+        boxShadow: `0 ${8 * scale}px ${24 * scale}px rgba(0,0,0,0.18)`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14 * scale,
+      }}
+    >
+      <div
+        style={{
+          width: 104 * scale,
+          height: 104 * scale,
+          borderRadius: 16 * scale,
+          background: 'radial-gradient(circle at 50% 35%, rgba(255,255,255,0.12), rgba(0,0,0,0.18))',
+          border: `${1 * scale}px solid rgba(255,255,255,0.08)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          overflow: 'hidden',
+        }}
+      >
+        <img
+          src={`${BASE}${item.src}`}
+          alt={item.name}
+          draggable={false}
+          style={{
+            width: '88%',
+            height: '88%',
+            objectFit: 'contain',
+          }}
+        />
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6 * scale,
+            padding: `${4 * scale}px ${9 * scale}px`,
+            borderRadius: 999,
+            background: isOwned ? 'rgba(63,220,176,0.14)' : 'rgba(255,210,74,0.14)',
+            border: `${1 * scale}px solid ${isOwned ? 'rgba(63,220,176,0.28)' : 'rgba(255,210,74,0.28)'}`,
+            marginBottom: 8 * scale,
+          }}
+        >
+          <Text
+            size={10 * scale}
+            weight={900}
+            color={isOwned ? '#73f2ca' : '#ffd24a'}
+            as="span"
+          >
+            {isOwned ? '현재 선택 캐릭터' : '미보유 캐릭터'}
+          </Text>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 * scale, flexWrap: 'wrap' }}>
+          <Text size={22 * scale} weight={900}>{item.name}</Text>
+          <Text size={12 * scale} weight={700} color="rgba(255,255,255,0.55)" as="span">
+            {item.jobTitle}
+          </Text>
+        </div>
+
+        <Text
+          size={12 * scale}
+          color="rgba(255,255,255,0.68)"
+          lineHeight={1.5}
+          style={{ marginTop: 6 * scale }}
+        >
+          {item.desc}
+        </Text>
+      </div>
     </div>
   );
 }
@@ -537,7 +644,7 @@ function CardGrid({ scale, children }: { scale: number; children: React.ReactNod
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: 10 * scale,
+        gap: 8 * scale,
       }}
     >
       {children}
@@ -598,11 +705,11 @@ function CharCard({
           background: bg,
           border,
           borderRadius: 14 * scale,
-          padding: `${12 * scale}px ${10 * scale}px ${10 * scale}px`,
+          padding: `${10 * scale}px ${9 * scale}px ${9 * scale}px`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 8 * scale,
+          gap: 6 * scale,
           boxSizing: 'border-box',
           boxShadow: isSelected
             ? `0 0 ${14 * scale}px rgba(255,210,74,0.25)`
@@ -614,7 +721,7 @@ function CharCard({
         <div
           style={{
             width: '100%',
-            aspectRatio: '1 / 1',
+            aspectRatio: '1 / 0.9',
             borderRadius: 12 * scale,
             background: 'rgba(0,0,0,0.25)',
             border: `1px solid rgba(255,255,255,0.05)`,
@@ -636,8 +743,8 @@ function CharCard({
               alt={item.name}
               draggable={false}
               style={{
-                width: '85%',
-                height: '85%',
+                width: '78%',
+                height: '78%',
                 objectFit: 'contain',
               }}
             />
@@ -658,7 +765,7 @@ function CharCard({
             style={{
               fontFamily: 'GMarketSans, sans-serif',
               fontWeight: 900,
-              fontSize: 15 * scale,
+              fontSize: 14 * scale,
               color: isLocked ? 'rgba(255,255,255,0.55)' : '#fff',
               textAlign: 'center',
               lineHeight: 1.1,
@@ -670,7 +777,7 @@ function CharCard({
             style={{
               fontFamily: 'GMarketSans, sans-serif',
               fontWeight: 700,
-              fontSize: 10 * scale,
+              fontSize: 9 * scale,
               color: isLocked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.55)',
               textAlign: 'center',
               letterSpacing: 0.3,
@@ -709,10 +816,10 @@ function ActionButton({
 }) {
   const baseStyle: React.CSSProperties = {
     width: '100%',
-    padding: `${8 * scale}px`,
+    padding: `${7 * scale}px`,
     borderRadius: 9 * scale,
     fontFamily: 'GMarketSans, sans-serif',
-    fontSize: 12 * scale,
+    fontSize: 11 * scale,
     fontWeight: 900,
     textAlign: 'center',
     letterSpacing: 0.3,
@@ -846,4 +953,3 @@ function CurrencyPill({
     </div>
   );
 }
-
