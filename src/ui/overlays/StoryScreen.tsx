@@ -1,15 +1,20 @@
 import { gameBus } from '../../game/event-bus';
+import { storage } from '../../game/services/storage';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { Text } from '../components/Text';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
+const META_INTRO_PENDING_KEY = 'home.metaIntroPending';
 
 export function StoryScreen() {
   const scale = useResponsiveScale();
 
   const handleTap = () => {
     gameBus.emit('play-sfx', 'sfx-click');
+    if (!storage.getBool('tutorialDone') && localStorage.getItem('home.metaIntroShown') !== '1') {
+      localStorage.setItem(META_INTRO_PENDING_KEY, '1');
+    }
     gameBus.emit('start-game', undefined);
   };
 
