@@ -19,6 +19,7 @@ export function StartButton({ label, scale, onClick, animate = true }: Props) {
     >
       <TapButton
         onTap={onClick}
+        rapid
         style={{ position: 'relative' }}
       >
         <img
