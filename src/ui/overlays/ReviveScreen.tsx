@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { gameBus, type GameOverData } from '../../game/event-bus';
 import { useLayout } from '../hooks/useLayout';
+import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { TapButton } from '../components/TapButton';
 import { GemIcon } from '../components/CurrencyIcons';
+import { ModalShell } from '../components/ModalShell';
+import { Text } from '../components/Text';
 import { storage } from '../../game/services/storage';
 import { isAdRemoved } from '../../game/services/billing';
 import { LayoutText } from '../components/LayoutText';
@@ -41,6 +44,7 @@ interface Props {
  */
 export function ReviveScreen({ data, onSkip }: Props) {
   const { score } = data;
+  const [confirmGemReviveOpen, setConfirmGemReviveOpen] = useState(false);
 
   // 부활 광고 제거 구매자는 보석 부활 버튼도 숨김 (광고 버튼 문구도 아래에서 교체)
   const adRemoved = isAdRemoved();
@@ -71,7 +75,18 @@ export function ReviveScreen({ data, onSkip }: Props) {
       return;
     }
     gameBus.emit('play-sfx', 'sfx-click');
+    setConfirmGemReviveOpen(true);
+  };
+
+  const handleConfirmGemRevive = () => {
+    gameBus.emit('play-sfx', 'sfx-click');
+    setConfirmGemReviveOpen(false);
     gameBus.emit('revive-with-gems', undefined);
+  };
+
+  const handleCancelGemRevive = () => {
+    gameBus.emit('play-sfx', 'sfx-click');
+    setConfirmGemReviveOpen(false);
   };
 
   const handleSkip = () => {
@@ -175,6 +190,15 @@ export function ReviveScreen({ data, onSkip }: Props) {
           </div>
         );
       })}
+
+      {confirmGemReviveOpen && (
+        <GemReviveConfirmModal
+          cost={REVIVE_GEM_COST}
+          currentGems={gems}
+          onConfirm={handleConfirmGemRevive}
+          onCancel={handleCancelGemRevive}
+        />
+      )}
     </div>
   );
 }
@@ -238,5 +262,106 @@ function ReviveButtonContent({
         {overrideText}
       </span>
     </div>
+  );
+}
+
+function GemReviveConfirmModal({
+  cost,
+  currentGems,
+  onConfirm,
+  onCancel,
+}: {
+  cost: number;
+  currentGems: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const responsiveScale = useResponsiveScale();
+  const balanceAfter = Math.max(0, currentGems - cost);
+
+  return (
+    <ModalShell onClose={onCancel} maxWidth={320} zIndex={1200}>
+      <Text size={20 * responsiveScale} weight={900} align="center" style={{ marginBottom: 6 * responsiveScale }}>
+        보석 부활
+      </Text>
+      <Text
+        size={12 * responsiveScale}
+        color="rgba(255,255,255,0.6)"
+        align="center"
+        style={{ marginBottom: 18 * responsiveScale }}
+      >
+        보석을 사용해서 이어서 도전할까요?
+      </Text>
+
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: `${1 * responsiveScale}px solid rgba(255,255,255,0.08)`,
+          borderRadius: 14 * responsiveScale,
+          padding: `${14 * responsiveScale}px`,
+          marginBottom: 18 * responsiveScale,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10 * responsiveScale,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text size={13 * responsiveScale} color="rgba(255,255,255,0.6)" as="span">보유 보석</Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 * responsiveScale }}>
+            <GemIcon size={18 * responsiveScale} />
+            <Text size={15 * responsiveScale} weight={900} as="span">{currentGems}개</Text>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text size={13 * responsiveScale} color="rgba(255,255,255,0.6)" as="span">사용 보석</Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 * responsiveScale }}>
+            <GemIcon size={18 * responsiveScale} />
+            <Text size={15 * responsiveScale} weight={900} color="#e8593c" as="span">- {cost}개</Text>
+          </div>
+        </div>
+        <div style={{ height: 1 * responsiveScale, background: 'rgba(255,255,255,0.08)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text size={13 * responsiveScale} color="rgba(255,255,255,0.7)" as="span">사용 후</Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 * responsiveScale }}>
+            <GemIcon size={18 * responsiveScale} />
+            <Text size={16 * responsiveScale} weight={900} color="#9c6bff" as="span">{balanceAfter}개</Text>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 * responsiveScale }}>
+        <TapButton
+          onTap={onCancel}
+          style={{
+            flex: 1,
+            padding: `${14 * responsiveScale}px`,
+            background: 'rgba(255,255,255,0.08)',
+            border: `${1.5 * responsiveScale}px solid rgba(255,255,255,0.15)`,
+            borderRadius: 12 * responsiveScale,
+            textAlign: 'center',
+          }}
+        >
+          <Text size={15 * responsiveScale} weight={700} color="rgba(255,255,255,0.72)" as="span">
+            취소
+          </Text>
+        </TapButton>
+        <TapButton
+          onTap={onConfirm}
+          style={{
+            flex: 1.2,
+            padding: `${14 * responsiveScale}px`,
+            background: 'linear-gradient(180deg, #b080ff, #7d51e8)',
+            border: `${1.5 * responsiveScale}px solid #c7a2ff`,
+            borderRadius: 12 * responsiveScale,
+            textAlign: 'center',
+            boxShadow: `0 ${3 * responsiveScale}px ${12 * responsiveScale}px rgba(125,81,232,0.28)`,
+          }}
+        >
+          <Text size={15 * responsiveScale} weight={900} color="#fff" as="span">
+            보석 쓰고 부활
+          </Text>
+        </TapButton>
+      </div>
+    </ModalShell>
   );
 }
