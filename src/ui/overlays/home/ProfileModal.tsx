@@ -5,7 +5,7 @@ import { TapButton } from '../../components/TapButton';
 import { Text } from '../../components/Text';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { gameBus } from '../../../game/event-bus';
-import { updateMyProfile, ensureAuth, ApiError } from '../../../game/services/api';
+import { updateMyProfile, ensureAuth, getStoredToken, ApiError } from '../../../game/services/api';
 import { storage } from '../../../game/services/storage';
 
 interface Props {
@@ -61,8 +61,10 @@ export function ProfileModal({ onClose }: Props) {
     if (saving) return;
     setSaving(true);
     try {
-      // 토큰 보장 (첫 호출에서 실패했다면 여기서 재시도)
-      await ensureAuth({ character: storage.getSelectedCharacter() });
+      // 토큰이 아예 없을 때만 인증한다. 기존 토큰의 401 재인증은 API 클라이언트가 처리한다.
+      if (!getStoredToken()) {
+        await ensureAuth({ character: storage.getSelectedCharacter() });
+      }
       const profile = await updateMyProfile({
         nickname: trimmed,
         character: storage.getSelectedCharacter(),
@@ -117,15 +119,20 @@ export function ProfileModal({ onClose }: Props) {
       <TapButton
         onTap={handleSave}
         pressScale={0.95}
+        rapid
         style={{
           marginTop: 16 * scale,
           width: '100%',
           padding: `${12 * scale}px 0`,
           borderRadius: 10 * scale,
-          background: 'linear-gradient(180deg, #ffd24a, #f0a030)',
+          background: saving
+            ? 'linear-gradient(180deg, #c8c8c8, #8f8f8f)'
+            : 'linear-gradient(180deg, #ffd24a, #f0a030)',
           border: `${2 * scale}px solid #7a4500`,
           textAlign: 'center',
-          boxShadow: `0 ${3 * scale}px ${10 * scale}px rgba(240,160,48,0.35)`,
+          boxShadow: saving ? 'none' : `0 ${3 * scale}px ${10 * scale}px rgba(240,160,48,0.35)`,
+          opacity: saving ? 0.82 : 1,
+          pointerEvents: saving ? 'none' : 'auto',
         }}
       >
         <span style={{
@@ -134,7 +141,7 @@ export function ProfileModal({ onClose }: Props) {
           fontSize: 14 * scale,
           color: '#3a2400',
           letterSpacing: 0.3,
-        }}>저장</span>
+        }}>{saving ? '저장 중...' : '저장'}</span>
       </TapButton>
     </ModalShell>,
     document.body,

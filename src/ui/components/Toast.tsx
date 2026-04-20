@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { gameBus } from '../../game/event-bus';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { Text } from './Text';
 
 const TOAST_DURATION_MS = 2500;
 const FADE_MS = 220;
+const TOAST_Z_INDEX = 2147483000;
 
 /**
  * 전역 Toast 알림 — 비인터랙티브 알림 전용.
@@ -52,7 +54,7 @@ export function Toast() {
 
   if (!message) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: 'fixed',
@@ -70,16 +72,16 @@ export function Toast() {
         // 풀 라운드 캡슐 — 버튼(16px)과 차별화
         borderRadius: 9999,
         // 반투명 + blur로 떠 있는 느낌
-        background: 'rgba(18, 18, 22, 0.78)',
+        background: 'linear-gradient(180deg, rgba(255, 224, 102, 0.96), rgba(250, 204, 21, 0.96))',
         backdropFilter: 'blur(12px) saturate(140%)',
         WebkitBackdropFilter: 'blur(12px) saturate(140%)',
         padding: `${12 * scale}px ${22 * scale}px`,
         // 가벼운 그림자 — 버튼처럼 묵직하지 않게
-        boxShadow: `0 ${4 * scale}px ${16 * scale}px rgba(0, 0, 0, 0.35)`,
+        boxShadow: `0 ${4 * scale}px ${16 * scale}px rgba(245, 158, 11, 0.35)`,
         // 미세한 하이라이트 보더
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: '1.5px solid rgba(146, 64, 14, 0.75)',
         pointerEvents: 'none',
-        zIndex: 9999,
+        zIndex: TOAST_Z_INDEX,
         // 콘텐츠 정렬
         display: 'flex',
         alignItems: 'center',
@@ -92,8 +94,8 @@ export function Toast() {
           width: 18 * scale,
           height: 18 * scale,
           borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.18)',
-          color: '#fff',
+          background: 'rgba(58, 36, 0, 0.14)',
+          color: '#3a2400',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -110,7 +112,7 @@ export function Toast() {
         size={14 * scale}
         weight={400}
         align="center"
-        color="rgba(255, 255, 255, 0.95)"
+        color="#3a2400"
         as="span"
         style={{
           letterSpacing: 0.1,
@@ -120,6 +122,7 @@ export function Toast() {
       >
         {message}
       </Text>
-    </div>
+    </div>,
+    document.body,
   );
 }
