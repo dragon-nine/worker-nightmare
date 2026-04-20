@@ -7,6 +7,8 @@ import { fetchMyRanks, getStoredUserId } from '../../../game/services/api';
 import { clearBattle } from '../../../game/services/battle-state';
 import { setGameMode } from '../../../game/services/game-mode';
 import { getReward, nextDailyKey, nextWeeklyKey, type RewardPeriod } from '../../../game/services/rewards';
+import { runThreeDayPromotionTest } from '../../../game/services/promotion';
+import { syncCurrenciesFromStorage } from '../../../game/services/assets';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
 import { TapButton } from '../../components/TapButton';
@@ -44,6 +46,9 @@ export function HomeTab({ scale }: Props) {
   const [openModal, setOpenModal] = useState<'attendance' | 'mission' | 'ranking' | 'profile' | 'debug' | null>(null);
   const [nickname, setNickname] = useState(getNickname);
   const [showMetaIntro, setShowMetaIntro] = useState(false);
+  const [hasSeenMetaIntro, setHasSeenMetaIntro] = useState(
+    () => localStorage.getItem(META_INTRO_SHOWN_KEY) === '1',
+  );
   const [dismissedTips, setDismissedTips] = useState<Record<'attendance' | 'mission' | 'ranking', boolean>>({
     attendance: false,
     mission: false,
@@ -92,6 +97,7 @@ export function HomeTab({ scale }: Props) {
   }, [tutorialDone]);
 
   useEffect(() => {
+    setHasSeenMetaIntro(localStorage.getItem(META_INTRO_SHOWN_KEY) === '1');
     setDismissedTips(readDismissedTips());
   }, []);
 
@@ -132,6 +138,7 @@ export function HomeTab({ scale }: Props) {
           if (coins > 0) storage.addNum('coins', coins);
           if (gems > 0) storage.addNum('gems', gems);
           storage.flushNums();
+          void syncCurrenciesFromStorage();
           const items: { kind: 'coin' | 'gem'; amount: number; label?: string }[] = [];
           if (coins > 0) items.push({ kind: 'coin', amount: coins, label: '랭킹 보상' });
           if (gems > 0) items.push({ kind: 'gem', amount: gems, label: '랭킹 보상' });
@@ -163,6 +170,7 @@ export function HomeTab({ scale }: Props) {
     localStorage.removeItem(META_INTRO_PENDING_KEY);
     localStorage.setItem(META_INTRO_SHOWN_KEY, '1');
     localStorage.removeItem('app.isNewUser');
+    setHasSeenMetaIntro(true);
     setShowMetaIntro(false);
   };
 
@@ -265,7 +273,7 @@ export function HomeTab({ scale }: Props) {
       >
         <GuideMenuItem
           scale={scale}
-          showTip={!dismissedTips.attendance}
+          showTip={hasSeenMetaIntro && !dismissedTips.attendance}
           title="출석"
           desc="매일 접속 보상 챙기기"
           bubbleAccent="#ffffff"
@@ -290,7 +298,7 @@ export function HomeTab({ scale }: Props) {
         />
         <GuideMenuItem
           scale={scale}
-          showTip={!dismissedTips.mission}
+          showTip={hasSeenMetaIntro && !dismissedTips.mission}
           title="임무"
           desc="플레이하면 보상이 쌓여요"
           bubbleAccent="#ffffff"
@@ -312,7 +320,7 @@ export function HomeTab({ scale }: Props) {
         />
         <GuideMenuItem
           scale={scale}
-          showTip={!dismissedTips.ranking}
+          showTip={hasSeenMetaIntro && !dismissedTips.ranking}
           title="랭킹"
           desc="점수 올리고 순위 보상 받기"
           bubbleAccent="#ffd24a"
@@ -397,6 +405,41 @@ export function HomeTab({ scale }: Props) {
             onTap={() => {
               gameBus.emit('play-sfx', 'sfx-click');
               gameBus.emit('show-ad-remove', undefined);
+            }}
+          />
+        </div>
+      )}
+      {import.meta.env.DEV && (
+        <div
+          className={introClass}
+          style={{
+            position: 'absolute',
+            left: 10 * scale,
+            top: `calc(var(--sat, 0px) + ${184 * scale}px)`,
+            zIndex: 5,
+            pointerEvents: 'auto',
+            animationDelay: '0.2s',
+          }}
+        >
+          <FloatingMenuButton
+            icon={
+              <svg width={28 * scale} height={28 * scale} viewBox="0 0 24 24" fill="none" stroke="#7ef0ff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v6" />
+                <path d="M12 15v6" />
+                <path d="M4.22 7.22l4.24 4.24" />
+                <path d="M15.54 15.54l4.24 4.24" />
+                <path d="M3 12h6" />
+                <path d="M15 12h6" />
+                <path d="M4.22 16.78l4.24-4.24" />
+                <path d="M15.54 8.46l4.24-4.24" />
+              </svg>
+            }
+            label="프로모션"
+            accent="#7ef0ff"
+            scale={scale}
+            onTap={() => {
+              gameBus.emit('play-sfx', 'sfx-click');
+              void runThreeDayPromotionTest();
             }}
           />
         </div>

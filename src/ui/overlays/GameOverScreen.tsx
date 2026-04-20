@@ -9,6 +9,7 @@ import { adService } from '../../game/services/ad-service';
 import { logClick, logEvent } from '../../game/services/analytics';
 import { RankingModal } from './home/RankingModal';
 import { storage } from '../../game/services/storage';
+import { syncCurrenciesFromStorage } from '../../game/services/assets';
 import { startBotBattle } from '../../game/services/battle-state';
 import { setGameMode } from '../../game/services/game-mode';
 import { getRandomQuote } from '../../game/game-over-quotes';
@@ -58,12 +59,13 @@ export function GameOverScreen({ data }: Props) {
       return;
     }
     gameBus.emit('play-sfx', 'sfx-click');
-    adService.showRewarded('coin', (result) => {
+    adService.showRewarded('coin2x', (result) => {
       if (result.kind === 'rewarded') {
         setBonusClaimed(true);
         storage.addNum('coins', coinsEarned);
         storage.recordCoinEarned(coinsEarned);
         storage.recordAdWatched();
+        void syncCurrenciesFromStorage();
         logEvent('reward_2x_claim', { coinsEarned });
         gameBus.emit('show-reward', [{ kind: 'coin', amount: coinsEarned }]);
       } else if (result.kind === 'skipped') {

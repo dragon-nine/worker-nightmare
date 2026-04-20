@@ -7,6 +7,10 @@ import { TapButton } from '../components/TapButton';
 import { Text } from '../components/Text';
 import { Toggle } from '../components/Toggle';
 
+const META_INTRO_PENDING_KEY = 'home.metaIntroPending';
+const META_INTRO_SHOWN_KEY = 'home.metaIntroShown';
+const META_TIP_DISMISSED_KEY = 'home.metaTipDismissed';
+
 export function SettingsOverlay() {
   const scale = useResponsiveScale();
   const { bgmMuted, sfxMuted, handleBgmToggle, handleSfxToggle } = useAudioToggles();
@@ -19,6 +23,9 @@ export function SettingsOverlay() {
   const handleReplayTutorial = () => {
     gameBus.emit('play-sfx', 'sfx-click');
     storage.setBool('tutorialDone', false);
+    localStorage.removeItem(META_INTRO_PENDING_KEY);
+    localStorage.removeItem(META_INTRO_SHOWN_KEY);
+    localStorage.removeItem(META_TIP_DISMISSED_KEY);
     gameBus.emit('toast', '다음 게임부터 튜토리얼이 표시됩니다');
   };
 

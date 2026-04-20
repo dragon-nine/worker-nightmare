@@ -3,6 +3,7 @@ import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { logEvent } from '../../../game/services/analytics';
 import { updateMyProfile } from '../../../game/services/api';
+import { syncCurrenciesFromStorage, syncOwnedCharactersFromStorage, syncSelectedCharacterFromStorage } from '../../../game/services/assets';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { ModalShell } from '../../components/ModalShell';
 import { TapButton } from '../../components/TapButton';
@@ -134,6 +135,7 @@ export function CharactersTab({ scale }: Props) {
       storage.setSelectedCharacter(item.id);
       setSelected(item.id);
       logEvent('character_select', { id: item.id });
+      void syncSelectedCharacterFromStorage();
       gameBus.emit('toast', `${item.name} 선택됨`);
       // 서버 프로필에도 반영 (랭킹에 최신 캐릭터 보이게) — 실패 시 무시 (로컬은 이미 반영)
       updateMyProfile({ character: item.id }).catch((e) => {
@@ -167,6 +169,8 @@ export function CharactersTab({ scale }: Props) {
     storage.addOwnedCharacter(item.id);
     if (item.currency === 'coin') setCoins(newBalance); else setGems(newBalance);
     setOwned(storage.getOwnedCharacters());
+    void syncCurrenciesFromStorage();
+    void syncOwnedCharactersFromStorage();
     logEvent('character_purchase_success', {
       id: item.id,
       price: item.price,

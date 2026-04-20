@@ -7,6 +7,7 @@ import {
   purchaseGemPackage,
   type GemPackageKey,
 } from '../../../game/services/billing';
+import { syncCurrenciesFromStorage } from '../../../game/services/assets';
 import { AdRewardButton } from '../../components/AdRewardButton';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { ModalShell } from '../../components/ModalShell';
@@ -109,6 +110,7 @@ export function ShopTab({ scale }: Props) {
     const newCount = storage.incrementFreeRewardCount(r.id);
     refreshBalance();
     refreshFreeRewardCounts();
+    void syncCurrenciesFromStorage();
     logEvent('free_reward_claim', { kind: r.kind, amount: r.amount, count: newCount });
     gameBus.emit('show-reward', [{ kind: r.kind, amount: r.amount }]);
   };
@@ -140,6 +142,7 @@ export function ShopTab({ scale }: Props) {
       .then((ok) => {
         if (ok) {
           refreshBalance();
+          void syncCurrenciesFromStorage();
           logEvent('gem_purchase_success', { pkg: p.skuKey!, amount: p.amount });
           gameBus.emit('show-reward', [{ kind: 'gem', amount: p.amount }]);
         } else {
@@ -164,6 +167,7 @@ export function ShopTab({ scale }: Props) {
     storage.addNum('gems', -gemCost);
     storage.addNum('coins', pkg.amount);
     refreshBalance();
+    void syncCurrenciesFromStorage();
     logEvent('coin_purchase_success', { pkg: pkg.id, amount: pkg.amount, cost: gemCost });
     gameBus.emit('show-reward', [{ kind: 'coin', amount: pkg.amount }]);
     setPendingCoinPurchase(null);

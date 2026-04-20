@@ -5,7 +5,9 @@ import { TapButton } from '../../components/TapButton';
 import { Text } from '../../components/Text';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { gameBus } from '../../../game/event-bus';
+import { logEvent } from '../../../game/services/analytics';
 import { storage } from '../../../game/services/storage';
+import { syncCurrenciesFromStorage } from '../../../game/services/assets';
 
 interface Props {
   onClose: () => void;
@@ -71,6 +73,12 @@ export function AttendanceModal({ onClose }: Props) {
     gameBus.emit('play-sfx', 'sfx-click');
     setAttendance(storage.getAttendance());
     setTodayClaimed(true);
+    void syncCurrenciesFromStorage();
+    logEvent('attendance_claim', {
+      day: result.day,
+      coin: reward.rewards.filter((item) => item.kind === 'coin').reduce((sum, item) => sum + item.amount, 0),
+      gem: reward.rewards.filter((item) => item.kind === 'gem').reduce((sum, item) => sum + item.amount, 0),
+    });
     gameBus.emit(
       'show-reward',
       reward.rewards.map((r) => ({ kind: r.kind, amount: r.amount })),
@@ -247,4 +255,3 @@ function DayCard({
     </div>
   );
 }
-

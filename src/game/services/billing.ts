@@ -12,6 +12,7 @@ import { registerPlugin } from '@capacitor/core';
 import { isGoogle, isToss, isTossNative } from '../platform';
 import { gameConfig } from '../game.config';
 import { storage } from './storage';
+import { syncAdRemoveFromStorage, syncCurrenciesFromStorage } from './assets';
 
 // ── Google Play Billing ──
 
@@ -47,10 +48,13 @@ const GEM_AMOUNTS: Record<GemPackageKey, number> = {
 function buildTossSkuGrants(): Record<string, () => void> {
   const grants: Record<string, () => void> = {};
   const ids = gameConfig.tossIap;
-  if (ids.adRemove) grants[ids.adRemove] = () => localStorage.setItem(AD_REMOVE_KEY, 'true');
-  if (ids.gem30)    grants[ids.gem30]    = () => storage.addNum('gems', GEM_AMOUNTS.gem30);
-  if (ids.gem165)   grants[ids.gem165]   = () => storage.addNum('gems', GEM_AMOUNTS.gem165);
-  if (ids.gem500)   grants[ids.gem500]   = () => storage.addNum('gems', GEM_AMOUNTS.gem500);
+  if (ids.adRemove) grants[ids.adRemove] = () => {
+    localStorage.setItem(AD_REMOVE_KEY, 'true');
+    void syncAdRemoveFromStorage();
+  };
+  if (ids.gem30)    grants[ids.gem30]    = () => { storage.addNum('gems', GEM_AMOUNTS.gem30); void syncCurrenciesFromStorage(); };
+  if (ids.gem165)   grants[ids.gem165]   = () => { storage.addNum('gems', GEM_AMOUNTS.gem165); void syncCurrenciesFromStorage(); };
+  if (ids.gem500)   grants[ids.gem500]   = () => { storage.addNum('gems', GEM_AMOUNTS.gem500); void syncCurrenciesFromStorage(); };
   return grants;
 }
 
@@ -72,6 +76,7 @@ async function purchaseGoogle(): Promise<boolean> {
     const result = await Billing.purchase({ productId: 'ad_remove' });
     if (result.purchased) {
       localStorage.setItem(AD_REMOVE_KEY, 'true');
+      void syncAdRemoveFromStorage();
       return true;
     }
     return false;
@@ -86,6 +91,7 @@ async function restoreGoogle(): Promise<boolean> {
     const result = await Billing.restorePurchases();
     if (result.adRemoved) {
       localStorage.setItem(AD_REMOVE_KEY, 'true');
+      void syncAdRemoveFromStorage();
     }
     return result.adRemoved;
   } catch (e) {
@@ -164,9 +170,11 @@ async function restoreToss(): Promise<boolean> {
 
     if (purchased) {
       localStorage.setItem(AD_REMOVE_KEY, 'true');
+      void syncAdRemoveFromStorage();
     } else {
       // 환불된 경우 제거
       localStorage.removeItem(AD_REMOVE_KEY);
+      void syncAdRemoveFromStorage();
     }
     return purchased;
   } catch (e) {
@@ -252,6 +260,7 @@ async function mockPurchaseGems(key: GemPackageKey): Promise<boolean> {
   );
   if (!confirmed) return false;
   storage.addNum('gems', GEM_AMOUNTS[key]);
+  void syncCurrenciesFromStorage();
   return true;
 }
 

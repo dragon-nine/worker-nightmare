@@ -245,3 +245,206 @@ export async function fetchMyRanks(fromDaily?: string, fromWeekly?: string): Pro
   if (fromWeekly) params.set('from_weekly', fromWeekly);
   return request(`/v1/leaderboard/my-ranks?${params}`, { auth: true });
 }
+
+export interface ThreeDayPromotionPrepareResponse {
+  promotion_id: string;
+  progress_key: string;
+  eligible: boolean;
+  already_granted: boolean;
+  amount: number;
+  state: Record<string, unknown>;
+}
+
+export interface PromotionAttemptResponse {
+  attempt_id: number;
+  promotion_id: string;
+  progress_key: string;
+  amount: number;
+}
+
+async function preparePromotion(promotionId: string): Promise<ThreeDayPromotionPrepareResponse> {
+  return request(`/v1/promotion/${promotionId}/prepare`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+    auth: true,
+  });
+}
+
+export async function prepareThreeDayPromotion(): Promise<ThreeDayPromotionPrepareResponse> {
+  return preparePromotion('three_day_play_50');
+}
+
+async function attemptPromotion(promotionId: string, progressKey: string): Promise<PromotionAttemptResponse> {
+  return request(`/v1/promotion/${promotionId}/attempt`, {
+    method: 'POST',
+    body: JSON.stringify({ progressKey }),
+    auth: true,
+  });
+}
+
+export async function attemptThreeDayPromotion(progressKey: string): Promise<PromotionAttemptResponse> {
+  return attemptPromotion('three_day_play_50', progressKey);
+}
+
+async function completePromotion(
+  promotionId: string,
+  input: {
+    progressKey: string;
+    attemptId: number;
+    rewardKey: string;
+    amount: number;
+    clientMeta?: Record<string, unknown>;
+  },
+): Promise<{ ok: true; already_granted: boolean }> {
+  return request(`/v1/promotion/${promotionId}/complete`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+}
+
+export async function completeThreeDayPromotion(input: {
+  progressKey: string;
+  attemptId: number;
+  rewardKey: string;
+  amount: number;
+  clientMeta?: Record<string, unknown>;
+}): Promise<{ ok: true; already_granted: boolean }> {
+  return completePromotion('three_day_play_50', input);
+}
+
+async function failPromotion(
+  promotionId: string,
+  input: {
+    progressKey: string;
+    attemptId: number;
+    amount: number;
+    errorCode?: string;
+    errorMessage?: string;
+    clientMeta?: Record<string, unknown>;
+  },
+): Promise<{ ok: true }> {
+  return request(`/v1/promotion/${promotionId}/fail`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+}
+
+export async function failThreeDayPromotion(input: {
+  progressKey: string;
+  attemptId: number;
+  amount: number;
+  errorCode?: string;
+  errorMessage?: string;
+  clientMeta?: Record<string, unknown>;
+}): Promise<{ ok: true }> {
+  return failPromotion('three_day_play_50', input);
+}
+
+export async function postUserActivityEvent(input: {
+  eventKind: string;
+  eventName: string;
+  eventKey?: string;
+  eventStatus?: string;
+  coinsSnapshot: number;
+  gemsSnapshot: number;
+  payload?: Record<string, unknown>;
+}): Promise<{ ok: true }> {
+  return request('/v1/events', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+}
+
+export interface ApiGameAsset {
+  user_id: string;
+  game_id: string;
+  asset_type: string;
+  asset_id: string;
+  quantity: number;
+  created_at?: number;
+  updated_at: number;
+}
+
+export async function fetchMyAssets(): Promise<ApiGameAsset[]> {
+  const r = await request<{ assets: ApiGameAsset[] }>('/v1/users/me/assets', { auth: true });
+  return r.assets;
+}
+
+export async function upsertMyAsset(input: {
+  asset_type: string;
+  asset_id: string;
+  quantity: number;
+}): Promise<ApiGameAsset> {
+  const r = await request<{ asset: ApiGameAsset }>('/v1/users/me/assets/upsert', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+  return r.asset;
+}
+
+export async function syncMyAssets(input: {
+  assets: Array<{
+    asset_type: string;
+    asset_id: string;
+    quantity: number;
+  }>;
+  replace_types?: string[];
+}): Promise<ApiGameAsset[]> {
+  const r = await request<{ assets: ApiGameAsset[] }>('/v1/users/me/assets/sync', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+  return r.assets;
+}
+
+export interface ApiGameLoadout {
+  user_id: string;
+  game_id: string;
+  slot_key: string;
+  target_type: string;
+  target_id: string;
+  meta_json: string | null;
+  created_at?: number;
+  updated_at: number;
+}
+
+export async function fetchMyLoadouts(): Promise<ApiGameLoadout[]> {
+  const r = await request<{ loadouts: ApiGameLoadout[] }>('/v1/users/me/loadouts', { auth: true });
+  return r.loadouts;
+}
+
+export async function upsertMyLoadout(input: {
+  slot_key: string;
+  target_type: string;
+  target_id: string;
+  meta?: Record<string, unknown>;
+}): Promise<ApiGameLoadout> {
+  const r = await request<{ loadout: ApiGameLoadout }>('/v1/users/me/loadouts/upsert', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+  return r.loadout;
+}
+
+export async function syncMyLoadouts(input: {
+  loadouts: Array<{
+    slot_key: string;
+    target_type: string;
+    target_id: string;
+    meta?: Record<string, unknown>;
+  }>;
+  replace_slots?: string[];
+}): Promise<ApiGameLoadout[]> {
+  const r = await request<{ loadouts: ApiGameLoadout[] }>('/v1/users/me/loadouts/sync', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+  return r.loadouts;
+}

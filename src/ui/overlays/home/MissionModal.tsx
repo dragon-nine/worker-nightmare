@@ -7,6 +7,7 @@ import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { logEvent } from '../../../game/services/analytics';
+import { syncCurrenciesFromStorage } from '../../../game/services/assets';
 import {
   ALL_MISSION_IDS,
   DAILY_MISSIONS,
@@ -87,6 +88,7 @@ export function MissionModal({ onClose }: Props) {
     storage.addClaimedMission(period, m.id);
     setMissionState(storage.getMissionState());
     setStats(storage.getPlayStats());
+    void syncCurrenciesFromStorage();
     gameBus.emit('play-sfx', 'sfx-click');
     logEvent('mission_claim', {
       id: m.id,

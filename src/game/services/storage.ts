@@ -32,6 +32,7 @@ const KEYS = {
   missionState: 'missionState',
   playStats: 'playStats',
   freeRewardState: 'freeRewardState',
+  promotionState: 'promotionState',
 } as const;
 
 const DEFAULT_CHARACTER = 'rabbit';
@@ -111,10 +112,25 @@ export interface FreeRewardState {
   resetKey: string;
 }
 
+export interface PromotionProgressState {
+  /** 연속 플레이 일수 */
+  streakDays: number;
+  /** 마지막으로 반영한 플레이 날짜 (YYYY-MM-DD) */
+  lastPlayedDate: string;
+  /** 프로모션 지급 완료 여부 */
+  claimed: boolean;
+  /** 지급 완료 시각 */
+  claimedAt?: string;
+}
+
 const DEFAULT_ATTENDANCE: AttendanceState = { nextDay: 1, lastClaimDate: '' };
 
 function defaultFreeRewardState(): FreeRewardState {
   return { counts: {}, resetKey: todayStr() };
+}
+
+function defaultPromotionState(): PromotionProgressState {
+  return { streakDays: 0, lastPlayedDate: '', claimed: false };
 }
 
 function defaultMissionState(): MissionState {
@@ -564,6 +580,73 @@ export const storage = {
     const next = (state.counts[id] || 0) + 1;
     state.counts[id] = next;
     localStorage.setItem(KEYS.freeRewardState, JSON.stringify(state));
+    return next;
+  },
+
+  /* ──────────────  Promotion Progress  ────────────── */
+
+  getPromotionState(): PromotionProgressState {
+    const raw = localStorage.getItem(KEYS.promotionState);
+    if (!raw) return defaultPromotionState();
+    try {
+      const parsed = JSON.parse(raw);
+      if (
+        typeof parsed?.streakDays === 'number' &&
+        typeof parsed?.lastPlayedDate === 'string' &&
+        typeof parsed?.claimed === 'boolean'
+      ) {
+        return {
+          streakDays: Math.max(0, Math.floor(parsed.streakDays)),
+          lastPlayedDate: parsed.lastPlayedDate,
+          claimed: parsed.claimed,
+          claimedAt: typeof parsed.claimedAt === 'string' ? parsed.claimedAt : undefined,
+        };
+      }
+    } catch { /* fallthrough */ }
+    return defaultPromotionState();
+  },
+
+  setPromotionState(state: PromotionProgressState): void {
+    localStorage.setItem(KEYS.promotionState, JSON.stringify(state));
+  },
+
+  /**
+   * 하루 1회만 연속 플레이 streak 반영.
+   * - 같은 날 여러 판: 유지
+   * - 전날 이후 연속 접속: +1
+   * - 하루 이상 비면: 1로 리셋
+   */
+  recordThreeDayPromotionPlay(): PromotionProgressState {
+    const state = this.getPromotionState();
+    if (state.claimed) return state;
+    const today = todayStr();
+    if (state.lastPlayedDate === today) return state;
+
+    let streakDays = 1;
+    if (state.lastPlayedDate) {
+      const prev = new Date(`${state.lastPlayedDate}T00:00:00+09:00`).getTime();
+      const curr = new Date(`${today}T00:00:00+09:00`).getTime();
+      const diffDays = Math.round((curr - prev) / 86400000);
+      streakDays = diffDays === 1 ? state.streakDays + 1 : 1;
+    }
+
+    const next = {
+      ...state,
+      streakDays,
+      lastPlayedDate: today,
+    };
+    this.setPromotionState(next);
+    return next;
+  },
+
+  markThreeDayPromotionClaimed(): PromotionProgressState {
+    const state = this.getPromotionState();
+    const next = {
+      ...state,
+      claimed: true,
+      claimedAt: new Date().toISOString(),
+    };
+    this.setPromotionState(next);
     return next;
   },
 };

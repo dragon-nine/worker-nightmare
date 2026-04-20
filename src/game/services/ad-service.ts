@@ -4,7 +4,8 @@
  * 리워드 타입별 독립 광고 그룹 지원:
  *   - 'revive' : 부활 광고
  *   - 'gem'    : 보석 보상 광고 (상점 무료 보상)
- *   - 'coin'   : 코인 보상 광고 (게임오버 2배 보너스)
+ *   - 'coin'   : 코인 보상 광고 (상점 무료 보상)
+ *   - 'coin2x' : 게임오버 코인 2배 보너스
  *
  * 사용 패턴:
  *   1. 게임 시작 시 adService.preload('revive')
@@ -19,8 +20,8 @@ import { logEvent } from './analytics';
 import { gameBus } from '../event-bus';
 
 /** 리워드 타입 — 각 타입별로 별도 adGroupId/adUnitId 사용 */
-export type AdRewardType = 'revive' | 'gem' | 'coin';
-const ALL_AD_REWARD_TYPES: AdRewardType[] = ['revive', 'gem', 'coin'];
+export type AdRewardType = 'revive' | 'gem' | 'coin' | 'coin2x';
+const ALL_AD_REWARD_TYPES: AdRewardType[] = ['revive', 'gem', 'coin', 'coin2x'];
 
 /** 광고 표시 결과 */
 export type AdResult =

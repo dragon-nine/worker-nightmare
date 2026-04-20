@@ -73,3 +73,28 @@ public/
 - 빌드: `npm run build:toss` (ait build)
 - 개발: `npm run dev:toss` (granite dev, port 8081+5173)
 - 배포: `npx ait deploy` (API 키 필요)
+
+## 최근 작업 메모 (2026-04-19)
+- 홈:
+  - 시작 버튼 등장 타이밍을 다른 에셋과 동일하게 정리
+  - 대전 메뉴 추가, 아이콘/색상 노란 번개로 정리
+- 대전 모드:
+  - `normal` / `battle` 모드 분리 (`src/game/services/game-mode.ts`)
+  - 봇 상대 전용 상태 추가 (`src/game/services/battle-state.ts`)
+  - 홈에서 `대전` 탭 시 봇 대전으로 바로 진입
+  - 카운트다운 `3-2-1` 후 자동 시작
+  - 대전 시간은 현재 `30초`
+  - 대전에서는 코인 획득/코인 HUD 없음
+  - 잘못된 입력은 즉사 대신 패널티(짧은 멈춤/흔들림/복귀)
+  - 패널티 후 캐릭터가 올바른 방향을 다시 보도록 수정
+  - 좌측 세로 대전 진행 바 추가
+- 대전 결과:
+  - 일반 게임오버/부활 흐름과 분리
+  - 전용 결과 화면에서 `WIN / LOSE / DRAW`, 거리 차이, 내 닉네임/상대 정보 표시
+  - 이긴 카드 하이라이트 추가
+  - 하단 버튼은 기존 게임오버 버튼 스타일 재사용
+- 배포:
+  - 커밋: `df4c1ea` `feat: add bot battle mode flow`
+  - 브랜치 `1.2.0` 원격 푸시 완료
+  - Apps in Toss 재빌드 후 배포 완료
+  - deploymentId: `019da4a0-6037-7e75-857c-a2917e2958f2`

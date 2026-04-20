@@ -1,4 +1,5 @@
 import { logEvent, logClick } from './services/analytics';
+import { syncCurrenciesFromStorage } from './services/assets';
 import { adService } from './services/ad-service';
 import { isAdRemoved } from './services/billing';
 import { gameBus } from './event-bus';
@@ -129,6 +130,7 @@ export function setupReactListeners(deps: ReactListenerDeps) {
       return;
     }
     storage.addNum('gems', -REVIVE_GEM_COST);
+    void syncCurrenciesFromStorage();
     logEvent('revive_gem', { score: deps.getScore(), cost: REVIVE_GEM_COST });
     gameBus.emit('screen-change', 'playing');
     doRevive(deps.getLifecycleDeps());

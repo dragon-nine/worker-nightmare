@@ -5,6 +5,7 @@ import { gameBus } from './event-bus';
 import { storage } from './services/storage';
 import { submitScore as submitApiScore } from './services/api';
 import { settleBattle } from './services/battle-state';
+import { handleThreeDayPromotionOnGameEnd } from './services/promotion';
 import { isBattleMode } from './services/game-mode';
 import {
   calcViewLeft, panViewTo, scrollToCurrentRow,
@@ -175,6 +176,10 @@ export function endGame(deps: LifecycleDeps) {
     }
     storage.flushNums();
   } catch { /* 무시 */ }
+
+  handleThreeDayPromotionOnGameEnd().catch((e) =>
+    console.warn('[promotion] game-end handler failed:', e),
+  );
 
   // ★ 이 emit은 절대 중단되면 안 됨 — 게임오버 화면 전환의 유일한 트리거
   const battle = isBattleMode() ? settleBattle(deps.getScore(), deps.hud.elapsed) : null;
