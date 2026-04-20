@@ -22,8 +22,8 @@ ensureAuth({
     return { profile, isNewUser };
   })
   .then(({ profile, isNewUser }) => {
-    // 서버 닉네임을 로컬과 동기화 (서버가 첫 가입 시 기본 닉네임 발급)
-    if (profile.nickname && !localStorage.getItem('nickname')) {
+    // 서버 닉네임이 원본이다. 로컬 닉네임은 UI 캐시로만 사용한다.
+    if (profile.nickname) {
       localStorage.setItem('nickname', profile.nickname);
     }
     // 신규 유저 플래그 — 튜토리얼/환영 트리거가 소비 후 clear
