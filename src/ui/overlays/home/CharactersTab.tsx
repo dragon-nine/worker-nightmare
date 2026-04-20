@@ -111,8 +111,6 @@ export function CharactersTab({ scale }: Props) {
   const orderedCharacters = [...CHARACTERS].sort((a, b) => {
     const aOwned = owned.includes(a.id);
     const bOwned = owned.includes(b.id);
-    if (a.id === selected && b.id !== selected) return -1;
-    if (b.id === selected && a.id !== selected) return 1;
     if (aOwned !== bOwned) return aOwned ? -1 : 1;
     return CHARACTERS.findIndex((item) => item.id === a.id) - CHARACTERS.findIndex((item) => item.id === b.id);
   });

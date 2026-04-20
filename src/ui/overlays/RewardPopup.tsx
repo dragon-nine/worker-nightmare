@@ -6,6 +6,7 @@ import { useResponsiveScale } from '../hooks/useResponsiveScale';
 
 const ITEM_STAGGER_MS = 160;
 const FADE_MS = 220;
+const DISMISS_LOCK_MS = 300;
 
 /**
  * 전역 보상 획득 팝업 — `gameBus.emit('show-reward', items)` 로 표시.
@@ -15,8 +16,10 @@ export function RewardPopup() {
   const scale = useResponsiveScale();
   const [items, setItems] = useState<RewardPopupItem[] | null>(null);
   const [visible, setVisible] = useState(false);
+  // 표시 직후 실수 탭으로 닫히는 것을 막고, 아이템 등장 후 입력을 허용한다.
   const [acceptTap, setAcceptTap] = useState(false);
   const sfxTimersRef = useRef<number[]>([]);
+  const enableTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const unsub = gameBus.on('show-reward', (incoming) => {
@@ -24,21 +27,27 @@ export function RewardPopup() {
       // 기존 타이머 정리
       sfxTimersRef.current.forEach(clearTimeout);
       sfxTimersRef.current = [];
+      if (enableTimerRef.current) clearTimeout(enableTimerRef.current);
 
       setItems(incoming);
       setVisible(true);
-      setAcceptTap(true);
+      setAcceptTap(false);
 
       // 보상 사운드 1회 — 첫 아이템 등장 시점에 재생
       const t = window.setTimeout(() => {
         gameBus.emit('play-sfx', 'sfx-reward');
       }, FADE_MS);
       sfxTimersRef.current.push(t);
+
+      enableTimerRef.current = window.setTimeout(() => {
+        setAcceptTap(true);
+      }, DISMISS_LOCK_MS);
     });
 
     return () => {
       unsub();
       sfxTimersRef.current.forEach(clearTimeout);
+      if (enableTimerRef.current) clearTimeout(enableTimerRef.current);
     };
   }, []);
 
