@@ -17,6 +17,19 @@ const DEFAULT_NICKNAME = '토끼킹';
 const MAX_LEN = 8;
 const NICK_PATTERN = /^[가-힣a-zA-Z0-9]+$/;
 
+function getProfileSaveErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 409 && error.message.includes('nickname already taken')) {
+      return '이미 사용 중인 닉네임이에요';
+    }
+    if (error.status === 400) {
+      return '닉네임을 다시 확인해주세요';
+    }
+    return `저장 실패 (${error.status})`;
+  }
+  return '서버 연결 실패';
+}
+
 export function getNickname(): string {
   return localStorage.getItem(NICKNAME_KEY) || DEFAULT_NICKNAME;
 }
@@ -59,11 +72,8 @@ export function ProfileModal({ onClose }: Props) {
       gameBus.emit('toast', '닉네임이 저장됐어요');
       onClose();
     } catch (e) {
-      const msg = e instanceof ApiError ? `저장 실패 (${e.status})` : '서버 연결 실패';
-      gameBus.emit('toast', msg);
-      // 오프라인 폴백 — 로컬에는 저장
-      localStorage.setItem(NICKNAME_KEY, trimmed);
-      onClose();
+      gameBus.emit('toast', getProfileSaveErrorMessage(e));
+      inputRef.current?.focus();
     } finally {
       setSaving(false);
     }
