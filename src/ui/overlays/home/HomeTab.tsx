@@ -45,6 +45,7 @@ export function HomeTab({ scale }: Props) {
   const adRemoved = isAdRemoved();
   const [openModal, setOpenModal] = useState<'attendance' | 'mission' | 'ranking' | 'profile' | 'debug' | null>(null);
   const [nickname, setNickname] = useState(getNickname);
+  const [, setAssetVersion] = useState(0);
   const [showMetaIntro, setShowMetaIntro] = useState(false);
   const [hasSeenMetaIntro, setHasSeenMetaIntro] = useState(
     () => localStorage.getItem(META_INTRO_SHOWN_KEY) === '1',
@@ -87,6 +88,10 @@ export function HomeTab({ scale }: Props) {
   useEffect(() => {
     setNickname(getNickname());
     return gameBus.on('profile-synced', () => setNickname(getNickname()));
+  }, []);
+
+  useEffect(() => {
+    return gameBus.on('assets-synced', () => setAssetVersion((value) => value + 1));
   }, []);
 
   useEffect(() => {

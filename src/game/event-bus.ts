@@ -103,6 +103,8 @@ type EventMap = {
   'toggle-godmode': void;
   // 서버 프로필 동기 완료 — nickname/character/owned 등 업데이트됨
   'profile-synced': void;
+  // 서버 에셋 동기 완료 — coins/gems/owned/selected 캐시 업데이트됨
+  'assets-synced': void;
 };
 
 type Listener<T> = (data: T) => void;

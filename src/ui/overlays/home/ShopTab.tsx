@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { logEvent } from '../../../game/services/analytics';
@@ -87,6 +87,10 @@ export function ShopTab({ scale }: Props) {
     setCoins(storage.getNum('coins'));
     setGems(storage.getNum('gems'));
   };
+
+  useEffect(() => {
+    return gameBus.on('assets-synced', refreshBalance);
+  }, []);
 
   const refreshFreeRewardCounts = () => {
     setFreeRewardCounts({ ...storage.getFreeRewardState().counts });

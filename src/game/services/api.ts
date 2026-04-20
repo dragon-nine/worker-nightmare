@@ -402,6 +402,33 @@ export async function syncMyAssets(input: {
   return r.assets;
 }
 
+export async function migrateLocalAssetsV1(input: {
+  assets: Array<{
+    asset_type: string;
+    asset_id: string;
+    quantity: number;
+  }>;
+  loadouts: Array<{
+    slot_key: string;
+    target_type: string;
+    target_id: string;
+    meta?: Record<string, unknown>;
+  }>;
+  meta?: Record<string, unknown>;
+}): Promise<{
+  migrated: boolean;
+  migration_key: string;
+  status: 'completed';
+  assets: ApiGameAsset[];
+  loadouts: ApiGameLoadout[];
+}> {
+  return request('/v1/users/me/assets/migrate-local-v1', {
+    method: 'POST',
+    body: JSON.stringify(input),
+    auth: true,
+  });
+}
+
 export interface ApiGameLoadout {
   user_id: string;
   game_id: string;

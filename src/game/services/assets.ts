@@ -2,10 +2,12 @@ import {
   fetchMyAssets,
   fetchMyLoadouts,
   getStoredToken,
+  migrateLocalAssetsV1,
   syncMyAssets,
   syncMyLoadouts,
 } from './api';
 import { isAdRemoved } from './billing';
+import { gameBus } from '../event-bus';
 import { storage } from './storage';
 
 function canSync(): boolean {
@@ -28,8 +30,6 @@ type SyncRequest = {
   replaceAssetTypes?: string[];
   replaceLoadoutSlots?: string[];
 };
-
-const ASSET_MIGRATION_V1_KEY = 'assetMigration.v1';
 
 const pendingAssetTypes = new Set<string>();
 const pendingLoadoutSlots = new Set<string>();
@@ -149,6 +149,7 @@ export async function bootstrapLocalStateFromServerAssets(): Promise<void> {
 
     const activeCharacter = loadouts.find((l) => l.slot_key === 'active_character' && l.target_type === 'character');
     if (activeCharacter) storage.setSelectedCharacter(activeCharacter.target_id);
+    gameBus.emit('assets-synced', undefined);
   } catch (e) {
     console.warn('[assets] bootstrap failed:', e);
   }
@@ -161,20 +162,33 @@ export async function syncAllAssetsFromStorage(): Promise<void> {
   });
 }
 
-export function isAssetMigrationV1Done(): boolean {
-  return localStorage.getItem(ASSET_MIGRATION_V1_KEY) === 'done';
-}
-
 export async function migrateLocalAssetsToServerOnce(): Promise<void> {
-  if (isAssetMigrationV1Done()) return;
   if (!canSync()) return;
   const replaceAssetTypes = ['currency', 'character', 'entitlement'];
   const replaceLoadoutSlots = ['active_character'];
   const assets = replaceAssetTypes.flatMap(buildAssetSnapshotForType);
   const loadouts = replaceLoadoutSlots.flatMap(buildLoadoutSnapshotForSlot);
-  await Promise.all([
-    syncMyAssets({ assets, replace_types: replaceAssetTypes }),
-    syncMyLoadouts({ loadouts, replace_slots: replaceLoadoutSlots }),
-  ]);
-  localStorage.setItem(ASSET_MIGRATION_V1_KEY, 'done');
+  const result = await migrateLocalAssetsV1({
+    assets,
+    loadouts,
+    meta: {
+      client: 'game01',
+      asset_count: assets.length,
+      loadout_count: loadouts.length,
+    },
+  });
+
+  const coin = result.assets.find((a) => a.asset_type === 'currency' && a.asset_id === 'coin');
+  const gem = result.assets.find((a) => a.asset_type === 'currency' && a.asset_id === 'gem');
+  storage.setNum('coins', coin?.quantity ?? 0);
+  storage.setNum('gems', gem?.quantity ?? 0);
+
+  const ownedCharacters = result.assets
+    .filter((a) => a.asset_type === 'character' && a.quantity > 0)
+    .map((a) => a.asset_id);
+  if (ownedCharacters.length > 0) storage.setOwnedCharacters(ownedCharacters);
+
+  const activeCharacter = result.loadouts.find((l) => l.slot_key === 'active_character' && l.target_type === 'character');
+  if (activeCharacter) storage.setSelectedCharacter(activeCharacter.target_id);
+  gameBus.emit('assets-synced', undefined);
 }

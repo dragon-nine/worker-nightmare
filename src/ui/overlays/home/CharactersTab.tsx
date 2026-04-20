@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { logEvent } from '../../../game/services/analytics';
@@ -107,6 +107,15 @@ export function CharactersTab({ scale }: Props) {
   const [coins, setCoins] = useState<number>(() => storage.getNum('coins'));
   const [gems, setGems] = useState<number>(() => storage.getNum('gems'));
   const [pendingChar, setPendingChar] = useState<CharItem | null>(null);
+  const refreshAssets = () => {
+    setOwned(storage.getOwnedCharacters());
+    setSelected(storage.getSelectedCharacter());
+    setCoins(storage.getNum('coins'));
+    setGems(storage.getNum('gems'));
+  };
+  useEffect(() => {
+    return gameBus.on('assets-synced', refreshAssets);
+  }, []);
   const selectedItem = CHARACTERS.find((item) => item.id === selected) ?? CHARACTERS[0];
   const orderedCharacters = [...CHARACTERS].sort((a, b) => {
     const aOwned = owned.includes(a.id);

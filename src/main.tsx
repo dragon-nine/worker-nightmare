@@ -5,7 +5,7 @@ import { ensureAuth, parseOwnedCharacters } from './game/services/api';
 import { storage } from './game/services/storage';
 import { gameBus } from './game/event-bus';
 import { logAuthActivity } from './game/services/analytics';
-import { bootstrapLocalStateFromServerAssets, migrateLocalAssetsToServerOnce } from './game/services/assets';
+import { migrateLocalAssetsToServerOnce } from './game/services/assets';
 import './index.css';
 
 // 백그라운드에서 익명 인증 + 프로필 동기 (UI 블록 X)
@@ -19,9 +19,7 @@ ensureAuth({
       is_new_user: isNewUser,
       total_plays: profile.total_plays,
     });
-    return bootstrapLocalStateFromServerAssets().catch((e) => {
-      console.warn('[assets] bootstrap failed:', e);
-    }).then(() => ({ profile, isNewUser }));
+    return { profile, isNewUser };
   })
   .then(({ profile, isNewUser }) => {
     // 서버 닉네임을 로컬과 동기화 (서버가 첫 가입 시 기본 닉네임 발급)
