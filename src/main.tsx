@@ -5,7 +5,7 @@ import { ensureAuth, parseOwnedCharacters } from './game/services/api';
 import { storage } from './game/services/storage';
 import { gameBus } from './game/event-bus';
 import { logAuthActivity } from './game/services/analytics';
-import { bootstrapLocalStateFromServerAssets, syncAllAssetsFromStorage } from './game/services/assets';
+import { bootstrapLocalStateFromServerAssets, migrateLocalAssetsToServerOnce } from './game/services/assets';
 import './index.css';
 
 // 백그라운드에서 익명 인증 + 프로필 동기 (UI 블록 X)
@@ -50,7 +50,9 @@ ensureAuth({
     }
     // UI 에 프로필 동기 완료 알림 (닉네임 등 다시 읽도록)
     gameBus.emit('profile-synced', undefined);
-    void syncAllAssetsFromStorage();
+    void migrateLocalAssetsToServerOnce().catch((e) => {
+      console.warn('[assets] migration failed:', e);
+    });
   })
   .catch((e) => {
     console.warn('[api] auth failed, continuing offline:', e);

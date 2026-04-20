@@ -29,6 +29,8 @@ type SyncRequest = {
   replaceLoadoutSlots?: string[];
 };
 
+const ASSET_MIGRATION_V1_KEY = 'assetMigration.v1';
+
 const pendingAssetTypes = new Set<string>();
 const pendingLoadoutSlots = new Set<string>();
 let scheduledFlush: Promise<void> | null = null;
@@ -157,4 +159,22 @@ export async function syncAllAssetsFromStorage(): Promise<void> {
     replaceAssetTypes: ['currency', 'character', 'entitlement'],
     replaceLoadoutSlots: ['active_character'],
   });
+}
+
+export function isAssetMigrationV1Done(): boolean {
+  return localStorage.getItem(ASSET_MIGRATION_V1_KEY) === 'done';
+}
+
+export async function migrateLocalAssetsToServerOnce(): Promise<void> {
+  if (isAssetMigrationV1Done()) return;
+  if (!canSync()) return;
+  const replaceAssetTypes = ['currency', 'character', 'entitlement'];
+  const replaceLoadoutSlots = ['active_character'];
+  const assets = replaceAssetTypes.flatMap(buildAssetSnapshotForType);
+  const loadouts = replaceLoadoutSlots.flatMap(buildLoadoutSnapshotForSlot);
+  await Promise.all([
+    syncMyAssets({ assets, replace_types: replaceAssetTypes }),
+    syncMyLoadouts({ loadouts, replace_slots: replaceLoadoutSlots }),
+  ]);
+  localStorage.setItem(ASSET_MIGRATION_V1_KEY, 'done');
 }
