@@ -1,9 +1,34 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
 node_modules
 dist
 dist-ssr
 *.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-.vercel
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.granite
+.wrangler/
+.env*.local
+.env.blob
+.env.prod
+*.ait
 
 # Android SDK tools
 platform-tools/
@@ -11,12 +36,3 @@ build-tools/
 licenses/
 platforms/
 .knownPackages
-.granite
-.env*.local
-.env.blob
-.env.prod
-games/game01/android/.wrangler/
-
-# 토스 인앱 빌드 결과물
-*.ait
-.wrangler/
