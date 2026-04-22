@@ -15,15 +15,27 @@ import { getStoredToken, postUserActivityEvent } from './api';
 
 type ParamValue = string | number | boolean;
 type Params = Record<string, ParamValue>;
+type Kind = 'event' | 'click' | 'screen' | 'auth';
 
 let previousScreen: string | null = null;
 
+// 토큰 도착 전(부팅~인증 완료 100~500ms)에 발생한 이벤트를 버퍼링.
+// 인증 완료 후 main.tsx 에서 flushActivityQueue() 호출 → 순서대로 전송.
+interface QueuedEvent { kind: Kind; name: string; params: Params; ts: number }
+const MAX_QUEUE = 64;
+const pending: QueuedEvent[] = [];
+
 async function logServerActivity(
-  eventKind: 'event' | 'click' | 'screen' | 'auth',
+  eventKind: Kind,
   eventName: string,
   params: Params = {},
 ): Promise<void> {
-  if (!getStoredToken()) return;
+  if (!getStoredToken()) {
+    if (pending.length < MAX_QUEUE) {
+      pending.push({ kind: eventKind, name: eventName, params, ts: Date.now() });
+    }
+    return;
+  }
   try {
     // 인덱싱 편의를 위해 자주 쓰는 식별자/상태는 별도 컬럼으로 승격
     const eventKey = typeof params.type === 'string' ? params.type
@@ -73,4 +85,14 @@ export function logAuthActivity(name: string, params: Params = {}): void {
 /** 현재 마지막으로 진입했던 화면 이름 — app_background 등 부가 이벤트에서 참조. */
 export function getCurrentScreenName(): string | null {
   return previousScreen;
+}
+
+/**
+ * 인증 완료 후 호출 — 부팅 중 버퍼링된 이벤트를 순서대로 flush.
+ * 중복 flush 는 이미 빈 큐 탓에 no-op.
+ */
+export function flushActivityQueue(): void {
+  if (!getStoredToken() || pending.length === 0) return;
+  const items = pending.splice(0, pending.length);
+  for (const e of items) void logServerActivity(e.kind, e.name, { ...e.params, buffered_ms: Date.now() - e.ts });
 }
