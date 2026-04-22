@@ -239,35 +239,50 @@ export function GameplayHUD() {
         </Text>
       )}
 
-      {/* 좌측 버튼 (방향 전환) — 즉시 반응 + 빠른 연타 위해 rapid 모드 */}
-      <TapButton
-        onTap={handleSwitch}
-        pressScale={0.85}
-        rapid
-        style={{ ...boxStyle('btn-switch'), pointerEvents: 'auto' }}
-      >
-        <img
-          src={`${BASE}ui/btn-switch.png`}
-          alt="전환"
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
-          draggable={false}
-        />
-      </TapButton>
+      {/* 튜토리얼 중엔 힌트 반대 버튼을 비활성화 — 잘못 눌러 크래시 나는 경로를 물리적으로 차단.
+          tutorialDone 이후엔 항상 활성. */}
+      {(() => {
+        const switchDisabled = !tutorialDone && guideHint === 'forward';
+        const forwardDisabled = !tutorialDone && guideHint === 'switch';
+        const dimStyle = (disabled: boolean): React.CSSProperties => ({
+          pointerEvents: disabled ? 'none' : 'auto',
+          opacity: disabled ? 0.65 : 1,
+          transition: 'opacity 0.2s',
+        });
+        return (
+          <>
+            {/* 좌측 버튼 (방향 전환) */}
+            <TapButton
+              onTap={handleSwitch}
+              pressScale={0.85}
+              rapid
+              style={{ ...boxStyle('btn-switch'), ...dimStyle(switchDisabled) }}
+            >
+              <img
+                src={`${BASE}ui/btn-switch.png`}
+                alt="전환"
+                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
+                draggable={false}
+              />
+            </TapButton>
 
-      {/* 우측 버튼 (전진) — 즉시 반응 + 빠른 연타 위해 rapid 모드 */}
-      <TapButton
-        onTap={handleForward}
-        pressScale={0.85}
-        rapid
-        style={{ ...boxStyle('btn-forward'), pointerEvents: 'auto' }}
-      >
-        <img
-          src={`${BASE}ui/btn-forward.png`}
-          alt="전진"
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
-          draggable={false}
-        />
-      </TapButton>
+            {/* 우측 버튼 (전진) */}
+            <TapButton
+              onTap={handleForward}
+              pressScale={0.85}
+              rapid
+              style={{ ...boxStyle('btn-forward'), ...dimStyle(forwardDisabled) }}
+            >
+              <img
+                src={`${BASE}ui/btn-forward.png`}
+                alt="전진"
+                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
+                draggable={false}
+              />
+            </TapButton>
+          </>
+        );
+      })()}
       {battleHud && <BattleRaceLane data={battleHud} scale={scale} />}
       {battleMode && battleCountdown !== null && (
         <div
@@ -359,16 +374,17 @@ export function GameplayHUD() {
                   textAlign: 'center', animation: 'guideFadeIn 0.5s ease-out',
                 }}>
                   <Text
-                    size={28 * scale}
+                    size={26 * scale}
                     weight={900}
                     as="span"
                     style={{
                       textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
                       WebkitTextStroke: `${2 * scale}px #000`,
                       paintOrder: 'stroke fill',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    앞으로!
+                    앞으로 쭉!
                   </Text>
                 </div>
               </>
@@ -397,16 +413,17 @@ export function GameplayHUD() {
                   textAlign: 'center', animation: 'guideFadeIn 0.5s ease-out',
                 }}>
                   <Text
-                    size={28 * scale}
+                    size={26 * scale}
                     weight={900}
                     as="span"
                     style={{
                       textShadow: '0 0 10px #ff3b3b, 0 0 20px #ff3b3b60',
                       WebkitTextStroke: `${2 * scale}px #000`,
                       paintOrder: 'stroke fill',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    회전!
+                    이쪽으로 꺾!
                   </Text>
                 </div>
               </>
