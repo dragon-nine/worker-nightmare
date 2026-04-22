@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { gameBus, type RewardPopupItem } from '../../game/event-bus';
 import { CoinIcon, GemIcon } from '../components/CurrencyIcons';
 import { Text } from '../components/Text';
+import { useNativeTap } from '../hooks/useNativeTap';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 
 const ITEM_STAGGER_MS = 160;
@@ -58,15 +59,13 @@ export function RewardPopup() {
     window.setTimeout(() => setItems(null), FADE_MS);
   };
 
+  const dismissRef = useNativeTap(handleDismiss);
+
   if (!items) return null;
 
   return (
     <div
-      onClick={handleDismiss}
-      onTouchEnd={(e) => {
-        e.preventDefault();
-        handleDismiss();
-      }}
+      ref={dismissRef}
       style={{
         position: 'fixed',
         inset: 0,

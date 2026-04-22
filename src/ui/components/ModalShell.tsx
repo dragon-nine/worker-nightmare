@@ -1,10 +1,14 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { TapButton } from './TapButton';
 import { Text } from './Text';
 import styles from '../overlays/overlay.module.css';
 
 const DEFAULT_GUIDANCE = '화면 터치 시 이전으로 이동';
+
+// 모달을 연 탭의 후속 합성 click이 배경을 때려 즉시 닫히는 것 방지.
+// scrollSafe(pointerup) 탭으로 모달이 열린 뒤 같은 제스처의 click이 튀는 시간.
+const BACKDROP_CLICK_LOCK_MS = 260;
 
 export interface ModalTabDef {
   /** 탭 식별 키 */
@@ -63,6 +67,12 @@ export function ModalShell({
 }: Props) {
   const scale = useResponsiveScale();
   const hasTabs = !!tabs && tabs.length > 0;
+  const mountedAtRef = useRef(performance.now());
+
+  const handleBackdropClick = () => {
+    if (performance.now() - mountedAtRef.current < BACKDROP_CLICK_LOCK_MS) return;
+    onClose();
+  };
 
   return (
     <div
@@ -71,7 +81,7 @@ export function ModalShell({
         pointerEvents: 'auto',
         ...(zIndex !== undefined && { zIndex }),
       }}
-      onClick={onClose}
+      onClick={handleBackdropClick}
     >
       <div className={styles.dim} />
 
