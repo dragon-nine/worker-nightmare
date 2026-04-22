@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gameBus, type CharacterUnlockPopupData } from '../../game/event-bus';
 import { Text } from '../components/Text';
+import { useNativeTap } from '../hooks/useNativeTap';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -33,17 +34,15 @@ export function CharacterUnlockPopup() {
     clearTimerRef.current = window.setTimeout(() => setData(null), FADE_MS);
   };
 
+  const dismissRef = useNativeTap(handleDismiss);
+
   if (!data) return null;
 
   const formattedDesc = data.desc.replace(/(\.["']?)\s+/g, '$1\n');
 
   return (
     <div
-      onClick={handleDismiss}
-      onTouchEnd={(e) => {
-        e.preventDefault();
-        handleDismiss();
-      }}
+      ref={dismissRef}
       style={{
         position: 'fixed',
         inset: 0,
