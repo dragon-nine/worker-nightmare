@@ -29,6 +29,11 @@ interface Options {
    * `pointerdown`에서 즉시 발사 + 50ms 디덥.
    */
   rapid?: boolean;
+  /**
+   * 기본(click) 모드에서 native 이벤트 전파를 막음.
+   * 모달/컨테이너처럼 부모에도 탭 핸들러가 있는 경우 자식 탭이 부모로 새지 않도록.
+   */
+  stopPropagation?: boolean;
 }
 
 const SCROLL_THRESHOLD_PX = 8;
@@ -40,6 +45,7 @@ export function useNativeTap(onTap: () => void, options: Options = {}) {
   onTapRef.current = onTap;
   const scrollSafe = options.scrollSafe ?? false;
   const rapid = options.rapid ?? false;
+  const stopPropagation = options.stopPropagation ?? false;
 
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -47,22 +53,25 @@ export function useNativeTap(onTap: () => void, options: Options = {}) {
     cleanupRef.current?.();
     cleanupRef.current = null;
     if (!el) return;
-    cleanupRef.current = attachTap(el, () => onTapRef.current(), { scrollSafe, rapid });
-  }, [scrollSafe, rapid]);
+    cleanupRef.current = attachTap(el, () => onTapRef.current(), { scrollSafe, rapid, stopPropagation });
+  }, [scrollSafe, rapid, stopPropagation]);
 }
 
 function attachTap(
   el: HTMLElement,
   onTap: () => void,
-  mode: { scrollSafe: boolean; rapid: boolean },
+  mode: { scrollSafe: boolean; rapid: boolean; stopPropagation: boolean },
 ): () => void {
   if (mode.scrollSafe) return attachScrollSafe(el, onTap);
   if (mode.rapid) return attachRapid(el, onTap);
-  return attachClick(el, onTap);
+  return attachClick(el, onTap, mode.stopPropagation);
 }
 
-function attachClick(el: HTMLElement, onTap: () => void): () => void {
-  const handler = () => onTap();
+function attachClick(el: HTMLElement, onTap: () => void, stopPropagation: boolean): () => void {
+  const handler = (e: MouseEvent) => {
+    if (stopPropagation) e.stopPropagation();
+    onTap();
+  };
   el.addEventListener('click', handler);
   return () => el.removeEventListener('click', handler);
 }

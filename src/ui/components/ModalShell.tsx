@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { TapButton } from './TapButton';
 import { Text } from './Text';
@@ -68,20 +68,33 @@ export function ModalShell({
   const scale = useResponsiveScale();
   const hasTabs = !!tabs && tabs.length > 0;
   const mountedAtRef = useRef(performance.now());
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  const handleBackdropClick = () => {
-    if (performance.now() - mountedAtRef.current < BACKDROP_CLICK_LOCK_MS) return;
-    onClose();
-  };
+  // 배경 탭 → 닫기. native click 리스너 + target 체크로 카드 내부 탭이 새는 걸 차단.
+  // React onClick 대신 native 를 쓰는 이유는 Galaxy WebView 의 합성 이벤트 중복 발사 회피.
+  useEffect(() => {
+    const el = backdropRef.current;
+    if (!el) return;
+    const handler = (e: MouseEvent) => {
+      if (e.target !== el) return; // 카드 내부 탭 무시
+      if (performance.now() - mountedAtRef.current < BACKDROP_CLICK_LOCK_MS) return;
+      onCloseRef.current();
+    };
+    el.addEventListener('click', handler);
+    return () => el.removeEventListener('click', handler);
+  }, []);
 
   return (
     <div
+      ref={backdropRef}
       className={`${styles.overlay} ${styles.fadeIn}`}
       style={{
         pointerEvents: 'auto',
+        cursor: 'pointer',
         ...(zIndex !== undefined && { zIndex }),
       }}
-      onClick={handleBackdropClick}
     >
       <div className={styles.dim} />
 
@@ -95,7 +108,6 @@ export function ModalShell({
         padding: `0 ${20 * scale}px`,
       }}>
         <div
-          onClick={(e) => e.stopPropagation()}
           style={{
             background: '#2a292e',
             borderRadius: 20 * scale,
@@ -105,6 +117,7 @@ export function ModalShell({
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            cursor: 'default',
           }}
         >
           {/* 본문 영역 */}

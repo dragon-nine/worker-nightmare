@@ -37,6 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
             {this.state.error?.message}
           </div>
           <button
+            // eslint-disable-next-line no-restricted-syntax -- ErrorBoundary 는 앱이 이미 깨진 상태 복구용, 일반 런타임 아님
             onClick={() => window.location.reload()}
             style={{
               padding: '12px 32px', borderRadius: 12,

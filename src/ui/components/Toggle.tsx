@@ -1,3 +1,5 @@
+import { TapDiv } from './TapDiv';
+
 interface Props {
   on: boolean;
   onToggle: () => void;
@@ -9,18 +11,17 @@ export function Toggle({ on, onToggle, scale }: Props) {
   const h = 30 * scale;
   const knob = h - 4 * scale;
   return (
-    <div
-      onClick={(e) => { e.stopPropagation(); onToggle(); }}
+    <TapDiv
+      onTap={onToggle}
+      stopPropagation
       style={{
         width: w,
         height: h,
         borderRadius: h / 2,
         background: on ? '#4ade80' : '#434750',
         position: 'relative',
-        cursor: 'pointer',
         transition: 'background 0.2s',
         flexShrink: 0,
-        touchAction: 'manipulation',
       }}
     >
       <div style={{
@@ -33,6 +34,6 @@ export function Toggle({ on, onToggle, scale }: Props) {
         left: on ? w - knob - 2 * scale : 2 * scale,
         transition: 'left 0.2s, background 0.2s',
       }} />
-    </div>
+    </TapDiv>
   );
 }

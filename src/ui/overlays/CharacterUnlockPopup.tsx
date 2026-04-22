@@ -72,6 +72,7 @@ export function CharacterUnlockPopup() {
           boxShadow: `0 ${12 * scale}px ${36 * scale}px rgba(0,0,0,0.45), 0 0 ${32 * scale}px rgba(255,214,92,0.28)`,
           overflow: 'hidden',
         }}
+        // eslint-disable-next-line no-restricted-syntax -- stopPropagation 만 수행, 탭 액션 없음
         onClick={(e) => e.stopPropagation()}
       >
         <BurstDeco scale={scale} />
