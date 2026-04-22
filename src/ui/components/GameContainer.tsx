@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { createGameConfig } from '../../game/config';
 import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
 import { adService } from '../../game/services/ad-service';
-import { logScreen } from '../../game/services/analytics';
+import { logEvent, logScreen, getCurrentScreenName } from '../../game/services/analytics';
 import { isGoogle, isTossNative } from '../../game/platform';
 // billing/leaderboard 는 다른 컴포넌트에서도 정적으로 import 됨 → 동적 import는
 // 코드 스플릿 효과가 없으므로 정적 import로 통일 (Vite 경고 해소).
@@ -94,6 +94,41 @@ export function GameContainer() {
     const unsub4 = gameBus.on('show-ad-remove', () => setShowAdRemove(true));
     const unsub5 = gameBus.on('revive-fail', (reason) => setReviveFailReason(reason));
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
+  }, []);
+
+  // 앱 라이프사이클 이벤트 — 이탈 분석용
+  //   app_start: 앱 마운트 (인증 완료 후 한 박자 지연해서 보냄 — 토큰 없으면 서버 기록 유실됨)
+  //   app_background / app_foreground: 화면 포커스 변화. last_screen 을 payload 로 남겨서
+  //   "유저가 어디서 백그라운드로 빠졌는지"를 쿼리로 복원 가능.
+  useEffect(() => {
+    const startedAt = Date.now();
+    // 인증 경쟁조건 회피: 짧은 지연 후 app_start (평균적으로 main 진입 전에 토큰 셋업됨)
+    const startId = window.setTimeout(() => {
+      logEvent('app_start');
+    }, 1200);
+
+    let lastHiddenAt: number | null = null;
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        lastHiddenAt = Date.now();
+        logEvent('app_background', {
+          last_screen: getCurrentScreenName() ?? 'unknown',
+          session_ms: lastHiddenAt - startedAt,
+        });
+      } else if (document.visibilityState === 'visible') {
+        const awayMs = lastHiddenAt ? Date.now() - lastHiddenAt : 0;
+        lastHiddenAt = null;
+        logEvent('app_foreground', {
+          last_screen: getCurrentScreenName() ?? 'unknown',
+          away_ms: awayMs,
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.clearTimeout(startId);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, []);
 
   return (
