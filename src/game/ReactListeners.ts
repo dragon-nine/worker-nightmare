@@ -1,5 +1,4 @@
 import { logEvent, logClick } from './services/analytics';
-import { syncCurrenciesFromStorage } from './services/assets';
 import { adService } from './services/ad-service';
 import { isAdRemoved } from './services/billing';
 import { gameBus } from './event-bus';
@@ -9,8 +8,6 @@ import { resetGameMode } from './services/game-mode';
 import { HUD } from './HUD';
 import { isToss, isTossNative } from './platform';
 import { revive as doRevive, type LifecycleDeps } from './GameLifecycle';
-
-const REVIVE_GEM_COST = 2;
 
 export interface ReactListenerDeps {
   scene: Phaser.Scene;
@@ -122,20 +119,6 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     storage.toggleBool('godMode');
   });
 
-  // 보석으로 부활 (광고 X)
-  const unsubReviveGem = gameBus.on('revive-with-gems', () => {
-    const gems = storage.getNum('gems');
-    if (gems < REVIVE_GEM_COST) {
-      gameBus.emit('toast', `보석 ${REVIVE_GEM_COST}개가 필요해요`);
-      return;
-    }
-    storage.addNum('gems', -REVIVE_GEM_COST);
-    void syncCurrenciesFromStorage();
-    logEvent('revive_gem', { score: deps.getScore(), cost: REVIVE_GEM_COST });
-    gameBus.emit('screen-change', 'playing');
-    doRevive(deps.getLifecycleDeps());
-  });
-
   deps.scene.events.on('shutdown', () => {
     // 진행 중인 광고가 있으면 결과 무시 (씬이 사라진 뒤 콜백 발생 방지)
     adService.cancel();
@@ -147,7 +130,6 @@ export function setupReactListeners(deps: ReactListenerDeps) {
     unsubPause();
     unsubPlaySfx();
     unsubGodMode();
-    unsubReviveGem();
   });
 }
 
