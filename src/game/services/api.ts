@@ -12,6 +12,12 @@ const API_BASE =
   'https://dragon-nine-api.dragonnine.workers.dev';
 const GAME_ID = 'game01';
 
+// 로컬 개발/디버그 빌드에서 항상 동일한 테스터로 접속한다.
+// Toss 유저키 링크도 스킵해서 실제 Toss 계정과 섞이지 않도록.
+const DEBUG = import.meta.env.DEV || import.meta.env.VITE_DEBUG === 'true';
+// 서버가 device_id 최소 8자 검증 — 'test'만으론 400.
+const DEBUG_DEVICE_ID = 'test-dev';
+
 const KEYS = {
   deviceId: 'api.deviceId',
   token: 'api.token',
@@ -76,6 +82,7 @@ function generateUuid(): string {
 }
 
 function getOrCreateDeviceId(): string {
+  if (DEBUG) return DEBUG_DEVICE_ID;
   let id = localStorage.getItem(KEYS.deviceId);
   if (!id) {
     id = generateUuid();
@@ -142,6 +149,7 @@ import { isTossNative } from '../platform';
  * 게임 카테고리 미니앱에서만 사용 가능.
  */
 async function getTossUserId(): Promise<string | null> {
+  if (DEBUG) return null;
   if (!isTossNative()) return null;
   try {
     const { getUserKeyForGame } = await import('@apps-in-toss/web-framework');

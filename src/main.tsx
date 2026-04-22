@@ -9,8 +9,12 @@ import { migrateLocalAssetsToServerOnce } from './game/services/assets';
 import './index.css';
 
 // 백그라운드에서 익명 인증 + 프로필 동기 (UI 블록 X)
+// DEBUG 빌드에서는 device_id 가 고정 테스터라서, 저장된 토큰이 다른 유저의 것일 수
+// 있다. 부팅 시 강제 재인증으로 항상 테스터 세션을 보장.
+const DEBUG = import.meta.env.DEV || import.meta.env.VITE_DEBUG === 'true';
 const localOwned = storage.getOwnedCharacters();
 ensureAuth({
+  force: DEBUG,
   character: storage.getSelectedCharacter(),
   ownedCharacters: localOwned,
 })
@@ -28,23 +32,29 @@ ensureAuth({
     }
     // 신규 유저 플래그 — 튜토리얼/환영 트리거가 소비 후 clear
     if (isNewUser) localStorage.setItem('app.isNewUser', '1');
-    // 보유 캐릭터: 서버 ∪ 로컬 → 로컬 반영 + (둘이 다르면) 서버로 push
     const serverOwned = parseOwnedCharacters(profile);
-    const union = Array.from(new Set([...serverOwned, ...localOwned]));
-    storage.setOwnedCharacters(union);
-    // 서버에 부족한 데이터 일괄 push (owned + best_score 마이그레이션)
-    const needOwnedPush = union.length > serverOwned.length;
-    const localBest = storage.getBestScore();
-    const needBestPush = localBest > 0 && localBest > profile.best_score;
-    if (needOwnedPush || needBestPush) {
-      import('./game/services/api').then(({ updateMyProfile }) => {
-        const patch: Record<string, unknown> = {};
-        if (needOwnedPush) patch.owned_characters = union;
-        if (needBestPush) patch.best_score = localBest;
-        updateMyProfile(patch).catch((e) =>
-          console.warn('[api] profile sync failed:', e),
-        );
-      });
+    if (DEBUG) {
+      // 디버그: 서버가 단일 진실 원천. 로컬을 서버 값으로 덮어쓰고 push 는 생략.
+      storage.setOwnedCharacters(serverOwned);
+      if (profile.character) storage.setSelectedCharacter(profile.character);
+      storage.setBestScore(profile.best_score);
+    } else {
+      // 보유 캐릭터: 서버 ∪ 로컬 → 로컬 반영 + (둘이 다르면) 서버로 push
+      const union = Array.from(new Set([...serverOwned, ...localOwned]));
+      storage.setOwnedCharacters(union);
+      const needOwnedPush = union.length > serverOwned.length;
+      const localBest = storage.getBestScore();
+      const needBestPush = localBest > 0 && localBest > profile.best_score;
+      if (needOwnedPush || needBestPush) {
+        import('./game/services/api').then(({ updateMyProfile }) => {
+          const patch: Record<string, unknown> = {};
+          if (needOwnedPush) patch.owned_characters = union;
+          if (needBestPush) patch.best_score = localBest;
+          updateMyProfile(patch).catch((e) =>
+            console.warn('[api] profile sync failed:', e),
+          );
+        });
+      }
     }
     // UI 에 프로필 동기 완료 알림 (닉네임 등 다시 읽도록)
     gameBus.emit('profile-synced', undefined);
