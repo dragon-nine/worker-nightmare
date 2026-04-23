@@ -17,7 +17,7 @@ export const TUTORIAL_MESSAGES: Partial<Record<TutorialStep, string>> = {
   'turn-info':         '길이 꺾이는 곳에선\n방향을 바꿀 수 있어요',
   'prompt-switch':     '그럼 방향전환 버튼을\n한 번 눌러볼까요?',
   'after-switch':      '방향을 바꿈과 동시에\n한 칸씩 전진하게 되요!',
-  'free-play':         '잘했어요! 이번엔\n혼자서 3칸 전진해 볼까요?',
+  'free-play':         '잘했어요! 이번엔\n혼자서 3칸 이동해 볼까요?',
   'free-play-fail':    '길을 벗어나면 실패해요!\n다시 한 번 해볼까요?',
   'all-learned':       '잘했어요! 이제\n지켜야 할 룰을 알려줄게요',
   'gauge-intro':       '퇴근할 수 있는\n시간이 정해져있어요',
