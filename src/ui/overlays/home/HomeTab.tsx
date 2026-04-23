@@ -346,8 +346,7 @@ export function HomeTab({ scale }: Props) {
             />
           )}
         />
-        {/* TEMP: 토스 프로모션 테스트 호출을 위해 프로덕션에도 임시 노출. 테스트 완료 후 import.meta.env.DEV 조건으로 복구 */}
-        {(
+        {import.meta.env.DEV && (
           <FloatingMenuButton
             icon={
               <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
