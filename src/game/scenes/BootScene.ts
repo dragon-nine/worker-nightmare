@@ -38,8 +38,10 @@ export class BootScene extends Phaser.Scene {
       unsubStart();
     });
 
-    // React에서 메인 화면 렌더링 → 'main' 스크린 표시 (리스너 등록 후)
-    gameBus.emit('screen-change', 'main');
+    // 첫 진입 유저(튜토리얼 미완)는 홈 스킵하고 바로 스토리 화면 (탭하면 튜토리얼 시작).
+    // 재진입 유저는 기존대로 메인 홈.
+    const initialScreen = storage.getBool('tutorialDone') ? 'main' : 'story';
+    gameBus.emit('screen-change', initialScreen);
 
     const unsubPlaySfx = gameBus.on('play-sfx', (key) => {
       if (key && !storage.getBool('sfxMuted')) {

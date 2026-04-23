@@ -43,11 +43,55 @@ export class Road {
     return this.container;
   }
 
+  /** 튜토리얼 transition-road 중 DOM 미러 렌더용 타일 정보 */
+  getMirrorTiles() {
+    const out: Array<{ x: number; y: number; w: number; h: number; texKey: string }> = [];
+    for (const row of this.rows) {
+      for (const tile of row.tiles) {
+        out.push({
+          x: this.container.x + tile.x,
+          y: this.container.y + tile.y,
+          w: tile.displayWidth,
+          h: tile.displayHeight,
+          texKey: tile.texture.key,
+        });
+      }
+    }
+    return out;
+  }
+
+  /** 튜토리얼 중 Phaser 도로 숨김 (DOM 미러가 대체 렌더) */
+  setVisibleForTutorial(visible: boolean) {
+    this.container.setAlpha(visible ? 1 : 0);
+  }
+
   generateInitial(height: number, startLane: number, startY?: number) {
     this.startY = startY ?? height - 200;
     this.straightRemaining = 1;
     this.addRow(startLane, this.startY);
 
+    for (let i = 0; i < 25; i++) {
+      this.addNextRow();
+    }
+  }
+
+  /**
+   * 튜토리얼 전용 초기 도로:
+   * - row 0: 시작 타일 (lane 0)
+   * - row 1: TR 턴 (lane 0→1) — 첫 전진 후 방향전환 연습 가능
+   * - row 2+: 랜덤
+   */
+  generateTutorialInitial(height: number, startY?: number) {
+    this.startY = startY ?? height - 200;
+
+    const startTile = this.createTile(this.laneWorldX[0], this.startY, 'tile-road-start');
+    this.container.add(startTile);
+    this.rows.push({ type: 0 as RoadType, y: this.startY, isTurn: false, tiles: [startTile] });
+
+    // row 1: TR 턴 — 첫 전진 착지 지점
+    this.addRow(1 as RoadType, this.startY - this.tileH);
+
+    this.straightRemaining = 0;
     for (let i = 0; i < 25; i++) {
       this.addNextRow();
     }

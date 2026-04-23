@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { gameBus, type BattleHudData } from '../../game/event-bus';
+import { gameBus, type BattleHudData, type TutorialStep } from '../../game/event-bus';
 import { hudState } from '../../game/hud-state';
 import { isBattleMode } from '../../game/services/game-mode';
 import { storage } from '../../game/services/storage';
 import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
 import { Text } from '../components/Text';
+import { TutorialOverlay } from './TutorialOverlay';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -26,8 +27,7 @@ export function GameplayHUD() {
   const coinsRef = useRef<HTMLSpanElement>(null);
   const gaugeFillRef = useRef<HTMLDivElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
-  const [showIntro, setShowIntro] = useState(!tutorialDone);
-  const [guideHint, setGuideHint] = useState<'forward' | 'switch' | null>(tutorialDone ? null : 'forward');
+  const [tutorialStep, setTutorialStep] = useState<TutorialStep>(tutorialDone ? 'done' : 'intro');
   const [battleHud, setBattleHud] = useState<BattleHudData | null>(null);
   const [battleCountdown, setBattleCountdown] = useState<number | null>(null);
 
@@ -45,13 +45,10 @@ export function GameplayHUD() {
       const bottomPct = Math.max(0, fillPct - slantPct);
       el.style.clipPath = `polygon(0% 0%, ${fillPct}% 0%, ${bottomPct}% 100%, 0% 100%)`;
     });
-    // 가이드 힌트 — 튜토리얼 중에만 구독. 완료 상태에선 리스너도 안 건다 (성능).
+    // 튜토리얼 스텝 — 튜토리얼 중에만 구독 (완료 상태에선 리스너 생략)
     const unsub3 = tutorialDone
       ? () => {}
-      : gameBus.on('guide-hint', (hint) => {
-          setGuideHint(hint);
-          if (showIntro) setShowIntro(false);
-        });
+      : gameBus.on('tutorial-step', setTutorialStep);
     // 코인 — DOM 직접 조작
     const unsub4 = gameBus.on('coin-update', (c) => {
       if (coinsRef.current) coinsRef.current.textContent = String(c);
@@ -66,7 +63,7 @@ export function GameplayHUD() {
     if (scoreRef.current) scoreRef.current.textContent = String(hudState.getScore());
     if (coinsRef.current) coinsRef.current.textContent = String(hudState.getCoins());
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); };
-  }, [showIntro, tutorialDone]);
+  }, [tutorialDone]);
 
   const handleSwitch = useCallback(() => {
     gameBus.emit('action-switch', undefined);
@@ -110,8 +107,23 @@ export function GameplayHUD() {
   return (
     <div className={styles.overlay} style={{ pointerEvents: 'none' }}>
       {/* 게이지바 */}
-      {gaugePos && (
-        <div style={boxStyle('gauge-bar')}>
+      {gaugePos && (() => {
+        const gaugeHighlight =
+          tutorialStep === 'gauge-intro' ||
+          tutorialStep === 'timeout-warning' ||
+          tutorialStep === 'timeout-reassure' ||
+          tutorialStep === 'recovery-intro' ||
+          tutorialStep === 'speed-tip';
+        return (
+        <div
+          style={{
+            ...boxStyle('gauge-bar'),
+            // transition-road 중: DOM 미러(z-index 121) 위로 올림. gauge-intro 류: 딤 위로. 그 외: 기본.
+            ...(tutorialStep === 'transition-road' ? { zIndex: 125 } :
+                gaugeHighlight ? { zIndex: 121 } : {}),
+          }}
+          className={gaugeHighlight ? styles.tutorialGlow : undefined}
+        >
           {/* 빈 게이지 배경 */}
           <img
             src={`${BASE}ui/gauge-empty.png`}
@@ -150,12 +162,17 @@ export function GameplayHUD() {
             })()}
           </div>
         </div>
-      )}
+        );
+      })()}
 
-      {/* 일시정지 버튼 */}
+      {/* 일시정지 버튼 — transition-road 중엔 미러 위로 올림 */}
       <TapButton
         onTap={handlePause}
-        style={{ ...boxStyle('btn-pause'), pointerEvents: 'auto' }}
+        style={{
+          ...boxStyle('btn-pause'),
+          pointerEvents: 'auto',
+          ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
+        }}
       >
         <img
           src={`${BASE}ui/btn-pause.png`}
@@ -186,6 +203,7 @@ export function GameplayHUD() {
               gap: 6 * scale,
               whiteSpace: 'nowrap',
               pointerEvents: 'none',
+              ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
             }}
           >
             <img
@@ -233,17 +251,24 @@ export function GameplayHUD() {
             justifyContent: 'center',
             WebkitTextStroke: `${scoreStrokeW}px ${scoreStrokeColor}`,
             paintOrder: 'stroke fill',
+            ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
           }}
         >
           {hudState.getScore()}
         </Text>
       )}
 
-      {/* 튜토리얼 중엔 힌트 반대 버튼을 비활성화 — 잘못 눌러 크래시 나는 경로를 물리적으로 차단.
-          tutorialDone 이후엔 항상 활성. */}
+      {/* 튜토리얼 스텝에 따라 버튼 활성/비활성 — prompt-forward 에선 switch 잠금 등 */}
       {(() => {
-        const switchDisabled = !tutorialDone && guideHint === 'forward';
-        const forwardDisabled = !tutorialDone && guideHint === 'switch';
+        const isDone = tutorialStep === 'done';
+        // 활성 스텝: done / prompt-forward(=forward) / prompt-switch(=switch) / free-play(=둘다)
+        const switchEnabled  = isDone || tutorialStep === 'prompt-switch' || tutorialStep === 'free-play';
+        const forwardEnabled = isDone || tutorialStep === 'prompt-forward' || tutorialStep === 'free-play';
+        const switchDisabled  = !switchEnabled;
+        const forwardDisabled = !forwardEnabled;
+        // 하이라이트: prompt-* 스텝만 (free-play 는 힌트 없음)
+        const switchHighlight  = tutorialStep === 'prompt-switch';
+        const forwardHighlight = tutorialStep === 'prompt-forward';
         const dimStyle = (disabled: boolean): React.CSSProperties => ({
           pointerEvents: disabled ? 'none' : 'auto',
           opacity: disabled ? 0.65 : 1,
@@ -256,11 +281,16 @@ export function GameplayHUD() {
               onTap={handleSwitch}
               pressScale={0.85}
               rapid
-              style={{ ...boxStyle('btn-switch'), ...dimStyle(switchDisabled) }}
+              style={{
+                ...boxStyle('btn-switch'),
+                ...dimStyle(switchDisabled),
+                ...(switchHighlight ? { zIndex: 121 } : {}),
+              }}
             >
               <img
                 src={`${BASE}ui/btn-switch.png`}
                 alt="전환"
+                className={switchHighlight ? styles.tutorialGlow : undefined}
                 style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
                 draggable={false}
               />
@@ -271,11 +301,16 @@ export function GameplayHUD() {
               onTap={handleForward}
               pressScale={0.85}
               rapid
-              style={{ ...boxStyle('btn-forward'), ...dimStyle(forwardDisabled) }}
+              style={{
+                ...boxStyle('btn-forward'),
+                ...dimStyle(forwardDisabled),
+                ...(forwardHighlight ? { zIndex: 121 } : {}),
+              }}
             >
               <img
                 src={`${BASE}ui/btn-forward.png`}
                 alt="전진"
+                className={forwardHighlight ? styles.tutorialGlow : undefined}
                 style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', pointerEvents: 'none' }}
                 draggable={false}
               />
@@ -309,128 +344,8 @@ export function GameplayHUD() {
           </Text>
         </div>
       )}
-      {/* 튜토리얼 애니메이션 스타일 */}
-      {(!tutorialDone && !battleMode) && (
-        <style>{`
-          @keyframes guideGlow {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-          }
-          @keyframes guideFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-        `}</style>
-      )}
-      {/* 튜토리얼 인트로 — 화면 중앙 텍스트 */}
-      {showIntro && !battleMode && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          animation: 'guideFadeIn 0.5s ease-out',
-        }}>
-          <Text
-            size={28 * scale}
-            weight={900}
-            align="center"
-            lineHeight={1.5}
-            as="span"
-            style={{
-              textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
-              WebkitTextStroke: `${2 * scale}px #000`,
-              paintOrder: 'stroke fill',
-            }}
-          >
-            제한 시간 동안<br />최대한 전진!
-          </Text>
-        </div>
-      )}
-      {/* 튜토리얼 가이드 — 눌러야 할 버튼만 표시 */}
-      {guideHint && !battleMode && (
-        <>
-          {guideHint === 'forward' && pos('btn-forward') && (() => {
-            const p = pos('btn-forward')!;
-            const left = p.x - p.displayWidth * p.originX;
-            const top = p.y - p.displayHeight * p.originY;
-            return (
-              <>
-                <div style={{
-                  position: 'absolute',
-                  left: left + p.displayWidth * 0.075,
-                  top: top + p.displayHeight * 0.075,
-                  width: p.displayWidth * 0.85,
-                  height: p.displayHeight * 0.85,
-                  borderRadius: '50%',
-                  border: `${2 * scale}px solid #00e5ff`,
-                  boxShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
-                  animation: 'guideGlow 1.2s ease-in-out infinite, guideFadeIn 0.5s ease-out',
-                }} />
-                <div style={{
-                  position: 'absolute', left, top: top - 40 * scale, width: p.displayWidth,
-                  textAlign: 'center', animation: 'guideFadeIn 0.5s ease-out',
-                }}>
-                  <Text
-                    size={26 * scale}
-                    weight={900}
-                    as="span"
-                    style={{
-                      textShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff60',
-                      WebkitTextStroke: `${2 * scale}px #000`,
-                      paintOrder: 'stroke fill',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    앞으로 쭉!
-                  </Text>
-                </div>
-              </>
-            );
-          })()}
-
-          {guideHint === 'switch' && pos('btn-switch') && (() => {
-            const p = pos('btn-switch')!;
-            const left = p.x - p.displayWidth * p.originX;
-            const top = p.y - p.displayHeight * p.originY;
-            return (
-              <>
-                <div style={{
-                  position: 'absolute',
-                  left: left + p.displayWidth * 0.075,
-                  top: top + p.displayHeight * 0.075,
-                  width: p.displayWidth * 0.85,
-                  height: p.displayHeight * 0.85,
-                  borderRadius: '50%',
-                  border: `${2 * scale}px solid #ff3b3b`,
-                  boxShadow: '0 0 10px #ff3b3b, 0 0 20px #ff3b3b60',
-                  animation: 'guideGlow 1.2s ease-in-out infinite, guideFadeIn 0.5s ease-out',
-                }} />
-                <div style={{
-                  position: 'absolute', left, top: top - 40 * scale, width: p.displayWidth,
-                  textAlign: 'center', animation: 'guideFadeIn 0.5s ease-out',
-                }}>
-                  <Text
-                    size={26 * scale}
-                    weight={900}
-                    as="span"
-                    style={{
-                      textShadow: '0 0 10px #ff3b3b, 0 0 20px #ff3b3b60',
-                      WebkitTextStroke: `${2 * scale}px #000`,
-                      paintOrder: 'stroke fill',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    이쪽으로 꺾!
-                  </Text>
-                </div>
-              </>
-            );
-          })()}
-        </>
-      )}
+      {/* 튜토리얼 오버레이 — 스텝별 다이얼로그/딤/하이라이트 */}
+      {!battleMode && <TutorialOverlay />}
     </div>
   );
 }

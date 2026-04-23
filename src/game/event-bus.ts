@@ -47,6 +47,30 @@ export interface BattleHudData {
   opponentScore: number;
 }
 
+/** 튜토리얼 진행 상태 — 스크립트 시퀀스 */
+export type TutorialStep =
+  | 'intro'            // 1. 인사
+  | 'path-intro'       // 2. 길 따라 앞으로만
+  | 'path-rule'        // 3. 벗어나거나 뒤로 가면 실패
+  | 'try-it'           // 4. 직접 배워보자
+  | 'prompt-forward'   // 5. 앞으로 눌러봐 (입력 대기)
+  | 'after-forward'    // 6. 앞으로 = 한 칸 올라감
+  | 'turn-info'        // 7. 꺾이는 곳에서 방향전환
+  | 'prompt-switch'    // 8. 방향전환 눌러봐 (입력 대기)
+  | 'after-switch'     // 9. 방향전환 = 바꾸며 한 칸
+  | 'free-play'        // 10. 혼자서 3칸 (입력 대기, 힌트/딤 없음)
+  | 'free-play-fail'   // 11. 실패 → 롤백 후 재시도 (탭)
+  | 'all-learned'      // 12. 동작 다 배움 → 룰 설명
+  | 'gauge-intro'      // 13. 시간 제한 (게이지 강조)
+  | 'timeout-warning'  // 14. 시간 다 되면 실패
+  | 'timeout-reassure' // 15. 걱정 마세요
+  | 'recovery-intro'   // 16. 한 칸마다 시간 회복
+  | 'speed-tip'        // 17. 빠르게 = 시간 확보
+  | 'finale'           // 18. 본격 시작
+  | 'transition'       // 토끼 이동 연출
+  | 'transition-road'  // 길 강조 연출 (intro → path-intro)
+  | 'done';            // 튜토리얼 종료
+
 export interface GameOverData {
   score: number;
   bestScore: number;
@@ -78,8 +102,16 @@ type EventMap = {
   'action-pause': void;
   // Challenge modal
   'show-challenge': number; // score
-  // Guide hint: which button to press next ('forward' | 'switch' | null)
-  'guide-hint': 'forward' | 'switch' | null;
+  // Tutorial: 현재 스텝 (Phaser → React)
+  'tutorial-step': TutorialStep;
+  // Tutorial: 다이얼로그 탭해서 다음으로 (React → Phaser)
+  'tutorial-advance': void;
+  // Tutorial transition 중: 토끼 미러 정보 (DOM 오버레이에 CSS 글로우 적용)
+  'rabbit-mirror': { x: number; y: number; texKey: string; flipX: boolean; size: number } | null;
+  // Tutorial transition-road 중: 도로 타일 전체 미러
+  'road-mirror': Array<{ x: number; y: number; w: number; h: number; texKey: string }> | null;
+  // Tutorial free-play 카운터 업데이트
+  'free-play-count': { current: number; target: number };
   // Modals
   'show-ad-remove': void;
   // 부활 광고 실패/스킵 알림 → ReviveFailModal 표시
