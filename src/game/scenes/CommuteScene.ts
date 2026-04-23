@@ -8,7 +8,7 @@ import { Player } from '../Player';
 import { HUD } from '../HUD';
 import { logEvent } from '../services/analytics';
 import { adService } from '../services/ad-service';
-import { gameBus } from '../event-bus';
+import { gameBus, type TutorialStep } from '../event-bus';
 import { hudState } from '../hud-state';
 import { storage } from '../services/storage';
 import { getBattleHudSnapshot } from '../services/battle-state';
@@ -18,7 +18,6 @@ import {
   switchLane as doSwitchLane,
   moveForward as doMoveForward,
   laneScreenX,
-  emitGuideHint,
   type MovementDeps,
 } from '../MovementController';
 import {
@@ -38,6 +37,23 @@ export class CommuteScene extends Phaser.Scene {
   private gameOver = false;
   private get godMode() { return storage.getBool('godMode'); }
   private guideCount = 0;
+  /** 튜토리얼 스텝 — 'done' 이면 정상 게임, 그 외 = 튜토리얼 진행 중 */
+  private tutorialStep: TutorialStep = 'done';
+  private unsubTutorialAdvance: (() => void) | null = null;
+  /** free-play 시작 시점 스냅샷 — 실패 시 롤백용 */
+  private freePlayStart: {
+    rowIdx: number;
+    playerLane: number;
+    playerX: number;
+    playerY: number;
+    viewLeft: number;
+    containerX: number;
+    containerY: number;
+    justSwitched: boolean;
+  } | null = null;
+  private freePlaySuccessCount = 0;
+  /** free-play 목표 성공 횟수 */
+  private readonly FREE_PLAY_TARGET = 3;
   private lastBattleEmitAt = 0;
   private inputLocked = false;
   private isFalling = false;
@@ -91,7 +107,13 @@ export class CommuteScene extends Phaser.Scene {
 
     this.road = new Road(this, this.laneWorldX, this.laneW, this.tileH, NUM_LANES);
     const playerScreenY = height * PLAYER_Y_RATIO - this.tileH / 2;
-    this.road.generateInitialStand(height, startLane, height * PLAYER_Y_RATIO);
+    const tutorialDoneAtInit = storage.getBool('tutorialDone');
+    if (!tutorialDoneAtInit && !isBattleMode()) {
+      // 튜토리얼용 도로: row 1 즉시 턴 → 방향전환 연습 가능
+      this.road.generateTutorialInitial(height, height * PLAYER_Y_RATIO);
+    } else {
+      this.road.generateInitialStand(height, startLane, height * PLAYER_Y_RATIO);
+    }
 
     this.currentRowIdx = 0;
     this.road.getContainer().setX(-(this.viewLeft * this.laneW));
@@ -125,6 +147,18 @@ export class CommuteScene extends Phaser.Scene {
     this.emitBattleHud();
     if (isBattleMode()) this.startGame();
 
+    // 튜토리얼 시작 — startGame 전에 독립적으로 구동
+    if (!tutorialDoneAtInit && !isBattleMode()) {
+      this.tutorialStep = 'intro';
+      this.unsubTutorialAdvance = gameBus.on('tutorial-advance', () => this.onTutorialAdvance());
+      this.events.once('shutdown', () => {
+        this.unsubTutorialAdvance?.();
+        this.unsubTutorialAdvance = null;
+      });
+      this.time.delayedCall(400, () => gameBus.emit('tutorial-step', 'intro'));
+      logEvent('tutorial_start');
+    }
+
     adService.preload('revive');
     // 코인 광고는 게임오버 "코인 2배" 버튼에서 사용 — 게임플레이 동안 미리 로드
     adService.preload('coin');
@@ -137,6 +171,10 @@ export class CommuteScene extends Phaser.Scene {
         this.lastBattleEmitAt = _time;
         this.emitBattleHud();
       }
+      // 튜토리얼 transition 중: DOM 미러에 매 프레임 위치 전송
+      if (this.tutorialStep === 'transition') {
+        gameBus.emit('rabbit-mirror', this.player.getMirrorInfo());
+      }
     }
   }
 
@@ -145,13 +183,11 @@ export class CommuteScene extends Phaser.Scene {
   private startGame() {
     if (this.gameStarted) return;
     this.gameStarted = true;
-
-    // BGM 은 AudioDirector 가 screen-change 에 맞춰 처리 — scene 레벨에서 touch 안 함
-    logEvent('game_start');
-    storage.recordPlayStart();
     this.guideCount = 0;
 
     if (isBattleMode()) {
+      logEvent('game_start');
+      storage.recordPlayStart();
       this.inputLocked = true;
       this.time.delayedCall(80, () => gameBus.emit('battle-countdown', 3));
       this.time.delayedCall(1080, () => gameBus.emit('battle-countdown', 2));
@@ -164,12 +200,160 @@ export class CommuteScene extends Phaser.Scene {
       return;
     }
 
-    const tutorialDone = storage.getBool('tutorialDone');
-    if (tutorialDone) {
+    // 튜토리얼 중이면 game_start/recordPlayStart/startTimer 는 finishTutorial 에서 실행.
+    // 돌아온 유저(tutorialDone)는 지금 바로 실행.
+    if (this.tutorialStep === 'done') {
+      logEvent('game_start');
+      storage.recordPlayStart();
       this.hud.startTimer();
     }
-    // 타이머 미시작 시 첫 moveForward에서 시작됨
-    this.time.delayedCall(100, () => emitGuideHint(this.movementDeps()));
+  }
+
+  /** 튜토리얼 다이얼로그 탭 → 다음 스텝 */
+  private onTutorialAdvance() {
+    const cur = this.tutorialStep;
+    // intro 탭 → 길 강조 연출 후 path-intro
+    if (cur === 'intro') {
+      this.setTutorialStep('transition-road');
+      this.road.setVisibleForTutorial(false);
+      this.player.setVisibleForTutorial(false);
+      gameBus.emit('road-mirror', this.road.getMirrorTiles());
+      gameBus.emit('rabbit-mirror', this.player.getMirrorInfo());
+      this.time.delayedCall(1400, () => {
+        this.road.setVisibleForTutorial(true);
+        this.player.setVisibleForTutorial(true);
+        gameBus.emit('road-mirror', null);
+        gameBus.emit('rabbit-mirror', null);
+        this.setTutorialStep('path-intro');
+      });
+      return;
+    }
+    // after-switch 탭 → free-play 진입. 현재 상태 스냅샷
+    if (cur === 'after-switch') {
+      this.snapshotFreePlay();
+      this.setTutorialStep('free-play');
+      return;
+    }
+    // free-play-fail 탭 → 시작 지점 롤백 후 재시도
+    if (cur === 'free-play-fail') {
+      this.rollbackFreePlay();
+      this.setTutorialStep('free-play');
+      return;
+    }
+    let next: TutorialStep | null = null;
+    if (cur === 'path-intro')             next = 'path-rule';
+    else if (cur === 'path-rule')         next = 'try-it';
+    else if (cur === 'try-it')            next = 'prompt-forward';
+    else if (cur === 'after-forward')     next = 'turn-info';
+    else if (cur === 'turn-info')         next = 'prompt-switch';
+    else if (cur === 'all-learned')       next = 'gauge-intro';
+    else if (cur === 'gauge-intro')       next = 'timeout-warning';
+    else if (cur === 'timeout-warning')   next = 'timeout-reassure';
+    else if (cur === 'timeout-reassure')  next = 'recovery-intro';
+    else if (cur === 'recovery-intro')    next = 'speed-tip';
+    else if (cur === 'speed-tip')         next = 'finale';
+    else if (cur === 'finale')            { this.finishTutorial(); return; }
+    if (next) this.setTutorialStep(next);
+  }
+
+  /** free-play 시작 시점의 상태 저장 (롤백용) */
+  private snapshotFreePlay() {
+    const container = this.road.getContainer();
+    this.freePlayStart = {
+      rowIdx: this.currentRowIdx,
+      playerLane: this.player.currentLane,
+      playerX: this.player.x,
+      playerY: this.player.y,
+      viewLeft: this.viewLeft,
+      containerX: container.x,
+      containerY: container.y,
+      justSwitched: this.justSwitched,
+    };
+    this.freePlaySuccessCount = 0;
+    gameBus.emit('free-play-count', { current: 0, target: this.FREE_PLAY_TARGET });
+  }
+
+  /** free-play 실패 시 시작 지점으로 복원 */
+  private rollbackFreePlay() {
+    const s = this.freePlayStart;
+    if (!s) return;
+    this.currentRowIdx = s.rowIdx;
+    this.viewLeft = s.viewLeft;
+    this.justSwitched = s.justSwitched;
+    this.isFalling = false;
+    const container = this.road.getContainer();
+    this.tweens.killTweensOf(container);
+    container.setPosition(s.containerX, s.containerY);
+    this.player.switchTo(s.playerLane);
+    this.player.setPosition(s.playerX, s.playerY);
+    this.freePlaySuccessCount = 0;
+    gameBus.emit('free-play-count', { current: 0, target: this.FREE_PLAY_TARGET });
+  }
+
+  private setTutorialStep(step: TutorialStep) {
+    this.tutorialStep = step;
+    gameBus.emit('tutorial-step', step);
+  }
+
+  /** 액션 성공 후 (forward/switch) 튜토리얼 진행 */
+  private onTutorialAction(action: 'forward' | 'switch') {
+    const s = this.tutorialStep;
+
+    // free-play: 성공 카운트 → 3회 달성 시 all-learned
+    if (s === 'free-play') {
+      this.freePlaySuccessCount += 1;
+      gameBus.emit('free-play-count', { current: this.freePlaySuccessCount, target: this.FREE_PLAY_TARGET });
+      if (this.freePlaySuccessCount >= this.FREE_PLAY_TARGET) {
+        this.setTutorialStep('all-learned');
+      }
+      return;
+    }
+
+    // prompt-forward / prompt-switch: transition 연출 후 다음 스텝
+    let next: TutorialStep | null = null;
+    if (s === 'prompt-forward' && action === 'forward') next = 'after-forward';
+    else if (s === 'prompt-switch' && action === 'switch') next = 'after-switch';
+    if (!next) return;
+
+    this.setTutorialStep('transition');
+    gameBus.emit('rabbit-mirror', this.player.getMirrorInfo());
+    this.player.setVisibleForTutorial(false);
+    this.time.delayedCall(800, () => {
+      this.player.setVisibleForTutorial(true);
+      gameBus.emit('rabbit-mirror', null);
+      this.setTutorialStep(next);
+    });
+  }
+
+  /** free-play 중 크래시 (전진) — 실제 죽음 대신 애니만 + 실패 모달 */
+  private onFreePlayForwardCrash() {
+    this.isFalling = true;
+    this.playSfx('sfx-crash', 0.7);
+    this.vibrate([30, 40, 60]);
+    this.cameras.main.shake(200, 0.015);
+    this.player.setHurt(true);
+    this.player.animateForwardCrash(() => {
+      this.setTutorialStep('free-play-fail');
+    });
+    logEvent('tutorial_free_play_fail', { type: 'forward', success_count: this.freePlaySuccessCount });
+  }
+
+  /** free-play 중 크래시 (방향전환) — MovementController 가 이미 애니 재생. 실패 모달만 */
+  private onFreePlaySwitchCrash() {
+    // isFalling 은 MovementController switchLane 에서 이미 true
+    this.setTutorialStep('free-play-fail');
+    logEvent('tutorial_free_play_fail', { type: 'switch', success_count: this.freePlaySuccessCount });
+  }
+
+  /** finale 탭 → 본게임 시작: 타이머 ON. 점수/코인은 튜토리얼에서 획득한 그대로 유지.
+   *  tutorial_complete + game_start 를 순서대로 로깅 (펀넬 분석용) */
+  private finishTutorial() {
+    storage.setBool('tutorialDone', true);
+    this.setTutorialStep('done');
+    logEvent('tutorial_complete', { score: this.score, coins: this.coinsEarnedThisGame });
+    logEvent('game_start');
+    storage.recordPlayStart();
+    this.hud.startTimer();
   }
 
   /* ── Popup ── */
@@ -227,8 +411,14 @@ export class CommuteScene extends Phaser.Scene {
       setIsFalling: (v) => { this.isFalling = v; },
       getGuideCount: () => this.guideCount,
       setGuideCount: (c) => { this.guideCount = c; },
-      onCrash: () => onCrash(this.lifecycleDeps()),
-      onForwardCrash: () => onForwardCrash(this.lifecycleDeps()),
+      onCrash: () => {
+        if (this.tutorialStep === 'free-play') { this.onFreePlaySwitchCrash(); return; }
+        onCrash(this.lifecycleDeps());
+      },
+      onForwardCrash: () => {
+        if (this.tutorialStep === 'free-play') { this.onFreePlayForwardCrash(); return; }
+        onForwardCrash(this.lifecycleDeps());
+      },
       playSfx: (key, vol) => this.playSfx(key, vol),
       vibrate: (p) => this.vibrate(p),
       getCoinsEarnedThisGame: () => this.coinsEarnedThisGame,
@@ -237,6 +427,8 @@ export class CommuteScene extends Phaser.Scene {
         hudState.setCoins(this.coinsEarnedThisGame);
         gameBus.emit('coin-update', this.coinsEarnedThisGame);
       },
+      getTutorialStep: () => this.tutorialStep,
+      onTutorialAction: (action) => this.onTutorialAction(action),
     };
   }
 

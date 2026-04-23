@@ -8,6 +8,7 @@ import type { LayoutElement, GroupElement, AnchorElement } from '../../game/layo
 import { DESIGN_W } from '../../game/layout-types';
 import { LayoutText } from './LayoutText';
 import { LayoutButton } from './LayoutButton';
+import { TapDiv } from './TapDiv';
 
 const BASE = import.meta.env.BASE_URL || '/';
 
@@ -167,13 +168,19 @@ export function LayoutRenderer({
           case 'bottom-right': posStyle.right = ox; posStyle.bottom = oy; break;
         }
 
+        const rendered = (
+          <RenderElement el={el} scale={scale} imageMap={imageMap} textOverrides={textOverrides} toggleStates={toggleStates} />
+        );
+        if (onClick) {
+          return (
+            <TapDiv key={el.id} onTap={onClick} stopPropagation style={posStyle}>
+              {rendered}
+            </TapDiv>
+          );
+        }
         return (
-          <div
-            key={el.id}
-            style={{ ...posStyle, cursor: onClick ? 'pointer' : undefined }}
-            onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
-          >
-            <RenderElement el={el} scale={scale} imageMap={imageMap} textOverrides={textOverrides} toggleStates={toggleStates} />
+          <div key={el.id} style={posStyle}>
+            {rendered}
           </div>
         );
       })}
@@ -217,62 +224,69 @@ function ElementNode({
     const ip = el.innerPadding || { top: 16, right: 16, bottom: 16, left: 16 };
     const childRows = groupByOrder(children);
 
-    return (
-      <div
-        style={style}
-        onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
-      >
-        <ContainerWrapper el={el} scale={scale}>
-          <div style={{
-            padding: `${ip.top * scale}px ${ip.right * scale}px ${ip.bottom * scale}px ${ip.left * scale}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}>
-            {childRows.map((row, ri) => (
-              <div
-                key={row.order}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                  gap: (row.nodes[0]?.el as GroupElement).hGapPx !== undefined
-                    ? (row.nodes[0].el as GroupElement).hGapPx! * scale
-                    : 8 * scale,
-                  marginTop: ri > 0 ? row.gapPx * scale : 0,
-                }}
-              >
-                {row.nodes.map((child) => (
-                  <ElementNode
-                    key={child.el.id}
-                    node={child}
-                    scale={scale}
-                    contentW={contentW}
-                    rowElCount={row.nodes.length}
-                    imageMap={imageMap}
-                    textOverrides={textOverrides}
-                    clickHandlers={clickHandlers}
-                    toggleStates={toggleStates}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </ContainerWrapper>
-      </div>
+    const containerBody = (
+      <ContainerWrapper el={el} scale={scale}>
+        <div style={{
+          padding: `${ip.top * scale}px ${ip.right * scale}px ${ip.bottom * scale}px ${ip.left * scale}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          {childRows.map((row, ri) => (
+            <div
+              key={row.order}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                gap: (row.nodes[0]?.el as GroupElement).hGapPx !== undefined
+                  ? (row.nodes[0].el as GroupElement).hGapPx! * scale
+                  : 8 * scale,
+                marginTop: ri > 0 ? row.gapPx * scale : 0,
+              }}
+            >
+              {row.nodes.map((child) => (
+                <ElementNode
+                  key={child.el.id}
+                  node={child}
+                  scale={scale}
+                  contentW={contentW}
+                  rowElCount={row.nodes.length}
+                  imageMap={imageMap}
+                  textOverrides={textOverrides}
+                  clickHandlers={clickHandlers}
+                  toggleStates={toggleStates}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </ContainerWrapper>
     );
+
+    if (onClick) {
+      return (
+        <TapDiv onTap={onClick} stopPropagation style={style}>
+          {containerBody}
+        </TapDiv>
+      );
+    }
+    return <div style={style}>{containerBody}</div>;
   }
 
-  return (
-    <div
-      style={style}
-      onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
-    >
-      <RenderElement el={el} scale={scale} imageMap={imageMap} textOverrides={textOverrides} toggleStates={toggleStates} />
-    </div>
+  const singleBody = (
+    <RenderElement el={el} scale={scale} imageMap={imageMap} textOverrides={textOverrides} toggleStates={toggleStates} />
   );
+  if (onClick) {
+    return (
+      <TapDiv onTap={onClick} stopPropagation style={style}>
+        {singleBody}
+      </TapDiv>
+    );
+  }
+  return <div style={style}>{singleBody}</div>;
 }
 
 /** 컨테이너(modal/card) 배경 + X 버튼 래퍼 */

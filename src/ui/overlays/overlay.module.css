@@ -117,3 +117,47 @@
 .imgBtn:active {
   transform: scale(0.92) !important;
 }
+
+/* === 튜토리얼 알파 기반 글로우 (filter: drop-shadow) ===
+   PNG 알파 따라 외곽선 글로우. Phaser preFX.addGlow 와 동등.
+   3단 색조: 크림 inner → 골드 mid → 앰버 outer (따뜻한 황금 느낌) */
+@keyframes tutorialAlphaGlow {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 2px #fff5b0)
+      drop-shadow(0 0 6px #ffdd44)
+      drop-shadow(0 0 14px #ffaa00);
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 3px #fff5b0)
+      drop-shadow(0 0 10px #ffdd44)
+      drop-shadow(0 0 24px #ffaa00)
+      drop-shadow(0 0 36px rgba(255,170,0,0.5));
+  }
+}
+.tutorialGlow {
+  animation: tutorialAlphaGlow 1.2s ease-in-out infinite;
+  will-change: filter;
+}
+
+/* 길용 작은 글로우 — 모달 box-shadow 수준 크기에서 살짝 커졌다 작아짐 */
+@keyframes tutorialAlphaGlowRoad {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 2px #fff5b0)
+      drop-shadow(0 0 5px #ffdd44)
+      drop-shadow(0 0 10px #ffaa00);
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 3px #fff5b0)
+      drop-shadow(0 0 7px #ffdd44)
+      drop-shadow(0 0 14px #ffaa00)
+      drop-shadow(0 0 20px rgba(255,170,0,0.35));
+  }
+}
+.tutorialGlowRoad {
+  animation: tutorialAlphaGlowRoad 1.2s ease-in-out infinite;
+  will-change: filter;
+}

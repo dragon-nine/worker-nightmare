@@ -39,6 +39,34 @@ export class Player {
     this.sprite.setTint(hurt ? 0xff4444 : 0xffffff);
   }
 
+  /** 튜토리얼 transition 중 Phaser 스프라이트 숨김 — DOM 미러가 대체 렌더 */
+  setVisibleForTutorial(visible: boolean) {
+    this.sprite.setAlpha(visible ? 1 : 0);
+  }
+
+  /** free-play 롤백 시 즉시 위치 복원용 */
+  setPosition(x: number, y: number) {
+    this.scene.tweens.killTweensOf(this.sprite);
+    this.sprite.setPosition(x, y);
+    this.sprite.setAlpha(1);
+    this.sprite.setScale(1);
+    this.sprite.setAngle(0);
+    this.sprite.clearTint();
+    this.sprite.setTexture(this.keyFront);
+    this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
+  }
+
+  /** DOM 미러 렌더용 정보 추출 */
+  getMirrorInfo() {
+    return {
+      x: this.sprite.x,
+      y: this.sprite.y,
+      texKey: this.sprite.texture.key,
+      flipX: this.sprite.flipX,
+      size: this.rabbitSize,
+    };
+  }
+
   /** 부활 시 스프라이트 상태 복구 */
   resetSprite() {
     this.sprite.setAlpha(1);
@@ -53,7 +81,7 @@ export class Player {
   }
 
   /** 전환 성공: 타겟 화면 X로 이동 */
-  animateSwitch(targetScreenX: number) {
+  animateSwitch(targetScreenX: number, duration = 120) {
     const goingRight = targetScreenX > this.sprite.x;
     this.sprite.setTexture(this.keySide);
     this.sprite.setFlipX(!goingRight);
@@ -62,7 +90,7 @@ export class Player {
     this.scene.tweens.add({
       targets: this.sprite,
       x: targetScreenX,
-      duration: 120, ease: 'Quad.easeOut',
+      duration, ease: 'Quad.easeOut',
     });
   }
 

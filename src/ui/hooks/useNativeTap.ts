@@ -29,17 +29,23 @@ interface Options {
    * `pointerdown`에서 즉시 발사 + 50ms 디덥.
    */
   rapid?: boolean;
+  /**
+   * 기본(click) 모드에서 native 이벤트 전파를 막음.
+   * 모달/컨테이너처럼 부모에도 탭 핸들러가 있는 경우 자식 탭이 부모로 새지 않도록.
+   */
+  stopPropagation?: boolean;
 }
 
 const SCROLL_THRESHOLD_PX = 8;
-const SCROLL_DEDUP_MS = 100;
-const RAPID_DEDUP_MS = 50;
+/** 모든 모드 공통 디덥 — Galaxy/토스 WebView 가 동일 제스처에 이벤트를 중복 발사하는 케이스 방어 */
+const DEDUP_MS = 50;
 
 export function useNativeTap(onTap: () => void, options: Options = {}) {
   const onTapRef = useRef(onTap);
   onTapRef.current = onTap;
   const scrollSafe = options.scrollSafe ?? false;
   const rapid = options.rapid ?? false;
+  const stopPropagation = options.stopPropagation ?? false;
 
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -47,22 +53,30 @@ export function useNativeTap(onTap: () => void, options: Options = {}) {
     cleanupRef.current?.();
     cleanupRef.current = null;
     if (!el) return;
-    cleanupRef.current = attachTap(el, () => onTapRef.current(), { scrollSafe, rapid });
-  }, [scrollSafe, rapid]);
+    cleanupRef.current = attachTap(el, () => onTapRef.current(), { scrollSafe, rapid, stopPropagation });
+  }, [scrollSafe, rapid, stopPropagation]);
 }
 
 function attachTap(
   el: HTMLElement,
   onTap: () => void,
-  mode: { scrollSafe: boolean; rapid: boolean },
+  mode: { scrollSafe: boolean; rapid: boolean; stopPropagation: boolean },
 ): () => void {
   if (mode.scrollSafe) return attachScrollSafe(el, onTap);
   if (mode.rapid) return attachRapid(el, onTap);
-  return attachClick(el, onTap);
+  return attachClick(el, onTap, mode.stopPropagation);
 }
 
-function attachClick(el: HTMLElement, onTap: () => void): () => void {
-  const handler = () => onTap();
+function attachClick(el: HTMLElement, onTap: () => void, stopPropagation: boolean): () => void {
+  // Galaxy WebView / 일부 토스 웹뷰가 동일 제스처에 click 을 두 번 합성하는 케이스 방어.
+  let lastFireAt = -Infinity;
+  const handler = (e: MouseEvent) => {
+    if (stopPropagation) e.stopPropagation();
+    const now = performance.now();
+    if (now - lastFireAt < DEDUP_MS) return;
+    lastFireAt = now;
+    onTap();
+  };
   el.addEventListener('click', handler);
   return () => el.removeEventListener('click', handler);
 }
@@ -78,7 +92,7 @@ function attachRapid(el: HTMLElement, onTap: () => void): () => void {
     try { el.setPointerCapture(e.pointerId); } catch { /* 일부 환경 미지원 무시 */ }
     const now = performance.now();
     const last = lastFireByPointer.get(e.pointerId) ?? -Infinity;
-    if (now - last < RAPID_DEDUP_MS) return;
+    if (now - last < DEDUP_MS) return;
     lastFireByPointer.set(e.pointerId, now);
     onTap();
   };
@@ -126,7 +140,7 @@ function attachScrollSafe(el: HTMLElement, onTap: () => void): () => void {
     tracking = false;
     if (moved) return;
     const now = performance.now();
-    if (now - lastFireAt < SCROLL_DEDUP_MS) return;
+    if (now - lastFireAt < DEDUP_MS) return;
     lastFireAt = now;
     onTap();
   };

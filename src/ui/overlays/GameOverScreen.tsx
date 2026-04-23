@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { gameBus, type GameOverData } from '../../game/event-bus';
 import type { LayoutElement } from '../../game/layout-types';
 import { useLayout } from '../hooks/useLayout';
@@ -12,11 +12,14 @@ import { storage } from '../../game/services/storage';
 import { syncCurrenciesFromStorage } from '../../game/services/assets';
 import { startBotBattle } from '../../game/services/battle-state';
 import { setGameMode } from '../../game/services/game-mode';
+import { fetchLeaderboardNearScore } from '../../game/services/api';
 import { getRandomQuote } from '../../game/game-over-quotes';
 import { getNickname } from './home/ProfileModal';
 import { LayoutText } from '../components/LayoutText';
 import { LayoutButton } from '../components/LayoutButton';
 import { Text } from '../components/Text';
+import { RivalCard } from './RivalCard';
+import { computePbMessage, computeRivalMessage, computeTopMessage, computeSurpassMessage, type RivalMessage } from './rival-message';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -34,13 +37,36 @@ export function GameOverScreen({ data }: Props) {
   if (battle) {
     return <BattleGameOverScreen data={battle} />;
   }
-  // 부활 모달은 별도 화면이므로 부활 버튼 슬롯을 "광고 2배" 로 재사용
-  // 멘트(quoteText)는 숨김
-  const excludeIds = useMemo(() => ['quoteText'], []);
+  // 부활 모달은 별도 화면이므로 부활 버튼 슬롯을 "광고 2배" 로 재사용.
+  // quoteText 슬롯은 RivalCard (격려 메시지) 로 재활용 → 별도 오버라이드 렌더.
+  const excludeIds = useMemo(() => [], []);
   const { positions, elements, scale, ready } = useLayout('game-over', IMAGE_MAP, excludeIds);
   const [bonusClaimed, setBonusClaimed] = useState(false);
   const [rankingOpen, setRankingOpen] = useState(false);
+  const [rival, setRival] = useState<RivalMessage | null>(null);
   const canBonus = coinsEarned > 0 && !bonusClaimed;
+
+  // 격려 메시지 — Rival Chase (우선) → PB 폴백. GameOver 는 칭찬/격려 톤.
+  // 이판 점수를 anchor 로 바로 위 랭커 조회 → "다음 판 목표" 가 이번 판 맥락에 맞음.
+  useEffect(() => {
+    setRival(computePbMessage(score, bestScore, 'gameover'));
+    fetchLeaderboardNearScore('daily', score)
+      .then((res) => {
+        const above = res.above?.[0];
+        if (!above) {
+          // 이판 점수가 이미 오늘 최상위 → 1등 문구
+          setRival(computeTopMessage('gameover'));
+          return;
+        }
+        const gap = above.score - score;
+        if (gap > 0) {
+          setRival(computeRivalMessage(above.nickname, gap, 'gameover'));
+        } else {
+          setRival(computeSurpassMessage('gameover'));
+        }
+      })
+      .catch(() => { /* PB 폴백 유지 */ });
+  }, [score, bestScore]);
 
   // 텍스트 내용 오버라이드 (동적 값)
   const quote = useMemo(() => getRandomQuote(), []);
@@ -132,6 +158,9 @@ export function GameOverScreen({ data }: Props) {
         const content = el.id === 'go-rabbit' ? (
           // 토끼 자리에 코인 보상 카드 렌더
           <RewardCoinCard coinsEarned={coinsEarned} doubled={bonusClaimed} scale={scale} />
+        ) : el.id === 'quoteText' ? (
+          // 멘트 슬롯을 격려 메시지(Rival Chase / PB) 카드로 재활용
+          rival ? <RivalCard msg={rival} scale={scale} /> : null
         ) : el.type === 'image' ? (
           <img
             src={`${BASE}${IMAGE_MAP[el.id]}`}
@@ -563,3 +592,4 @@ function RewardCoinCard({
     </div>
   );
 }
+

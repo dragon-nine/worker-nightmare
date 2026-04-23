@@ -53,6 +53,12 @@ public/
 - 모든 텍스처에 LINEAR 필터 적용
 - 에셋 크기: 표시 크기의 2~3x 준비
 
+## 입력 처리 규약 (중요)
+- **DOM 요소 탭은 반드시 TapButton / TapDiv / useNativeTap 경유**. raw `onClick` 금지 (Galaxy WebView 가 React 합성 이벤트를 2번 발사하는 버그).
+- 용도별: 버튼(press 애니 필요)=`TapButton`, 게임 인풋(즉시 발사)=`TapButton rapid`, 클릭 가능한 div(자체 press 연출)=`TapDiv`
+- 커스텀 컴포넌트 prop (`<StartButton onClick={...} />`) 은 허용 — 내부가 위 셋 중 하나 경유하면 됨
+- ESLint `no-restricted-syntax` 룰로 소문자 DOM 태그의 `onClick` 차단. 불가피한 예외는 `// eslint-disable-next-line no-restricted-syntax -- 사유` 로 명시
+
 ## Cloudflare R2 Storage
 - bucket: dragon-nine
 - public URL: https://pub-a6e8e0aec44d4a69ae3ed4e096c5acc5.r2.dev

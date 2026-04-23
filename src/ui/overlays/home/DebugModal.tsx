@@ -6,6 +6,7 @@ import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { isAdRemoved } from '../../../game/services/billing';
+import { runThreeDayPromotionTest } from '../../../game/services/promotion';
 
 const AD_REMOVE_KEY = 'ad_removed';
 
@@ -125,6 +126,37 @@ export function DebugModal({ onClose }: Props) {
             ghost
           />
         </ButtonRow>
+      </Section>
+
+      {/* 토스 프로모션 테스트 — SDK 호출만 (서버 streak 체크 건너뜀) */}
+      <Section title="토스 프로모션" scale={scale}>
+        <TapButton
+          onTap={() => {
+            gameBus.emit('play-sfx', 'sfx-click');
+            void runThreeDayPromotionTest();
+          }}
+          pressScale={0.96}
+          style={{
+            width: '100%',
+            padding: `${10 * scale}px`,
+            background: 'rgba(126,240,255,0.12)',
+            border: `${1.5 * scale}px solid #7ef0ff`,
+            borderRadius: 9 * scale,
+            textAlign: 'center',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'GMarketSans, sans-serif',
+              fontWeight: 900,
+              fontSize: 13 * scale,
+              color: '#7ef0ff',
+              letterSpacing: 0.3,
+            }}
+          >
+            ⚡ 3일 연속 프로모션 테스트 호출
+          </span>
+        </TapButton>
       </Section>
 
       {/* 로컬스토리지 초기화 */}

@@ -7,7 +7,6 @@ import { fetchMyRanks, getStoredUserId } from '../../../game/services/api';
 import { clearBattle } from '../../../game/services/battle-state';
 import { setGameMode } from '../../../game/services/game-mode';
 import { getReward, nextDailyKey, nextWeeklyKey, type RewardPeriod } from '../../../game/services/rewards';
-import { runThreeDayPromotionTest } from '../../../game/services/promotion';
 import { syncCurrenciesFromStorage } from '../../../game/services/assets';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
 import { StartButton } from '../../components/StartButton';
@@ -414,42 +413,6 @@ export function HomeTab({ scale }: Props) {
           />
         </div>
       )}
-      {import.meta.env.DEV && (
-        <div
-          className={introClass}
-          style={{
-            position: 'absolute',
-            left: 10 * scale,
-            top: `calc(var(--sat, 0px) + ${184 * scale}px)`,
-            zIndex: 5,
-            pointerEvents: 'auto',
-            animationDelay: '0.2s',
-          }}
-        >
-          <FloatingMenuButton
-            icon={
-              <svg width={28 * scale} height={28 * scale} viewBox="0 0 24 24" fill="none" stroke="#7ef0ff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3v6" />
-                <path d="M12 15v6" />
-                <path d="M4.22 7.22l4.24 4.24" />
-                <path d="M15.54 15.54l4.24 4.24" />
-                <path d="M3 12h6" />
-                <path d="M15 12h6" />
-                <path d="M4.22 16.78l4.24-4.24" />
-                <path d="M15.54 8.46l4.24-4.24" />
-              </svg>
-            }
-            label="프로모션"
-            accent="#7ef0ff"
-            scale={scale}
-            onTap={() => {
-              gameBus.emit('play-sfx', 'sfx-click');
-              void runThreeDayPromotionTest();
-            }}
-          />
-        </div>
-      )}
-
 
       {/* 타이틀 */}
       <div

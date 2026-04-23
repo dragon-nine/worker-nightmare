@@ -4,7 +4,7 @@ import App from './App';
 import { ensureAuth, parseOwnedCharacters } from './game/services/api';
 import { storage } from './game/services/storage';
 import { gameBus } from './game/event-bus';
-import { logAuthActivity } from './game/services/analytics';
+import { logAuthActivity, flushActivityQueue } from './game/services/analytics';
 import { migrateLocalAssetsToServerOnce } from './game/services/assets';
 import './index.css';
 
@@ -19,6 +19,8 @@ ensureAuth({
   ownedCharacters: localOwned,
 })
   .then(({ profile, isNewUser }) => {
+    // 토큰 도착 — 버퍼된 이벤트부터 즉시 flush (screen_main 등 초기 로그 보존)
+    flushActivityQueue();
     void logAuthActivity('login_success', {
       is_new_user: isNewUser,
       total_plays: profile.total_plays,

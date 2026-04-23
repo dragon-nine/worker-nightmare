@@ -71,10 +71,14 @@ export class HUD {
     gameBus.emit('score-update', score);
   }
 
-  addTime() {
+  addTime(score = 0) {
     if (!this.allowTimeBonus) return;
-    // 시간 보너스: 시작 시 +0.4초 → 90초 경과 시 +0.15초까지 선형 감소 (이후 0.15 고정)
-    const bonus = Math.max(0.15, 0.4 - (this.elapsed / 90) * 0.25);
+    // 기본 시간 기반 커브 (기존 유지): 시작 0.4초 → 90초 후 0.15초
+    let bonus = Math.max(0.15, 0.4 - (this.elapsed / 90) * 0.25);
+    // 초반 적응 추가 보너스 (계단형)
+    if (score < 25)      bonus += 2.0;
+    else if (score < 35) bonus += 1.0;
+    else if (score < 50) bonus += 0.5;
     this.timeLeft = Math.min(this.maxTime, this.timeLeft + bonus);
     this.emitTimer();
   }

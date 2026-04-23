@@ -2,10 +2,10 @@ import { NUM_LANES, VISIBLE_LANES, PADDING, PLAYER_Y_RATIO } from './constants';
 import { Road } from './Road';
 import { Player } from './Player';
 import { HUD } from './HUD';
-import { gameBus } from './event-bus';
-import { storage } from './services/storage';
+import type { TutorialStep } from './event-bus';
 import { BackgroundManager } from './BackgroundManager';
 import { isBattleMode } from './services/game-mode';
+import { storage } from './services/storage';
 
 export interface MovementDeps {
   scene: Phaser.Scene;
@@ -28,6 +28,8 @@ export interface MovementDeps {
   setIsFalling(v: boolean): void;
   getGuideCount(): number;
   setGuideCount(c: number): void;
+  getTutorialStep(): TutorialStep;
+  onTutorialAction(action: 'forward' | 'switch'): void;
   onCrash(): void;
   onForwardCrash(): void;
   playSfx(key: string, volume: number): void;
@@ -55,18 +57,18 @@ export function calcViewLeft(deps: MovementDeps, lane: number): number {
 }
 
 /** 뷰 패닝 (컨테이너 X 이동) */
-export function panViewTo(deps: MovementDeps, newViewLeft: number) {
+export function panViewTo(deps: MovementDeps, newViewLeft: number, duration = 120) {
   if (newViewLeft === deps.getViewLeft()) return;
   deps.setViewLeft(newViewLeft);
   deps.scene.tweens.add({
     targets: deps.road.getContainer(),
     x: -(deps.getViewLeft() * deps.laneW),
-    duration: 120, ease: 'Quad.easeOut',
+    duration, ease: 'Quad.easeOut',
   });
 }
 
 /** 현재 행 기준으로 스크롤 */
-export function scrollToCurrentRow(deps: MovementDeps) {
+export function scrollToCurrentRow(deps: MovementDeps, duration = 100) {
   const { height } = deps.scene.scale;
   const row = deps.road.rows[deps.getCurrentRowIdx()];
   if (!row) return;
@@ -80,7 +82,7 @@ export function scrollToCurrentRow(deps: MovementDeps) {
   deps.scene.tweens.add({
     targets: deps.road.getContainer(),
     y: targetContainerY,
-    duration: 100, ease: 'Quad.easeOut',
+    duration, ease: 'Quad.easeOut',
   });
 
   deps.bgManager.scroll(scrollDelta);
@@ -89,29 +91,21 @@ export function scrollToCurrentRow(deps: MovementDeps) {
   deps.player.scrollToX(playerScreenX);
 }
 
-/** 가이드 힌트 전송 — 튜토리얼 동안만 emit. 완료 후엔 호출 자체 생략(리스너 오버헤드 제거). */
-export function emitGuideHint(deps: MovementDeps) {
-  if (storage.getBool('tutorialDone')) {
-    // 튜토리얼 완료 상태 → 리스너 호출도 하지 않음 (탭 성능 최적화)
-    return;
-  }
-  if (deps.getGuideCount() >= 20) {
-    storage.setBool('tutorialDone', true);
-    gameBus.emit('guide-hint', null);
-    return;
-  }
-  const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
-  if (currentRow?.isTurn && !deps.getJustSwitched() && currentRow.type !== deps.player.currentLane) {
-    gameBus.emit('guide-hint', 'switch');
-  } else {
-    gameBus.emit('guide-hint', 'forward');
-  }
+/** 튜토리얼 스텝일 때 이동 속도를 느리게 */
+function isTutorialSlowMove(deps: MovementDeps): boolean {
+  const s = deps.getTutorialStep();
+  return s === 'prompt-forward' || s === 'prompt-switch';
 }
 
 /* ── Movement ── */
 
 export function switchLane(deps: MovementDeps) {
   if (deps.getIsFalling()) return;
+
+  const step = deps.getTutorialStep();
+  // 튜토리얼 중 switch 를 허용하는 스텝만 통과
+  if (step !== 'done' && step !== 'prompt-switch' && step !== 'free-play') return;
+
   const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
   const canSwitch = !deps.getJustSwitched() && currentRow?.isTurn;
 
@@ -137,22 +131,31 @@ export function switchLane(deps: MovementDeps) {
   deps.setJustSwitched(true);
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
-  deps.hud.addTime();
-  deps.setGuideCount(deps.getGuideCount() + 1);
-  emitGuideHint(deps);
+  deps.hud.addTime(deps.getScore());
 
-  panViewTo(deps, calcViewLeft(deps, targetLane));
+  const slowMove = isTutorialSlowMove(deps);
+  const moveDur = slowMove ? 380 : 120;
+  const faceDelay = slowMove ? 600 : 350;
+
+  panViewTo(deps, calcViewLeft(deps, targetLane), moveDur);
 
   const targetScreenX = laneScreenX(deps, targetLane);
-  deps.player.animateSwitch(targetScreenX);
+  deps.player.animateSwitch(targetScreenX, moveDur);
 
-  deps.scene.time.delayedCall(350, () => {
+  deps.scene.time.delayedCall(faceDelay, () => {
     deps.player.faceNextTile(deps.player.currentLane);
   });
+
+  if (step === 'prompt-switch' || step === 'free-play') deps.onTutorialAction('switch');
 }
 
 export function moveForward(deps: MovementDeps) {
   if (deps.getIsFalling()) return;
+
+  const step = deps.getTutorialStep();
+  // 튜토리얼 중 forward 를 허용하는 스텝만 통과
+  if (step !== 'done' && step !== 'prompt-forward' && step !== 'free-play') return;
+
   const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
   if (currentRow.isTurn && deps.player.currentLane !== currentRow.type) {
     deps.onForwardCrash();
@@ -169,8 +172,8 @@ export function moveForward(deps: MovementDeps) {
     return;
   }
 
-  // 튜토리얼: 첫 전진 시 타이머 시작
-  if (!deps.hud.isTimerRunning()) {
+  // 튜토리얼이 'done' 일 때만 타이머 돌림. 튜토리얼 중엔 finishTutorial에서 시작함.
+  if (step === 'done' && !deps.hud.isTimerRunning()) {
     deps.hud.startTimer();
   }
 
@@ -179,9 +182,7 @@ export function moveForward(deps: MovementDeps) {
   deps.setCurrentRowIdx(nextIdx);
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
-  deps.hud.addTime();
-  deps.setGuideCount(deps.getGuideCount() + 1);
-  emitGuideHint(deps);
+  deps.hud.addTime(deps.getScore());
 
   while (deps.road.rows.length - deps.getCurrentRowIdx() < 15) {
     deps.road.addNextRow();
@@ -209,7 +210,11 @@ export function moveForward(deps: MovementDeps) {
     });
   }
 
-  deps.player.animateForward(() => scrollToCurrentRow(deps));
+  const slowMove = step === 'prompt-forward';
+  const scrollDur = slowMove ? 380 : 100;
+  // 튜토리얼 step 은 애니메이션 시작 후 'transition' 으로 전환 (slowMove 계산 후에 호출)
+  if (step === 'prompt-forward' || step === 'free-play') deps.onTutorialAction('forward');
+  deps.player.animateForward(() => scrollToCurrentRow(deps, scrollDur));
 
   deps.setCurrentRowIdx(deps.road.cleanupOldRows(deps.getCurrentRowIdx()));
 }

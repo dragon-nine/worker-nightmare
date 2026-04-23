@@ -1,5 +1,6 @@
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
+import { useNativeTap } from '../hooks/useNativeTap';
 import { useResponsiveScale } from '../hooks/useResponsiveScale';
 import { Text } from '../components/Text';
 import styles from './overlay.module.css';
@@ -10,19 +11,21 @@ const META_INTRO_PENDING_KEY = 'home.metaIntroPending';
 export function StoryScreen() {
   const scale = useResponsiveScale();
 
-  const handleTap = () => {
+  // 버튼과 동일하게 useNativeTap — Galaxy WebView 에서 React onClick 이 같은 제스처에
+  // 2번 합성되는 케이스를 native addEventListener('click') 로 회피.
+  const tapRef = useNativeTap(() => {
     gameBus.emit('play-sfx', 'sfx-click');
     if (!storage.getBool('tutorialDone') && localStorage.getItem('home.metaIntroShown') !== '1') {
       localStorage.setItem(META_INTRO_PENDING_KEY, '1');
     }
     gameBus.emit('start-game', undefined);
-  };
+  });
 
   return (
     <div
+      ref={tapRef}
       className={styles.overlay}
       style={{ background: '#000', cursor: 'pointer' }}
-      onClick={handleTap}
     >
       <style>{`
         @keyframes blink {

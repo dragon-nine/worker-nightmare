@@ -1,7 +1,7 @@
 {
   "name": "game01",
   "private": true,
-  "version": "1.1.7",
+  "version": "1.1.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,12 +16,10 @@
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.0.5",
     "@capacitor-community/admob": "^8.0.0",
-    "@capacitor-firebase/analytics": "^8.1.0",
     "@capacitor/android": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@capacitor/haptics": "^8.0.1",
     "@capacitor/share": "^8.0.1",
-    "firebase": "^12.11.0",
     "phaser": "^3.90.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
