@@ -12,7 +12,7 @@ import { storage } from '../../game/services/storage';
 import { syncCurrenciesFromStorage } from '../../game/services/assets';
 import { startBotBattle } from '../../game/services/battle-state';
 import { setGameMode } from '../../game/services/game-mode';
-import { fetchLeaderboard } from '../../game/services/api';
+import { fetchLeaderboardNearScore } from '../../game/services/api';
 import { getRandomQuote } from '../../game/game-over-quotes';
 import { getNickname } from './home/ProfileModal';
 import { LayoutText } from '../components/LayoutText';
@@ -47,26 +47,25 @@ export function GameOverScreen({ data }: Props) {
   const canBonus = coinsEarned > 0 && !bonusClaimed;
 
   // 격려 메시지 — Rival Chase (우선) → PB 폴백. GameOver 는 칭찬/격려 톤.
+  // 이판 점수를 anchor 로 바로 위 랭커 조회 → "다음 판 목표" 가 이번 판 맥락에 맞음.
   useEffect(() => {
     setRival(computePbMessage(score, bestScore, 'gameover'));
-    fetchLeaderboard('daily')
+    fetchLeaderboardNearScore('daily', score)
       .then((res) => {
-        if (!res.me) return; // 오늘 기록 없음 → PB 메시지 유지
-        const above = res.around?.above?.[0];
+        const above = res.above?.[0];
         if (!above) {
+          // 이판 점수가 이미 오늘 최상위 → 1등 문구
           setRival(computeTopMessage('gameover'));
           return;
         }
-        // 서버 me.score 가 막 제출한 점수 반영 전일 수 있음 → 방금 판 점수와 max
-        const anchor = Math.max(res.me.score, score);
-        const gap = above.score - anchor;
+        const gap = above.score - score;
         if (gap > 0) {
           setRival(computeRivalMessage(above.nickname, gap, 'gameover'));
         } else {
           setRival(computeSurpassMessage('gameover'));
         }
       })
-      .catch(() => { /* 폴백 유지 */ });
+      .catch(() => { /* PB 폴백 유지 */ });
   }, [score, bestScore]);
 
   // 텍스트 내용 오버라이드 (동적 값)

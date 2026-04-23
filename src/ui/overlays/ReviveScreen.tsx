@@ -4,7 +4,7 @@ import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
 import { storage } from '../../game/services/storage';
 import { isAdRemoved } from '../../game/services/billing';
-import { fetchLeaderboard } from '../../game/services/api';
+import { fetchLeaderboardNearScore } from '../../game/services/api';
 import { LayoutText } from '../components/LayoutText';
 import { LayoutButton } from '../components/LayoutButton';
 import { buttonStyleDefaults, typeScale } from '../components/design-tokens';
@@ -49,25 +49,25 @@ export function ReviveScreen({ data, onSkip }: Props) {
   const [rival, setRival] = useState<RivalMessage | null>(null);
 
   // 격려 메시지 — Revive 는 도전/액션 톤.
+  // 이판 점수를 anchor 로 바로 위 랭커 조회 → 부활하면 따라잡을 수 있는 실제 목표 제시.
   useEffect(() => {
     setRival(computePbMessage(score, bestScore, 'revive'));
-    fetchLeaderboard('daily')
+    fetchLeaderboardNearScore('daily', score)
       .then((res) => {
-        if (!res.me) return;
-        const above = res.around?.above?.[0];
+        const above = res.above?.[0];
         if (!above) {
+          // 이판 점수가 이미 오늘 최상위 → 1등 문구
           setRival(computeTopMessage('revive'));
           return;
         }
-        const anchor = Math.max(res.me.score, score);
-        const gap = above.score - anchor;
+        const gap = above.score - score;
         if (gap > 0) {
           setRival(computeRivalMessage(above.nickname, gap, 'revive'));
         } else {
           setRival(computeSurpassMessage('revive'));
         }
       })
-      .catch(() => { /* 폴백 유지 */ });
+      .catch(() => { /* PB 폴백 유지 */ });
   }, [score, bestScore]);
 
   const handleAdRevive = () => {

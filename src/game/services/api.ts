@@ -237,6 +237,32 @@ export async function fetchLeaderboard(period: Period): Promise<LeaderboardRespo
   return request(`/v1/leaderboard?period=${period}`, hasToken ? { auth: true } : {});
 }
 
+/* ───── 이판 점수 기준 랭커 (near-score) ─────
+ * 게임오버/부활 화면의 "X 점수까지 N점!" 메시지용.
+ * 기본 /leaderboard 의 around 는 "내 오늘 PB 기준" 이라 이번 판 점수가 PB 보다 낮으면
+ * 의미 없는 랭커가 잡힘. 이 엔드포인트는 anchor 로 이판 점수를 직접 받음.
+ */
+export interface NearScoreRow {
+  user_id: string;
+  nickname: string;
+  character: string | null;
+  score: number;
+}
+export interface NearScoreResponse {
+  period: Period;
+  score: number;
+  above: NearScoreRow[];
+  below: NearScoreRow[];
+}
+export async function fetchLeaderboardNearScore(period: Period, score: number): Promise<NearScoreResponse> {
+  const hasToken = !!getStoredToken();
+  const safeScore = Math.max(0, Math.floor(score));
+  return request(
+    `/v1/leaderboard/near-score?period=${period}&score=${safeScore}`,
+    hasToken ? { auth: true } : {},
+  );
+}
+
 /* ───── 내 과거 기간별 순위 (보상 조회) ───── */
 export interface MyRankEntry {
   period_key: string;
