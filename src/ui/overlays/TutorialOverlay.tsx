@@ -186,7 +186,7 @@ export function TutorialOverlay() {
             as="span"
             style={{ textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}
           >
-            {'혼자서 3칸\n전진해 볼까요?'}
+            {TUTORIAL_MESSAGES['free-play']}
           </Text>
           {/* 카운터 */}
           <div style={{ marginTop: 10 * scale }}>
