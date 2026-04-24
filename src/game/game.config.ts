@@ -68,8 +68,6 @@ export const gameConfig = {
       ['bg-5', 'background/bg-5.jpg'],
       ['bg-6', 'background/bg-6.jpg'],
       ['rabbit-front', 'character/rabbit-front.png'],
-      ['rabbit-back', 'character/rabbit-back.png'],
-      ['rabbit-side', 'character/rabbit-side.png'],
       ['penguin-front', 'character/penguin-front.png'],
       ['penguin-back', 'character/penguin-back.png'],
       ['penguin-side', 'character/penguin-side.png'],
@@ -93,6 +91,13 @@ export const gameConfig = {
       ['go-rabbit', 'game-over-screen/gameover-rabbit.png'],
       ['coin', 'items/coin.png'],
     ] as [string, string][],
+    /** 스프라이트시트 (가로 배치): [key, path, frameWidth, frameHeight, frameCount]. 자동으로 `${key}-walk` 루프 anim 생성 */
+    spritesheets: [
+      ['rabbit-back', 'character/rabbit-back.png', 512, 512, 3],
+      ['rabbit-side', 'character/rabbit-side.png', 512, 512, 3],
+      ['rabbit-dust-fwd', 'character/rabbit-dust-fwd.png', 512, 512, 4],
+      ['rabbit-dust-side', 'character/rabbit-dust-side.png', 512, 512, 4],
+    ] as [string, string, number, number, number][],
     svgs: [] as [string, string, number, number][],
     audio: [
       ['bgm-menu', 'audio/bgm/menu.mp3'],

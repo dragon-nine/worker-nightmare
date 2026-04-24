@@ -13,6 +13,9 @@ export class BootScene extends Phaser.Scene {
     for (const [key, path] of gameConfig.assets.images) {
       if (!this.textures.exists(key)) this.load.image(key, path);
     }
+    for (const [key, path, w, h] of gameConfig.assets.spritesheets) {
+      if (!this.textures.exists(key)) this.load.spritesheet(key, path, { frameWidth: w, frameHeight: h });
+    }
     for (const [key, path, w, h] of gameConfig.assets.svgs) {
       if (!this.textures.exists(key)) this.load.svg(key, path, { width: w, height: h });
     }
@@ -28,6 +31,20 @@ export class BootScene extends Phaser.Scene {
     this.textures.getTextureKeys().forEach((key) => {
       this.textures.get(key).setFilter(Phaser.Textures.LINEAR);
     });
+
+    // 스프라이트시트 → 1회 재생 anim 자동 등록 (key: `${textureKey}-walk`).
+    // 움직일 때마다 1사이클 돌리고 멈추면 프레임 0 으로 복귀 (Player 가 animationcomplete 에서 처리).
+    for (const [key, , , , frames] of gameConfig.assets.spritesheets) {
+      const animKey = `${key}-walk`;
+      if (!this.anims.exists(animKey)) {
+        this.anims.create({
+          key: animKey,
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: frames - 1 }),
+          frameRate: 8,
+          repeat: 0,
+        });
+      }
+    }
 
     // BGM 은 AudioDirector 가 단독 관리 — 화면/광고/가시성/음소거 반영
     audioDirector.init(this.sound);

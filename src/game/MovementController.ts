@@ -214,7 +214,7 @@ export function moveForward(deps: MovementDeps) {
   const scrollDur = slowMove ? 380 : 100;
   // 튜토리얼 step 은 애니메이션 시작 후 'transition' 으로 전환 (slowMove 계산 후에 호출)
   if (step === 'prompt-forward' || step === 'free-play') deps.onTutorialAction('forward');
-  deps.player.animateForward(() => scrollToCurrentRow(deps, scrollDur));
+  deps.player.animateForward(scrollDur, () => scrollToCurrentRow(deps, scrollDur));
 
   deps.setCurrentRowIdx(deps.road.cleanupOldRows(deps.getCurrentRowIdx()));
 }

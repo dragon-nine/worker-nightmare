@@ -3,7 +3,7 @@ import { RABBIT_SIZE_RATIO } from './constants';
 
 export class Player {
   private scene: Phaser.Scene;
-  private sprite: Phaser.GameObjects.Image;
+  private sprite: Phaser.GameObjects.Sprite;
   private rabbitSize: number;
   private characterId: string;
   currentLane = 0;
@@ -26,10 +26,65 @@ export class Player {
     this.characterId = characterId;
 
     this.rabbitSize = laneW * RABBIT_SIZE_RATIO;
-    this.sprite = scene.add.image(startX, startY, this.keyFront)
+    this.sprite = scene.add.sprite(startX, startY, this.keyFront)
       .setDisplaySize(this.rabbitSize, this.rabbitSize)
       .setOrigin(0.5, 0.5)
       .setDepth(150);
+    // 1회짜리 walk anim 이 끝나면 항상 첫 프레임으로 복귀 (정지 포즈)
+    this.sprite.on('animationcomplete', () => {
+      this.sprite.setFrame(0);
+    });
+  }
+
+  /**
+   * 걸을 때 먼지 이펙트 스폰 (1회 재생 후 자동 삭제). 이동 지속시간과 무관하게 400ms 로 여운.
+   * 오프셋은 dust-preview.html 로 조정한 값. 반환된 sprite 에 caller 가 tween 을 걸면 토끼 이동을 따라감.
+   */
+  private spawnDust(variant: 'fwd' | 'side', flipX = false): Phaser.GameObjects.Sprite | null {
+    const texKey = `rabbit-dust-${variant}`;
+    const animKey = `${texKey}-walk`;
+    if (!this.scene.anims.exists(animKey)) return null;
+
+    let x = this.sprite.x;
+    let y = this.sprite.y;
+    let size = this.rabbitSize;
+
+    if (variant === 'fwd') {
+      y += this.rabbitSize * 0.56;
+      size = this.rabbitSize * 0.52;
+    } else {
+      // 이동 방향 반대쪽(뒤쪽) 에 dust: flipX=true → 왼쪽 이동 → dust 는 오른쪽
+      const trailX = this.rabbitSize * 0.415;
+      x += flipX ? trailX : -trailX;
+      y += this.rabbitSize * 0.075;
+      size = this.rabbitSize * 0.9;
+    }
+
+    const dust = this.scene.add.sprite(x, y, texKey)
+      .setDisplaySize(size, size)
+      .setOrigin(0.5, 0.5)
+      .setDepth(this.sprite.depth - 1)
+      .setFlipX(flipX);
+
+    dust.play({ key: animKey, duration: 400 });
+    dust.once('animationcomplete', () => dust.destroy());
+    return dust;
+  }
+
+  /**
+   * 방향 텍스처 전환.
+   * - `durationMs` 지정: 그 시간 동안 `${key}-walk` anim 1회 재생 (한 칸 이동 중)
+   * - 생략: 정지 프레임(0) — 방향만 재지정, 부활 복구, 튕김 등
+   */
+  private setFacing(key: string, durationMs?: number) {
+    const animKey = `${key}-walk`;
+    if (durationMs != null && this.scene.anims.exists(animKey)) {
+      this.sprite.play({ key: animKey, duration: durationMs });
+    } else {
+      if (this.sprite.anims.isPlaying) this.sprite.anims.stop();
+      this.sprite.setTexture(key);
+      this.sprite.setFrame(0);
+    }
   }
 
   get x() { return this.sprite.x; }
@@ -52,7 +107,7 @@ export class Player {
     this.sprite.setScale(1);
     this.sprite.setAngle(0);
     this.sprite.clearTint();
-    this.sprite.setTexture(this.keyFront);
+    this.setFacing(this.keyFront);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
   }
 
@@ -72,7 +127,7 @@ export class Player {
     this.sprite.setAlpha(1);
     this.sprite.setScale(1);
     this.sprite.setAngle(0);
-    this.sprite.setTexture(this.keyFront);
+    this.setFacing(this.keyFront);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
   }
 
@@ -83,21 +138,31 @@ export class Player {
   /** 전환 성공: 타겟 화면 X로 이동 */
   animateSwitch(targetScreenX: number, duration = 120) {
     const goingRight = targetScreenX > this.sprite.x;
-    this.sprite.setTexture(this.keySide);
+    const startX = this.sprite.x;
+    this.setFacing(this.keySide, duration);
     this.sprite.setFlipX(!goingRight);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setAngle(0);
+    const dust = this.spawnDust('side', !goingRight);
     this.scene.tweens.add({
       targets: this.sprite,
       x: targetScreenX,
       duration, ease: 'Quad.easeOut',
     });
+    // dust 도 토끼 이동량만큼 같이 이동 (따라다님)
+    if (dust) {
+      this.scene.tweens.add({
+        targets: dust,
+        x: dust.x + (targetScreenX - startX),
+        duration, ease: 'Quad.easeOut',
+      });
+    }
   }
 
   /** 전환 실패: 잘못된 레인으로 이동 → 떨어짐 */
   animateCrashSwitch(bumpX: number, onDone: () => void) {
     const goingRight = bumpX > this.sprite.x;
-    this.sprite.setTexture(this.keySide);
+    this.setFacing(this.keySide, 120);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(!goingRight);
     this.sprite.setAngle(0);
@@ -114,28 +179,29 @@ export class Player {
     });
   }
 
-  /** 전진 성공 */
-  animateForward(onDone: () => void) {
-    this.sprite.setTexture(this.keyBack);
+  /** 전진 성공 — scroll duration 동안 back-walk anim 재생 */
+  animateForward(scrollDuration: number, onDone: () => void) {
+    this.setFacing(this.keyBack, scrollDuration);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
     this.sprite.setAngle(0);
+    this.spawnDust('fwd');
     onDone();
   }
 
-  /** 다음 타일 방향을 바라보도록 스프라이트 변경 */
+  /** 다음 타일 방향을 바라보도록 스프라이트 변경 (방향만 재지정 — anim 없이 정지 프레임) */
   faceNextTile(nextLane: number) {
     if (nextLane > this.currentLane) {
       // 다음이 오른쪽
-      this.sprite.setTexture(this.keySide);
+      this.setFacing(this.keySide);
       this.sprite.setFlipX(false);
     } else if (nextLane < this.currentLane) {
       // 다음이 왼쪽
-      this.sprite.setTexture(this.keySide);
+      this.setFacing(this.keySide);
       this.sprite.setFlipX(true);
     } else {
       // 같은 레인 (직진)
-      this.sprite.setTexture(this.keyBack);
+      this.setFacing(this.keyBack);
       this.sprite.setFlipX(false);
     }
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
@@ -144,7 +210,7 @@ export class Player {
 
   /** 전진 충돌: 한 칸 전진 → 떨어짐 */
   animateForwardCrash(onDone: () => void) {
-    this.sprite.setTexture(this.keyBack);
+    this.setFacing(this.keyBack, 120);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setAngle(0);
 
@@ -163,7 +229,7 @@ export class Player {
   /** 대전 패널티: 잠깐 앞으로 튕겼다가 제자리 복귀 */
   animateForwardPenalty(onDone: () => void) {
     const startY = this.sprite.y;
-    this.sprite.setTexture(this.keyBack);
+    this.setFacing(this.keyBack);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setAngle(0);
 
@@ -185,7 +251,7 @@ export class Player {
   animateSwitchPenalty(direction: 'left' | 'right', onDone: () => void) {
     const startX = this.sprite.x;
     const offset = this.rabbitSize * 0.18 * (direction === 'right' ? 1 : -1);
-    this.sprite.setTexture(this.keySide);
+    this.setFacing(this.keySide);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(direction === 'left');
     this.sprite.setAngle(0);
@@ -206,7 +272,7 @@ export class Player {
 
   /** 공통 낙하: 정면 전환 → 후들후들 → 쏙! 빨려들어감 */
   private animateFall(onDone: () => void) {
-    this.sprite.setTexture(this.keyFront);
+    this.setFacing(this.keyFront);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
     this.sprite.setAngle(0);
