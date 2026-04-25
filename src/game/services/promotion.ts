@@ -50,7 +50,7 @@ export async function handleThreeDayPromotionOnGameEnd(): Promise<void> {
           state: prepared.state,
         },
       });
-      gameBus.emit('toast', `3일 연속 플레이 달성! 토스포인트 ${attempt.amount}원 지급`);
+      gameBus.emit('toast', `3일 연속 플레이 달성!\n토스포인트 ${attempt.amount}원 지급`);
       return;
     }
 
