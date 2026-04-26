@@ -8,7 +8,9 @@ import {
 } from './api';
 
 const THREE_DAY_PROMOTION_CODE = import.meta.env.VITE_TOSS_PROMOTION_3DAY_CODE as string | undefined;
-const USE_TEST_CODE = import.meta.env.VITE_TOSS_PROMOTION_USE_TEST_CODE === 'true';
+// dev 서버에서만 TEST_ 접두 코드 사용. ait build (production)는 항상 실 지급 코드.
+// .env.local의 토글 변수를 production 빌드로 흘려보내 50원 미지급된 사고 방지.
+const USE_TEST_CODE = import.meta.env.DEV;
 
 let inFlight = false;
 let testInFlight = false;
@@ -48,7 +50,7 @@ export async function handleThreeDayPromotionOnGameEnd(): Promise<void> {
           state: prepared.state,
         },
       });
-      gameBus.emit('toast', `3일 연속 플레이 달성! 토스포인트 ${attempt.amount}원 지급`);
+      gameBus.emit('toast', `3일 연속 플레이 달성!\n토스포인트 ${attempt.amount}원 지급`);
       return;
     }
 
