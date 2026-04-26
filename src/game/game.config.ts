@@ -95,8 +95,8 @@ export const gameConfig = {
     spritesheets: [
       ['rabbit-back', 'character/rabbit-back.png', 512, 512, 3],
       ['rabbit-side', 'character/rabbit-side.png', 512, 512, 3],
-      ['rabbit-dust-fwd', 'character/rabbit-dust-fwd.png', 512, 512, 4],
-      ['rabbit-dust-side', 'character/rabbit-dust-side.png', 512, 512, 4],
+      ['rabbit-dust-fwd', 'character/rabbit-dust-fwd.png', 512, 512, 5],
+      ['rabbit-dust-side', 'character/rabbit-dust-side.png', 512, 512, 5],
     ] as [string, string, number, number, number][],
     svgs: [] as [string, string, number, number][],
     audio: [
