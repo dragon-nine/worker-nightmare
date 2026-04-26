@@ -5,6 +5,9 @@ import { CHARACTER_SPECS } from './game.config';
 /** dust 효과 1회 재생 시간 (ms). 한 번 시작되면 캐릭터 이동 시간과 무관하게 이 길이만큼 살아있다 사라짐. */
 const DUST_DURATION_MS = 400;
 
+/** 떨어지기 직전 단계 시간 (ms) — 흔들림 또는 fall anim 1회 재생 후 곧바로 suck-in 단계로 넘어감. */
+const FALL_PRE_SUCK_MS = 350;
+
 export class Player {
   private scene: Phaser.Scene;
   private sprite: Phaser.GameObjects.Sprite;
@@ -18,6 +21,7 @@ export class Player {
   private get keyFront() { return `${this.characterId}-front`; }
   private get keyBack()  { return `${this.characterId}-back`; }
   private get keySide()  { return `${this.characterId}-side`; }
+  private get keyFall()  { return `${this.characterId}-fall`; }
 
   constructor(
     scene: Phaser.Scene,
@@ -36,8 +40,10 @@ export class Player {
       .setDisplaySize(this.rabbitSize, this.rabbitSize)
       .setOrigin(0.5, 0.5)
       .setDepth(150);
-    // 1회짜리 walk anim 이 끝나면 항상 첫 프레임으로 복귀 (정지 포즈)
-    this.sprite.on('animationcomplete', () => {
+    // 1회짜리 anim 이 끝나면 첫 프레임 (정지 포즈) 으로 복귀.
+    // 단, fall anim 은 suck-in 연출이 곧바로 이어지므로 마지막 tumbling 프레임을 유지.
+    this.sprite.on('animationcomplete', (anim: Phaser.Animations.Animation) => {
+      if (anim.key === `${this.keyFall}-walk`) return;
       this.sprite.setFrame(0);
     });
   }
@@ -221,16 +227,20 @@ export class Player {
     this.sprite.setAngle(0);
   }
 
-  /** 전진 충돌: 한 칸 전진 → 떨어짐 */
-  animateForwardCrash(onDone: () => void) {
+  /**
+   * 전진 충돌: 한 칸 전진 시도 → 떨어짐.
+   * @param bumpY 1단계에서 토끼가 도달할 절대 Y 좌표 (보통 caller 가 `player.y - tileH` 로 한 타일 위 계산).
+   *              symmetry: animateCrashSwitch 가 절대 X(bumpX) 받는 것과 동일한 패턴.
+   */
+  animateForwardCrash(bumpY: number, onDone: () => void) {
     this.setFacing(this.keyBack, 120);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setAngle(0);
 
-    // 1단계: 한 칸 위로 이동 (전진 시도)
+    // 1단계: 지정된 Y 좌표로 이동 (전진 시도)
     this.scene.tweens.add({
       targets: this.sprite,
-      y: this.sprite.y - this.rabbitSize,
+      y: bumpY,
       duration: 120, ease: 'Quad.easeOut',
       onComplete: () => {
         // 2단계: 떨어짐
@@ -283,33 +293,47 @@ export class Player {
     });
   }
 
-  /** 공통 낙하: 정면 전환 → 후들후들 → 쏙! 빨려들어감 */
+  /**
+   * 공통 낙하: 1단계 허우적대기 → 2단계 쏙! 빨려들어감.
+   * - 1단계: `fall` 스프라이트시트가 있는 캐릭터는 fall anim 1회 재생 (스프라이트가 모션 표현),
+   *   없으면 정적 `-front` 이미지에 좌우 흔들림 + 각도 위블 폴백.
+   * - 2단계: 위치/각도 정리 후 살짝 커졌다가(으악!) 0 으로 빨려들어가며 페이드.
+   */
   private animateFall(onDone: () => void) {
-    this.setFacing(this.keyFront);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
     this.sprite.setFlipX(false);
     this.sprite.setAngle(0);
 
     const baseX = this.sprite.x;
+    const hasFallAnim = !!CHARACTER_SPECS[this.characterId]?.fall;
+    let shakeEvent: Phaser.Time.TimerEvent | null = null;
 
-    // 1단계: 후들후들 떨림 (허우적대는 느낌)
-    let shakeCount = 0;
-    const shakeEvent = this.scene.time.addEvent({
-      delay: 40,
-      repeat: 7,
-      callback: () => {
-        shakeCount++;
-        const offset = (shakeCount % 2 === 0 ? 1 : -1) * 5;
-        this.sprite.setX(baseX + offset);
-        this.sprite.setAngle(offset * 0.8);
-      },
-    });
+    if (hasFallAnim) {
+      // 스프라이트시트로 떨어짐 모션 표현 — 마지막 tumbling 프레임이 유지됨 (animationcomplete 핸들러 참고)
+      this.setFacing(this.keyFall, FALL_PRE_SUCK_MS);
+    } else {
+      // 정적 이미지 폴백: 흔들림 + 각도 위블로 허우적대는 느낌
+      this.setFacing(this.keyFront);
+      let shakeCount = 0;
+      shakeEvent = this.scene.time.addEvent({
+        delay: 40,
+        repeat: 7,
+        callback: () => {
+          shakeCount++;
+          const offset = (shakeCount % 2 === 0 ? 1 : -1) * 5;
+          this.sprite.setX(baseX + offset);
+          this.sprite.setAngle(offset * 0.8);
+        },
+      });
+    }
 
     // 2단계: 쏙! 빨려들어감
-    this.scene.time.delayedCall(350, () => {
-      shakeEvent.destroy();
-      this.sprite.setX(baseX);
-      this.sprite.setAngle(0);
+    this.scene.time.delayedCall(FALL_PRE_SUCK_MS, () => {
+      if (shakeEvent) {
+        shakeEvent.destroy();
+        this.sprite.setX(baseX);
+        this.sprite.setAngle(0);
+      }
 
       // 살짝 커졌다가 (으악!) → 쏙 빨려들어감
       const curScaleX = this.sprite.scaleX;

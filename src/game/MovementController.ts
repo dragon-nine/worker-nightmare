@@ -30,8 +30,8 @@ export interface MovementDeps {
   setGuideCount(c: number): void;
   getTutorialStep(): TutorialStep;
   onTutorialAction(action: 'forward' | 'switch'): void;
-  onCrash(): void;
-  onForwardCrash(): void;
+  /** 충돌 처리 단일 entrypoint. kind='switch' 일 땐 opts.bumpX 필수 (튕길 X 좌표). */
+  onCrash(kind: 'forward' | 'switch', opts?: { bumpX?: number }): void;
   playSfx(key: string, volume: number): void;
   vibrate(pattern: number | number[]): void;
   /** 이번 판에서 획득한 코인 수 */
@@ -111,17 +111,15 @@ export function switchLane(deps: MovementDeps) {
 
   if (!canSwitch) {
     if (isBattleMode()) {
-      deps.onCrash();
+      deps.onCrash('switch');
       return;
     }
     if (deps.getGodMode()) return;
-    deps.setIsFalling(true);
-    deps.hud.stopTimer();
-    deps.playSfx('sfx-crash', 0.7);
+    // 충돌 효과 + 떨어짐 애니 + onDeath 까지 단일 함수에서 처리
     const lane = deps.player.currentLane;
     const crashLane = lane < NUM_LANES - 1 ? lane + 1 : lane - 1;
     const bumpX = laneScreenX(deps, crashLane);
-    deps.player.animateCrashSwitch(bumpX, () => deps.onCrash());
+    deps.onCrash('switch', { bumpX });
     return;
   }
 
@@ -158,7 +156,7 @@ export function moveForward(deps: MovementDeps) {
 
   const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
   if (currentRow.isTurn && deps.player.currentLane !== currentRow.type) {
-    deps.onForwardCrash();
+    deps.onCrash('forward');
     return;
   }
 
@@ -168,7 +166,7 @@ export function moveForward(deps: MovementDeps) {
 
   const canPass = nextRow.isTurn || nextRow.type === deps.player.currentLane;
   if (!canPass) {
-    deps.onForwardCrash();
+    deps.onCrash('forward');
     return;
   }
 

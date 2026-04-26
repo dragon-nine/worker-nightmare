@@ -21,7 +21,7 @@ import {
   type MovementDeps,
 } from '../MovementController';
 import {
-  onForwardCrash, onCrash, onDeath,
+  onCrash, onDeath,
   type LifecycleDeps,
 } from '../GameLifecycle';
 import { setupReactListeners } from '../ReactListeners';
@@ -332,7 +332,9 @@ export class CommuteScene extends Phaser.Scene {
     this.vibrate([30, 40, 60]);
     this.cameras.main.shake(200, 0.015);
     this.player.setHurt(true);
-    this.player.animateForwardCrash(() => {
+    // 일반 죽음(GameLifecycle.onCrash)과 동일한 비율 — 0.7 타일만 휘청
+    const bumpY = this.player.y - this.tileH * 0.7;
+    this.player.animateForwardCrash(bumpY, () => {
       this.setTutorialStep('free-play-fail');
     });
     logEvent('tutorial_free_play_fail', { type: 'forward', success_count: this.freePlaySuccessCount });
@@ -411,13 +413,14 @@ export class CommuteScene extends Phaser.Scene {
       setIsFalling: (v) => { this.isFalling = v; },
       getGuideCount: () => this.guideCount,
       setGuideCount: (c) => { this.guideCount = c; },
-      onCrash: () => {
-        if (this.tutorialStep === 'free-play') { this.onFreePlaySwitchCrash(); return; }
-        onCrash(this.lifecycleDeps());
-      },
-      onForwardCrash: () => {
-        if (this.tutorialStep === 'free-play') { this.onFreePlayForwardCrash(); return; }
-        onForwardCrash(this.lifecycleDeps());
+      onCrash: (kind, opts) => {
+        // 튜토리얼 free-play 중에는 게임오버 대신 자체 핸들러로 라우팅
+        if (this.tutorialStep === 'free-play') {
+          if (kind === 'forward') this.onFreePlayForwardCrash();
+          else this.onFreePlaySwitchCrash();
+          return;
+        }
+        onCrash(this.lifecycleDeps(), kind, opts);
       },
       playSfx: (key, vol) => this.playSfx(key, vol),
       vibrate: (p) => this.vibrate(p),

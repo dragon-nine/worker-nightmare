@@ -5,15 +5,17 @@
 /**
  * 캐릭터 단위 스프라이트 / 이펙트 사양.
  * - `walk`: back/side 스프라이트시트의 프레임 수 (가로 배치, 512×512 셀)
+ * - `fall`: 떨어질 때 스프라이트시트 프레임 수. 미등록 시 정적 `-front` 이미지 + 흔들림 폴백.
  * - `dust`: 발자국 효과. 미등록 시 해당 캐릭터는 효과 없음.
  *   - `frames`: 스프라이트시트 프레임 수
  *   - `xOffset` / `yOffset` / `size`: 캐릭터 표시 크기 대비 비율
  *
  * 새 캐릭터를 스프라이트로 전환하는 절차:
  *   1) `public/character/{id}-back.png`, `{id}-side.png` 배치 (가로 배치, 512×512 프레임)
- *   2) (선택) `public/character/{id}-dust-fwd.png`, `{id}-dust-side.png` 배치
- *   3) `CHARACTER_SPECS` 에 `{id}: { walk: ..., dust: ... }` 항목 추가
- *   4) `assets.images` 에서 같은 id 의 `-back` / `-side` 정적 이미지 항목 제거
+ *   2) (선택) `public/character/{id}-fall.png` 배치 (떨어지는 모션)
+ *   3) (선택) `public/character/{id}-dust-fwd.png`, `{id}-dust-side.png` 배치
+ *   4) `CHARACTER_SPECS` 에 `{id}: { walk: ..., fall: ..., dust: ... }` 항목 추가
+ *   5) `assets.images` 에서 같은 id 의 `-back` / `-side` 정적 이미지 항목 제거
  *      (`-front` 정적 이미지는 그대로 둠 — 메뉴/홈에서 사용)
  */
 interface DustOffset {
@@ -25,12 +27,14 @@ interface DustOffset {
 
 export interface CharacterSpec {
   walk: { back: number; side: number };
+  fall?: number;
   dust?: { fwd: DustOffset; side: DustOffset };
 }
 
 export const CHARACTER_SPECS: Record<string, CharacterSpec> = {
   rabbit: {
     walk: { back: 6, side: 5 },
+    fall: 7,
     dust: {
       fwd:  { frames: 5, xOffset: 0,     yOffset: 0.56,  size: 0.52 },
       side: { frames: 5, xOffset: 0.415, yOffset: 0.075, size: 0.9  },
@@ -45,6 +49,9 @@ function buildCharacterSpritesheets(): SpritesheetEntry[] {
   for (const [id, spec] of Object.entries(CHARACTER_SPECS)) {
     out.push([`${id}-back`, `character/${id}-back.png`, 512, 512, spec.walk.back]);
     out.push([`${id}-side`, `character/${id}-side.png`, 512, 512, spec.walk.side]);
+    if (spec.fall) {
+      out.push([`${id}-fall`, `character/${id}-fall.png`, 512, 512, spec.fall]);
+    }
     if (spec.dust) {
       out.push([`${id}-dust-fwd`,  `character/${id}-dust-fwd.png`,  512, 512, spec.dust.fwd.frames]);
       out.push([`${id}-dust-side`, `character/${id}-dust-side.png`, 512, 512, spec.dust.side.frames]);
