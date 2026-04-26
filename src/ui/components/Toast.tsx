@@ -116,8 +116,8 @@ export function Toast() {
         as="span"
         style={{
           letterSpacing: 0.1,
-          // nowrap 해제: 긴 메시지는 줄바꿈
-          whiteSpace: 'normal',
+          // pre-line: 메시지 안의 \n 을 줄바꿈으로, 긴 메시지는 자동 wrap.
+          whiteSpace: 'pre-line',
         }}
       >
         {message}
