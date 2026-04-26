@@ -93,8 +93,8 @@ export const gameConfig = {
     ] as [string, string][],
     /** 스프라이트시트 (가로 배치): [key, path, frameWidth, frameHeight, frameCount]. 자동으로 `${key}-walk` 루프 anim 생성 */
     spritesheets: [
-      ['rabbit-back', 'character/rabbit-back.png', 512, 512, 3],
-      ['rabbit-side', 'character/rabbit-side.png', 512, 512, 3],
+      ['rabbit-back', 'character/rabbit-back.png', 512, 512, 6],
+      ['rabbit-side', 'character/rabbit-side.png', 512, 512, 5],
       ['rabbit-dust-fwd', 'character/rabbit-dust-fwd.png', 512, 512, 5],
       ['rabbit-dust-side', 'character/rabbit-dust-side.png', 512, 512, 5],
     ] as [string, string, number, number, number][],
