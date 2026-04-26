@@ -1,11 +1,17 @@
 import Phaser from 'phaser';
 import { RABBIT_SIZE_RATIO } from './constants';
+import { CHARACTER_SPECS } from './game.config';
+
+/** dust 효과 1회 재생 시간 (ms). 한 번 시작되면 캐릭터 이동 시간과 무관하게 이 길이만큼 살아있다 사라짐. */
+const DUST_DURATION_MS = 400;
 
 export class Player {
   private scene: Phaser.Scene;
   private sprite: Phaser.GameObjects.Sprite;
   private rabbitSize: number;
   private characterId: string;
+  /** 한 번에 한 dust 만 — 이전 dust 가 살아있으면 새 dust 가 spawn 될 때 destroy. */
+  private activeDust: Phaser.GameObjects.Sprite | null = null;
   currentLane = 0;
 
   /** 캐릭터별 텍스처 키 */
@@ -37,27 +43,30 @@ export class Player {
   }
 
   /**
-   * 걸을 때 먼지 이펙트 스폰 (1회 재생 후 자동 삭제). 이동 지속시간과 무관하게 400ms 로 여운.
-   * 오프셋은 dust-preview.html 로 조정한 값. 반환된 sprite 에 caller 가 tween 을 걸면 토끼 이동을 따라감.
+   * 걸을 때 먼지 이펙트 스폰 (1회 재생 후 자동 삭제). 이동 지속시간과 무관하게 DUST_DURATION_MS 로 여운.
+   * 오프셋/크기는 `CHARACTER_SPECS[characterId].dust` 에서 조회 (dust-preview.html 로 조정한 값).
+   * 반환된 sprite 에 caller 가 tween 을 걸면 캐릭터 이동을 따라감.
+   * 캐릭터에 dust spec 이 등록되지 않았거나 anim 이 없으면 null.
    */
   private spawnDust(variant: 'fwd' | 'side', flipX = false): Phaser.GameObjects.Sprite | null {
-    const texKey = `rabbit-dust-${variant}`;
+    const dustSpec = CHARACTER_SPECS[this.characterId]?.dust;
+    if (!dustSpec) return null;
+
+    const texKey = `${this.characterId}-dust-${variant}`;
     const animKey = `${texKey}-walk`;
     if (!this.scene.anims.exists(animKey)) return null;
 
-    let x = this.sprite.x;
-    let y = this.sprite.y;
-    let size = this.rabbitSize;
+    const offsets = dustSpec[variant];
+    // 옆 dust: 이동 방향 반대쪽(뒤쪽) 에 위치 — flipX=true → 왼쪽 이동 → dust 는 오른쪽.
+    // 앞 dust: xOffset=0 이라 flipX 무관하게 같은 위치.
+    const trailX = this.rabbitSize * offsets.xOffset;
+    const x = this.sprite.x + (flipX ? trailX : -trailX);
+    const y = this.sprite.y + this.rabbitSize * offsets.yOffset;
+    const size = this.rabbitSize * offsets.size;
 
-    if (variant === 'fwd') {
-      y += this.rabbitSize * 0.56;
-      size = this.rabbitSize * 0.52;
-    } else {
-      // 이동 방향 반대쪽(뒤쪽) 에 dust: flipX=true → 왼쪽 이동 → dust 는 오른쪽
-      const trailX = this.rabbitSize * 0.415;
-      x += flipX ? trailX : -trailX;
-      y += this.rabbitSize * 0.075;
-      size = this.rabbitSize * 0.9;
+    // 이전 dust 가 아직 살아있으면 즉시 제거 — 빠른 연속 동작에서 잔상 방지
+    if (this.activeDust && this.activeDust.active) {
+      this.activeDust.destroy();
     }
 
     const dust = this.scene.add.sprite(x, y, texKey)
@@ -66,8 +75,12 @@ export class Player {
       .setDepth(this.sprite.depth - 1)
       .setFlipX(flipX);
 
-    dust.play({ key: animKey, duration: 400 });
-    dust.once('animationcomplete', () => dust.destroy());
+    dust.play({ key: animKey, duration: DUST_DURATION_MS });
+    dust.once('animationcomplete', () => {
+      dust.destroy();
+      if (this.activeDust === dust) this.activeDust = null;
+    });
+    this.activeDust = dust;
     return dust;
   }
 

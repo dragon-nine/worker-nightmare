@@ -2,6 +2,57 @@
  * 게임별 설정 — game02 복제 시 이 파일만 수정하면 됨
  */
 
+/**
+ * 캐릭터 단위 스프라이트 / 이펙트 사양.
+ * - `walk`: back/side 스프라이트시트의 프레임 수 (가로 배치, 512×512 셀)
+ * - `dust`: 발자국 효과. 미등록 시 해당 캐릭터는 효과 없음.
+ *   - `frames`: 스프라이트시트 프레임 수
+ *   - `xOffset` / `yOffset` / `size`: 캐릭터 표시 크기 대비 비율
+ *
+ * 새 캐릭터를 스프라이트로 전환하는 절차:
+ *   1) `public/character/{id}-back.png`, `{id}-side.png` 배치 (가로 배치, 512×512 프레임)
+ *   2) (선택) `public/character/{id}-dust-fwd.png`, `{id}-dust-side.png` 배치
+ *   3) `CHARACTER_SPECS` 에 `{id}: { walk: ..., dust: ... }` 항목 추가
+ *   4) `assets.images` 에서 같은 id 의 `-back` / `-side` 정적 이미지 항목 제거
+ *      (`-front` 정적 이미지는 그대로 둠 — 메뉴/홈에서 사용)
+ */
+interface DustOffset {
+  frames: number;
+  xOffset: number;
+  yOffset: number;
+  size: number;
+}
+
+export interface CharacterSpec {
+  walk: { back: number; side: number };
+  dust?: { fwd: DustOffset; side: DustOffset };
+}
+
+export const CHARACTER_SPECS: Record<string, CharacterSpec> = {
+  rabbit: {
+    walk: { back: 6, side: 5 },
+    dust: {
+      fwd:  { frames: 5, xOffset: 0,     yOffset: 0.56,  size: 0.52 },
+      side: { frames: 5, xOffset: 0.415, yOffset: 0.075, size: 0.9  },
+    },
+  },
+};
+
+type SpritesheetEntry = [string, string, number, number, number];
+
+function buildCharacterSpritesheets(): SpritesheetEntry[] {
+  const out: SpritesheetEntry[] = [];
+  for (const [id, spec] of Object.entries(CHARACTER_SPECS)) {
+    out.push([`${id}-back`, `character/${id}-back.png`, 512, 512, spec.walk.back]);
+    out.push([`${id}-side`, `character/${id}-side.png`, 512, 512, spec.walk.side]);
+    if (spec.dust) {
+      out.push([`${id}-dust-fwd`,  `character/${id}-dust-fwd.png`,  512, 512, spec.dust.fwd.frames]);
+      out.push([`${id}-dust-side`, `character/${id}-dust-side.png`, 512, 512, spec.dust.side.frames]);
+    }
+  }
+  return out;
+}
+
 export const gameConfig = {
   /** 게임 ID (레이아웃 로더, 에셋 경로에 사용) */
   gameId: 'game01',
@@ -91,13 +142,8 @@ export const gameConfig = {
       ['go-rabbit', 'game-over-screen/gameover-rabbit.png'],
       ['coin', 'items/coin.png'],
     ] as [string, string][],
-    /** 스프라이트시트 (가로 배치): [key, path, frameWidth, frameHeight, frameCount]. 자동으로 `${key}-walk` 루프 anim 생성 */
-    spritesheets: [
-      ['rabbit-back', 'character/rabbit-back.png', 512, 512, 6],
-      ['rabbit-side', 'character/rabbit-side.png', 512, 512, 5],
-      ['rabbit-dust-fwd', 'character/rabbit-dust-fwd.png', 512, 512, 5],
-      ['rabbit-dust-side', 'character/rabbit-dust-side.png', 512, 512, 5],
-    ] as [string, string, number, number, number][],
+    /** 스프라이트시트 (가로 배치): [key, path, frameWidth, frameHeight, frameCount]. 자동으로 `${key}-walk` 루프 anim 생성. 캐릭터 항목은 `CHARACTER_SPECS` 에서 자동 생성. */
+    spritesheets: buildCharacterSpritesheets(),
     svgs: [] as [string, string, number, number][],
     audio: [
       ['bgm-menu', 'audio/bgm/menu.mp3'],
