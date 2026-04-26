@@ -13,6 +13,7 @@ import { hudState } from '../hud-state';
 import { storage } from '../services/storage';
 import { getBattleHudSnapshot } from '../services/battle-state';
 import { isBattleMode } from '../services/game-mode';
+import { combo } from '../services/combo';
 import { BackgroundManager } from '../BackgroundManager';
 import {
   switchLane as doSwitchLane,
@@ -91,6 +92,9 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#000000');
 
+    // 새 게임 시작 — 이전 세션의 콤보 상태 (있다면) 정리
+    combo.reset();
+
     this.bgManager = new BackgroundManager(this);
     this.bgManager.create();
 
@@ -121,6 +125,8 @@ export class CommuteScene extends Phaser.Scene {
     const playerScreenX = laneScreenX(this.movementDeps(), startLane);
     const characterId = storage.getSelectedCharacter();
     this.player = new Player(this, this.laneW, playerScreenX, playerScreenY, startLane, characterId);
+    // 씬 종료 시 Player 의 gameBus 리스너 (combo-state 등) 정리
+    this.events.once('shutdown', () => this.player.destroy());
 
     this.hud = new HUD(this, () => onDeath(this.lifecycleDeps()), {
       duration: isBattleMode() ? 30 : undefined,
@@ -167,6 +173,7 @@ export class CommuteScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     if (!this.gameOver) {
       this.hud.update(delta);
+      combo.tick(_time);
       if (_time - this.lastBattleEmitAt >= 120) {
         this.lastBattleEmitAt = _time;
         this.emitBattleHud();

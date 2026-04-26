@@ -30,6 +30,8 @@ export function GameplayHUD() {
   const [tutorialStep, setTutorialStep] = useState<TutorialStep>(tutorialDone ? 'done' : 'intro');
   const [battleHud, setBattleHud] = useState<BattleHudData | null>(null);
   const [battleCountdown, setBattleCountdown] = useState<number | null>(null);
+  // 콤보 단계 — level 2 (10+ 연속) 일 때 점수 색상 변경. 글로우/오라 같은 추가 효과는 없음.
+  const [comboLevel, setComboLevel] = useState<0 | 1 | 2>(0);
 
   useEffect(() => {
     // 점수 — DOM 직접 조작 (리렌더 0번)
@@ -59,10 +61,13 @@ export function GameplayHUD() {
     const unsub6 = gameBus.on('battle-countdown', (value) => {
       setBattleCountdown(value);
     });
+    const unsub7 = gameBus.on('combo-state', ({ level }) => {
+      setComboLevel(level);
+    });
     // 초기값 주입 (재마운트/부활 시 깜빡임 방지)
     if (scoreRef.current) scoreRef.current.textContent = String(hudState.getScore());
     if (coinsRef.current) coinsRef.current.textContent = String(hudState.getCoins());
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); };
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); };
   }, [tutorialDone]);
 
   const handleSwitch = useCallback(() => {
@@ -237,26 +242,35 @@ export function GameplayHUD() {
         );
       })()}
 
-      {/* 점수 */}
-      {pos('scoreText') && !(battleMode && battleCountdown !== null) && (
-        <Text
-          ref={scoreRef}
-          size={scoreFontSize}
-          weight={700}
-          color={scoreEl?.textStyle?.color || '#fff'}
-          style={{
-            ...boxStyle('scoreText'),
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-            WebkitTextStroke: `${scoreStrokeW}px ${scoreStrokeColor}`,
-            paintOrder: 'stroke fill',
-            ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
-          }}
-        >
-          {hudState.getScore()}
-        </Text>
-      )}
+      {/* 점수 — 콤보 레벨 2 (10+ 연속): 안=흰색, 테두리=노랑(#f5f784), 하이라이트=시안(#74edf2) 글로우 */}
+      {pos('scoreText') && !(battleMode && battleCountdown !== null) && (() => {
+        const comboFull = comboLevel >= 2;
+        const fillColor = comboFull ? '#ffffff' : (scoreEl?.textStyle?.color || '#fff');
+        const strokeColor = comboFull ? '#f5f784' : scoreStrokeColor;
+        const highlight = comboFull
+          ? `0 0 ${6 * scale}px #74edf2, 0 0 ${14 * scale}px #74edf2, 0 0 ${24 * scale}px rgba(116,237,242,0.7)`
+          : 'none';
+        return (
+          <Text
+            ref={scoreRef}
+            size={scoreFontSize}
+            weight={700}
+            color={fillColor}
+            style={{
+              ...boxStyle('scoreText'),
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              WebkitTextStroke: `${scoreStrokeW}px ${strokeColor}`,
+              paintOrder: 'stroke fill',
+              textShadow: highlight,
+              ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
+            }}
+          >
+            {hudState.getScore()}
+          </Text>
+        );
+      })()}
 
       {/* 튜토리얼 스텝에 따라 버튼 활성/비활성 — prompt-forward 에선 switch 잠금 등 */}
       {(() => {

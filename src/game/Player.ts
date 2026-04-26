@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { RABBIT_SIZE_RATIO } from './constants';
 import { CHARACTER_SPECS } from './game.config';
+import { gameBus } from './event-bus';
 
 /** dust 효과 1회 재생 시간 (ms). 한 번 시작되면 캐릭터 이동 시간과 무관하게 이 길이만큼 살아있다 사라짐. */
 const DUST_DURATION_MS = 400;
@@ -15,13 +16,28 @@ export class Player {
   private characterId: string;
   /** 한 번에 한 dust 만 — 이전 dust 가 살아있으면 새 dust 가 spawn 될 때 destroy. */
   private activeDust: Phaser.GameObjects.Sprite | null = null;
+  /** 콤보 단계 (0/1/2) — keyBack/keySide 가 단계별 변형을 반환. gameBus 'combo-state' 구독해 갱신. */
+  private comboLevel: 0 | 1 | 2 = 0;
+  private unsubCombo: (() => void) | null = null;
   currentLane = 0;
 
-  /** 캐릭터별 텍스처 키 */
+  /**
+   * 캐릭터별 텍스처 키. 콤보 단계 / 등록된 변형 / 방향에 따라 적절한 키 선택.
+   * level 1 에 side 만 등록 + level 2 에 back/side 모두 등록 패턴이 흔함.
+   * 등록 안 된 방향은 일반 sprite 로 폴백.
+   */
   private get keyFront() { return `${this.characterId}-front`; }
-  private get keyBack()  { return `${this.characterId}-back`; }
-  private get keySide()  { return `${this.characterId}-side`; }
+  private get keyBack()  { return this.resolveDirKey('back'); }
+  private get keySide()  { return this.resolveDirKey('side'); }
   private get keyFall()  { return `${this.characterId}-fall`; }
+
+  private resolveDirKey(dir: 'back' | 'side') {
+    const id = this.characterId;
+    const combo = CHARACTER_SPECS[id]?.combo;
+    if (this.comboLevel === 2 && combo?.level2?.[dir]) return `${id}-${dir}-combo2`;
+    if (this.comboLevel >= 1 && combo?.level1?.[dir]) return `${id}-${dir}-combo1`;
+    return `${id}-${dir}`;
+  }
 
   constructor(
     scene: Phaser.Scene,
@@ -46,6 +62,42 @@ export class Player {
       if (anim.key === `${this.keyFall}-walk`) return;
       this.sprite.setFrame(0);
     });
+
+    // 콤보 단계 변화 → 현재 표시 중인 walk 텍스처를 해당 단계 변형으로 즉시 swap
+    this.unsubCombo = gameBus.on('combo-state', ({ level }) => {
+      if (this.comboLevel === level) return;
+      this.comboLevel = level;
+      this.swapComboTexture();
+    });
+  }
+
+  /** 콤보 단계 바뀐 직후 현재 sprite 가 walk 텍스처(back/side) 면 단계 변형으로 교체. front/fall 은 콤보 영향 X. */
+  private swapComboTexture() {
+    const id = this.characterId;
+    if (!CHARACTER_SPECS[id]?.combo) return;
+    const cur = this.sprite.texture.key;
+    const isBack = cur.startsWith(`${id}-back`);
+    const isSide = cur.startsWith(`${id}-side`);
+    if (!isBack && !isSide) return;
+
+    const newKey = isBack ? this.keyBack : this.keySide;
+    if (newKey === cur) return;
+
+    // anim 재생 중이면 같은 종류의 변형 anim 으로 교체 (frame 0 부터 — 짧은 walk 라 위화감 작음)
+    if (this.sprite.anims.isPlaying) {
+      const newAnimKey = `${newKey}-walk`;
+      if (this.scene.anims.exists(newAnimKey)) {
+        this.sprite.play({ key: newAnimKey });
+        return;
+      }
+    }
+    this.sprite.setTexture(newKey);
+  }
+
+  /** 씬 종료 시 호출 — gameBus 리스너 누수 방지 */
+  destroy() {
+    this.unsubCombo?.();
+    this.unsubCombo = null;
   }
 
   /**

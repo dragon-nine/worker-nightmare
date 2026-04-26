@@ -6,6 +6,7 @@ import type { TutorialStep } from './event-bus';
 import { BackgroundManager } from './BackgroundManager';
 import { isBattleMode } from './services/game-mode';
 import { storage } from './services/storage';
+import { combo } from './services/combo';
 
 export interface MovementDeps {
   scene: Phaser.Scene;
@@ -130,6 +131,7 @@ export function switchLane(deps: MovementDeps) {
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
   deps.hud.addTime(deps.getScore());
+  combo.increment(deps.scene.time.now);
 
   const slowMove = isTutorialSlowMove(deps);
   const moveDur = slowMove ? 380 : 120;
@@ -181,6 +183,7 @@ export function moveForward(deps: MovementDeps) {
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
   deps.hud.addTime(deps.getScore());
+  combo.increment(deps.scene.time.now);
 
   while (deps.road.rows.length - deps.getCurrentRowIdx() < 15) {
     deps.road.addNextRow();

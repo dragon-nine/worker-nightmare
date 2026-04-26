@@ -94,6 +94,8 @@ type EventMap = {
   'play-sfx': string;
   // Gameplay HUD: Phaser → React
   'score-update': number;
+  /** 콤보 상태 — count: 누적 콤보 횟수, level: 단계 (0=꺼짐, 1=옆 sprite 만, 2=전체 효과) */
+  'combo-state': { count: number; level: 0 | 1 | 2 };
   'timer-update': number;  // 0~1 비율
   'coin-update': number;   // 이번 판 획득 코인 수 (누적값 아님)
   // Gameplay HUD: React → Phaser

@@ -7,6 +7,7 @@ import { submitScore as submitApiScore } from './services/api';
 import { settleBattle } from './services/battle-state';
 import { handleThreeDayPromotionOnGameEnd } from './services/promotion';
 import { isBattleMode } from './services/game-mode';
+import { combo } from './services/combo';
 import {
   calcViewLeft, panViewTo, scrollToCurrentRow,
   type MovementDeps,
@@ -48,6 +49,7 @@ export function onCrash(deps: LifecycleDeps, kind: CrashKind, opts: CrashOpts = 
   deps.playSfx('sfx-crash', 0.7);
   deps.vibrate([30, 40, 60]);
   deps.scene.cameras.main.shake(200, 0.015);
+  combo.reset();
 
   // 2) 종류별 떨어짐 애니메이션 → 끝나면 onDeath
   if (kind === 'forward') {
@@ -117,6 +119,7 @@ export function revive(deps: LifecycleDeps) {
 
   deps.player.setHurt(false);
   deps.player.resetSprite();
+  combo.reset();
 
   const { height } = deps.scene.scale;
   const playerScreenY = height * PLAYER_Y_RATIO - deps.tileH / 2;

@@ -5,6 +5,8 @@
 /**
  * 캐릭터 단위 스프라이트 / 이펙트 사양.
  * - `walk`: back/side 스프라이트시트의 프레임 수 (가로 배치, 512×512 셀)
+ * - `combo.level1` / `combo.level2`: 콤보 단계별 walk 변형. back/side 각각 선택적 — 등록 안 한 방향은 일반 sprite 사용.
+ *   레벨 임계값(5/10 등)은 services/combo.ts 에 정의.
  * - `fall`: 떨어질 때 스프라이트시트 프레임 수. 미등록 시 정적 `-front` 이미지 + 흔들림 폴백.
  * - `dust`: 발자국 효과. 미등록 시 해당 캐릭터는 효과 없음.
  *   - `frames`: 스프라이트시트 프레임 수
@@ -12,10 +14,11 @@
  *
  * 새 캐릭터를 스프라이트로 전환하는 절차:
  *   1) `public/character/{id}-back.png`, `{id}-side.png` 배치 (가로 배치, 512×512 프레임)
- *   2) (선택) `public/character/{id}-fall.png` 배치 (떨어지는 모션)
- *   3) (선택) `public/character/{id}-dust-fwd.png`, `{id}-dust-side.png` 배치
- *   4) `CHARACTER_SPECS` 에 `{id}: { walk: ..., fall: ..., dust: ... }` 항목 추가
- *   5) `assets.images` 에서 같은 id 의 `-back` / `-side` 정적 이미지 항목 제거
+ *   2) (선택) `public/character/{id}-side-combo1.png` 등 콤보 변형 배치
+ *   3) (선택) `public/character/{id}-fall.png` 배치 (떨어지는 모션)
+ *   4) (선택) `public/character/{id}-dust-fwd.png`, `{id}-dust-side.png` 배치
+ *   5) `CHARACTER_SPECS` 에 항목 추가
+ *   6) `assets.images` 에서 같은 id 의 `-back` / `-side` 정적 이미지 항목 제거
  *      (`-front` 정적 이미지는 그대로 둠 — 메뉴/홈에서 사용)
  */
 interface DustOffset {
@@ -25,8 +28,14 @@ interface DustOffset {
   size: number;
 }
 
+interface ComboLevel {
+  back?: number;
+  side?: number;
+}
+
 export interface CharacterSpec {
   walk: { back: number; side: number };
+  combo?: { level1?: ComboLevel; level2?: ComboLevel };
   fall?: number;
   dust?: { fwd: DustOffset; side: DustOffset };
 }
@@ -34,6 +43,10 @@ export interface CharacterSpec {
 export const CHARACTER_SPECS: Record<string, CharacterSpec> = {
   rabbit: {
     walk: { back: 6, side: 5 },
+    combo: {
+      level1: { side: 5 },                 // 5+ count: 옆만 — 눈에 불
+      level2: { back: 6, side: 5 },        // 10+ count: 앞/옆 모두 — 전체 불
+    },
     fall: 7,
     dust: {
       fwd:  { frames: 5, xOffset: 0,     yOffset: 0.56,  size: 0.52 },
@@ -49,6 +62,16 @@ function buildCharacterSpritesheets(): SpritesheetEntry[] {
   for (const [id, spec] of Object.entries(CHARACTER_SPECS)) {
     out.push([`${id}-back`, `character/${id}-back.png`, 512, 512, spec.walk.back]);
     out.push([`${id}-side`, `character/${id}-side.png`, 512, 512, spec.walk.side]);
+    if (spec.combo) {
+      const levels: Array<{ n: 1 | 2; lvl: ComboLevel | undefined }> = [
+        { n: 1, lvl: spec.combo.level1 },
+        { n: 2, lvl: spec.combo.level2 },
+      ];
+      for (const { n, lvl } of levels) {
+        if (lvl?.back) out.push([`${id}-back-combo${n}`, `character/${id}-back-combo${n}.png`, 512, 512, lvl.back]);
+        if (lvl?.side) out.push([`${id}-side-combo${n}`, `character/${id}-side-combo${n}.png`, 512, 512, lvl.side]);
+      }
+    }
     if (spec.fall) {
       out.push([`${id}-fall`, `character/${id}-fall.png`, 512, 512, spec.fall]);
     }
