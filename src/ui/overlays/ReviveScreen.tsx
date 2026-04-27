@@ -1,23 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gameBus, type GameOverData } from '../../game/event-bus';
-import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
-import { storage } from '../../game/services/storage';
 import { isAdRemoved } from '../../game/services/billing';
 import { fetchLeaderboardNearScore } from '../../game/services/api';
-import { LayoutText } from '../components/LayoutText';
-import { LayoutButton } from '../components/LayoutButton';
-import { buttonStyleDefaults, typeScale } from '../components/design-tokens';
-import { RivalCard } from './RivalCard';
 import { computePbMessage, computeRivalMessage, computeTopMessage, computeSurpassMessage, type RivalMessage } from './rival-message';
 import styles from './overlay.module.css';
 
-const BASE = import.meta.env.BASE_URL || '/';
+// 부활 선택 제한시간 — 안 누르면 자동 스킵 → 게임오버 화면으로 전환
+const REVIVE_TIMEOUT_MS = 5000;
 
-// go-rabbit 슬롯은 GameOverScreen과 동일한 이미지 기준으로 크기가 계산됨 → 레이아웃 일치.
-const IMAGE_MAP: Record<string, string> = {
-  'go-rabbit': 'game-over-screen/gameover-rabbit.png',
-};
+const DESIGN_W = 390;
+
+// 모달 직후 backdrop 합성 click 차단 — 죽음 직전 탭이 부활 화면에 새는 걸 방지
+// (ModalShell 과 동일 정책)
+const BACKDROP_CLICK_LOCK_MS = 260;
 
 interface Props {
   data: GameOverData;
@@ -25,38 +21,74 @@ interface Props {
 }
 
 /**
- * 부활 화면 — 게임오버 레이아웃을 차용한 풀스크린 뷰.
+ * 부활 모달 — 게임 화면 위 반투명 dim + 가운데 카드.
+ * 5초 후 자동 스킵 → skip 버튼 배경에 카운트다운 progress bar 로 시각화.
  *
- * 슬롯 매핑:
- *  - bestText          → "이어서 도전?"
- *  - scoreText         → 현재 점수
- *  - go-rabbit         → 선택된 캐릭터 정면 이미지
- *  - go-btn-revive     → "광고 보고 부활" (광고 제거 구매자는 "이어서 도전")
- *  - go-btn-challenge  → "건너뛰기" (눈에 띄는 커스텀 스타일)
- *  - 나머지 (go-btn-home / restart / ranking / quoteText) → 제외
+ * 구성:
+ *  - 헤더: "이어서 도전?"
+ *  - 큰 현재 점수
+ *  - 라이벌/격려 메시지 (RivalMessage 기반)
+ *  - 광고 보고 부활 버튼 (광고 제거 구매자는 "이어서 도전")
+ *  - 건너뛰기 버튼 (progress bar 자동 채워짐)
  */
 export function ReviveScreen({ data, onSkip }: Props) {
   const { score, bestScore } = data;
   const adRemoved = isAdRemoved();
+  // PB 메시지가 즉시 폴백 — 리더보드 응답 오면 라이벌/탑 메시지로 갱신.
+  const [rival, setRival] = useState<RivalMessage | null>(() => computePbMessage(score, bestScore, 'revive'));
 
-  // quoteText 슬롯은 RivalCard 로 재활용
-  const excludeIds = useMemo(
-    () => ['go-btn-ranking', 'go-btn-restart', 'go-btn-home'],
-    [],
-  );
-  const { positions, elements, scale, ready } = useLayout('game-over', IMAGE_MAP, excludeIds);
-  const characterId = storage.getSelectedCharacter();
-  const [rival, setRival] = useState<RivalMessage | null>(null);
+  // 광고 부활 클릭 후 → 카운트다운/입력 정지. 광고 콜백이 screen-change 처리할 때까지 대기.
+  const adInFlightRef = useRef(false);
 
-  // 격려 메시지 — Revive 는 도전/액션 톤.
-  // 이판 점수를 anchor 로 바로 위 랭커 조회 → 부활하면 따라잡을 수 있는 실제 목표 제시.
+  // 5초 카운트다운 — 0 도달 시 자동 onSkip (단, 광고 진행 중이면 차단)
+  const [msLeft, setMsLeft] = useState(REVIVE_TIMEOUT_MS);
+  const onSkipRef = useRef(onSkip);
+  useEffect(() => { onSkipRef.current = onSkip; }, [onSkip]);
   useEffect(() => {
-    setRival(computePbMessage(score, bestScore, 'revive'));
+    const start = performance.now();
+    let raf = 0;
+    const tick = () => {
+      if (adInFlightRef.current) return; // 광고 진행 중 → 자동 skip 차단
+      const elapsed = performance.now() - start;
+      const left = Math.max(0, REVIVE_TIMEOUT_MS - elapsed);
+      setMsLeft(left);
+      if (left <= 0) {
+        onSkipRef.current();
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // backdrop(카드 외 영역) 탭 → 건너뛰기와 동일하게 onSkip.
+  // raw onClick 금지 (Galaxy WebView 합성 이벤트 중복) → native click + contains 체크.
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mountedAtRef = useRef(0);
+  useEffect(() => {
+    mountedAtRef.current = performance.now();
+    const root = backdropRef.current;
+    if (!root) return;
+    const handler = (e: MouseEvent) => {
+      if (adInFlightRef.current) return; // 광고 진행 중 → backdrop 무시
+      if (performance.now() - mountedAtRef.current < BACKDROP_CLICK_LOCK_MS) return;
+      // 카드 내부 클릭(부활/스킵 버튼 등)은 무시 — 자체 핸들러로 처리됨
+      if (cardRef.current?.contains(e.target as Node)) return;
+      onSkipRef.current();
+    };
+    root.addEventListener('click', handler);
+    return () => root.removeEventListener('click', handler);
+  }, []);
+
+  // 격려 메시지 — 이판 점수 anchor 로 바로 위 랭커 조회 → 부활 후 따라잡을 실제 목표.
+  // (초기값은 PB 폴백, 응답 오면 갱신)
+  useEffect(() => {
     fetchLeaderboardNearScore('daily', score)
       .then((res) => {
         const above = res.above?.[0];
         if (!above) {
-          // 이판 점수가 이미 오늘 최상위 → 1등 문구
           setRival(computeTopMessage('revive'));
           return;
         }
@@ -68,154 +100,275 @@ export function ReviveScreen({ data, onSkip }: Props) {
         }
       })
       .catch(() => { /* PB 폴백 유지 */ });
-  }, [score, bestScore]);
+  }, [score]);
 
   const handleAdRevive = () => {
+    if (adInFlightRef.current) return; // 중복 클릭 차단
+    adInFlightRef.current = true;
     gameBus.emit('play-sfx', 'sfx-click');
     gameBus.emit('revive', undefined);
   };
 
   const handleSkip = () => {
+    if (adInFlightRef.current) return;
     gameBus.emit('play-sfx', 'sfx-click');
     onSkip();
   };
 
-  const textOverrides: Record<string, string> = useMemo(() => ({
-    'bestText': '이어서 도전?',
-    'scoreText': `${score}`,
-    'go-btn-revive': adRemoved ? '이어서 도전' : '광고 보고 부활',
-    'go-btn-challenge': '건너뛰기',
-  }), [score, adRemoved]);
-
-  const clickHandlers: Record<string, () => void> = useMemo(() => ({
-    'go-btn-revive': handleAdRevive,
-    'go-btn-challenge': handleSkip,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), []);
-
-  if (!ready) return null;
-
-  const btnIds = new Set(['go-btn-revive', 'go-btn-challenge']);
-  // 건너뛰기 슬롯 높이를 광고부활 버튼과 동일하게 맞추기 위해 참조
-  const revivePos = positions.get('go-btn-revive');
+  // 화면 스케일 — 다른 화면들과 동일 기준 (useLayout 과 동일 공식)
+  const scale = Math.min(window.innerWidth, 500) / DESIGN_W;
+  const progress = msLeft / REVIVE_TIMEOUT_MS; // 1 → 0
+  const secondsLeft = Math.max(1, Math.ceil(msLeft / 1000));
 
   return (
-    <div className={`${styles.overlay} ${styles.fadeIn}`}>
-      {/* 부활 전용 어두운 블루 그라데이션 */}
+    <div
+      ref={backdropRef}
+      className={`${styles.overlay} ${styles.fadeIn}`}
+      style={{ cursor: 'pointer' }}
+    >
+      {/* 게임 화면 위 반투명 dim — 게임 씬이 뒤에 비쳐 보임 */}
+      <div className={styles.gradient} style={{ background: 'rgba(0, 0, 0, 0.55)' }} />
+
+      {/* 모달 카드 + 하단 안내 문구 — 화면 중앙 정렬 (column) */}
       <div
-        className={styles.gradient}
-        style={{ background: 'linear-gradient(to bottom, #0a1a2a, #000000)' }}
-      />
-
-      {elements.map((el) => {
-        const pos = positions.get(el.id);
-        if (!pos) return null;
-
-        // 건너뛰기 는 광고부활 과 동일한 높이 슬롯으로 렌더 (폰트/크기 맞춤)
-        const isSkip = el.id === 'go-btn-challenge';
-        const displayHeight = isSkip && revivePos ? revivePos.displayHeight : pos.displayHeight;
-        const left = pos.x - pos.displayWidth * pos.originX;
-        const top = pos.y - displayHeight * pos.originY;
-        const onClick = clickHandlers[el.id];
-        const isBtn = btnIds.has(el.id);
-
-        const delay = isBtn ? '0.6s' : '0.3s';
-        const finalDelay = el.id === 'go-btn-challenge' ? '0.8s' : delay;
-
-        const content = el.id === 'go-rabbit' ? (
-          <img
-            src={`${BASE}character/${characterId}-front.png`}
-            alt=""
-            draggable={false}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              transform: 'scale(1.25)',
-              transformOrigin: 'center',
-            }}
-          />
-        ) : el.id === 'quoteText' ? (
-          rival ? <RivalCard msg={rival} scale={scale} /> : null
-        ) : el.type === 'image' ? (
-          <img
-            src={`${BASE}${IMAGE_MAP[el.id]}`}
-            alt={el.id}
-            draggable={false}
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'block',
-              objectFit: 'contain',
-            }}
-          />
-        ) : el.id === 'go-btn-challenge' ? (
-          <SkipButton scale={scale} text={textOverrides[el.id] ?? '건너뛰기'} />
-        ) : el.type === 'button' ? (
-          <LayoutButton el={el} scale={scale} overrideText={textOverrides[el.id]} />
-        ) : (
-          <LayoutText el={el} scale={scale} overrideText={textOverrides[el.id]} />
-        );
-
-        return (
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          ref={cardRef}
+          className={styles.fadeInUp}
+          style={{
+            width: 312 * scale,
+            background: 'linear-gradient(180deg, #1f2536, #14181f)',
+            borderRadius: 20 * scale,
+            padding: `${24 * scale}px ${22 * scale}px ${18 * scale}px`,
+            boxShadow: `0 ${10 * scale}px ${32 * scale}px rgba(0,0,0,0.55)`,
+            border: `${2 * scale}px solid rgba(255,255,255,0.06)`,
+            cursor: 'default',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 14 * scale,
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* 타이틀 */}
           <div
-            key={el.id}
-            className={styles.fadeInUp}
             style={{
-              position: 'absolute',
-              left, top,
-              width: pos.displayWidth,
-              height: displayHeight,
-              animationDelay: finalDelay,
+              fontFamily: 'GMarketSans, sans-serif',
+              fontSize: 22 * scale,
+              fontWeight: 800,
+              color: 'rgba(255,255,255,0.85)',
+              letterSpacing: 0.4,
             }}
           >
-            {isBtn && onClick ? (
-              <TapButton
-                onTap={onClick}
-                style={{ width: '100%', height: '100%' }}
-              >
-                {content}
-              </TapButton>
-            ) : content}
+            이어서 도전?
           </div>
-        );
-      })}
+
+          {/* 큰 점수 */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 6 * scale,
+              marginTop: -2 * scale,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'GMarketSans, sans-serif',
+                fontSize: 64 * scale,
+                fontWeight: 900,
+                color: '#fff',
+                lineHeight: 1,
+                letterSpacing: -0.5,
+                textShadow: `0 ${2 * scale}px ${12 * scale}px rgba(96,165,250,0.35)`,
+              }}
+            >
+              {score}
+            </span>
+            <span
+              style={{
+                fontFamily: 'GMarketSans, sans-serif',
+                fontSize: 18 * scale,
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.5)',
+                letterSpacing: 0.3,
+              }}
+            >
+              점
+            </span>
+          </div>
+
+          {/* 라이벌 메시지 */}
+          {rival && <RivalLine msg={rival} scale={scale} />}
+
+          {/* 광고 보고 부활 */}
+          <TapButton onTap={handleAdRevive} style={{ width: '100%' }}>
+            <div
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #e5332f, #771615)',
+                color: '#fff',
+                fontFamily: 'GMarketSans, sans-serif',
+                fontSize: 18 * scale,
+                fontWeight: 900,
+                padding: `${14 * scale}px 0`,
+                textAlign: 'center',
+                borderRadius: 12 * scale,
+                border: `${2 * scale}px solid #000`,
+                letterSpacing: 0.4,
+                boxSizing: 'border-box',
+                WebkitTextStroke: `${1.2 * scale}px #000`,
+                paintOrder: 'stroke fill',
+              }}
+            >
+              {adRemoved ? '이어서 도전' : '광고 보고 부활'}
+            </div>
+          </TapButton>
+
+          {/* 건너뛰기 — 카운트다운 progress bar 내장 */}
+          <TapButton onTap={handleSkip} style={{ width: '100%' }}>
+            <SkipButtonWithProgress
+              scale={scale}
+              progress={progress}
+              secondsLeft={secondsLeft}
+            />
+          </TapButton>
+        </div>
+
+        {/* 하단 안내 — 다른 모달들과 동일 패턴 */}
+        <div
+          style={{
+            marginTop: 12 * scale,
+            fontFamily: 'GMarketSans, sans-serif',
+            fontSize: 13 * scale,
+            color: 'rgba(255,255,255,0.55)',
+            textAlign: 'center',
+            letterSpacing: 0.3,
+          }}
+        >
+          화면 터치 시 게임오버 화면으로 이동
+        </div>
+      </div>
     </div>
   );
 }
 
 /**
- * 건너뛰기 버튼 — 광고 부활 버튼과 동일한 사이즈/폰트(outline + sm scale).
- * 색상만 다르게 (어두운 블루 배경 위에 밝은 카드형) 해서 "같은 급의 선택지" 느낌.
+ * 건너뛰기 버튼 — 시간 흐를수록 좌→우로 채워지는 progress bar 가 배경에 깔림.
+ * 다 채워지면 자동 스킵. 텍스트는 "건너뛰기 (N)" 형태로 남은 초 표시.
  */
-function SkipButton({ scale, text }: { scale: number; text: string }) {
-  const ts = typeScale.sm;
-  const bsd = buttonStyleDefaults.outline;
+function SkipButtonWithProgress({ scale, progress, secondsLeft }: {
+  scale: number; progress: number; secondsLeft: number;
+}) {
+  // progress: 1 (full time) → 0 (timeout). filled = 시간 소진 %.
+  const filledPct = (1 - progress) * 100;
   return (
     <div
       style={{
         width: '100%',
-        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
         background: '#e9ecf1',
-        borderRadius: bsd.borderRadius * scale,
-        border: `${bsd.borderWidth * scale}px solid ${bsd.borderColor}`,
+        borderRadius: 12 * scale,
+        border: `${2 * scale}px solid #000`,
+        padding: `${14 * scale}px 0`,
+        textAlign: 'center',
+        boxSizing: 'border-box',
+      }}
+    >
+      {/* 진행 바 — 채워질수록 시간이 줄어듬 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: `${filledPct}%`,
+          background: 'rgba(10, 26, 42, 0.12)',
+        }}
+      />
+      <span
+        style={{
+          position: 'relative',
+          fontFamily: 'GMarketSans, sans-serif',
+          fontSize: 18 * scale,
+          fontWeight: 700,
+          color: '#0a1a2a',
+          letterSpacing: 0.3,
+        }}
+      >
+        건너뛰기 ({secondsLeft})
+      </span>
+    </div>
+  );
+}
+
+/**
+ * 라이벌/격려 메시지 한 줄 — RivalCard 와 비슷하지만 콘텐츠 기반 높이.
+ * (모달 안에서 자동 높이가 필요해 별도 인라인 컴포넌트로 분리)
+ */
+function RivalLine({ msg, scale }: { msg: RivalMessage; scale: number }) {
+  const accent = msg.kind === 'rival' ? '#ffd24a'
+    : msg.kind === 'top' ? '#ffd24a'
+    : msg.kind === 'pb-new' ? '#7ce4ff'
+    : 'rgba(255,255,255,0.78)';
+  return (
+    <div
+      style={{
+        width: '100%',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: 2 * scale,
+        padding: `${8 * scale}px ${12 * scale}px`,
+        borderRadius: 10 * scale,
+        background: 'rgba(0,0,0,0.35)',
+        border: `${1 * scale}px solid ${accent}55`,
+        boxSizing: 'border-box',
       }}
     >
       <span
         style={{
           fontFamily: 'GMarketSans, sans-serif',
-          fontSize: ts.fontSize * scale,
-          fontWeight: ts.fontWeight,
-          color: '#0a1a2a',
+          fontSize: 15 * scale,
+          fontWeight: 900,
+          color: accent,
           letterSpacing: 0.3,
+          WebkitTextStroke: `${1.2 * scale}px #000`,
+          paintOrder: 'stroke fill',
           whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: '100%',
         }}
       >
-        {text}
+        {msg.title}
       </span>
+      {msg.subtitle && (
+        <span
+          style={{
+            fontFamily: 'GMarketSans, sans-serif',
+            fontSize: 11 * scale,
+            fontWeight: 700,
+            color: 'rgba(255,255,255,0.7)',
+            letterSpacing: 0.2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: '100%',
+          }}
+        >
+          {msg.subtitle}
+        </span>
+      )}
     </div>
   );
 }
