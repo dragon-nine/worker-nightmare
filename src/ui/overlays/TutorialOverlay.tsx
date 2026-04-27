@@ -65,7 +65,14 @@ export function TutorialOverlay() {
     return unsub;
   }, []);
 
+  // 튜토리얼 advance throttle — 일부 디바이스(Galaxy WebView/iOS)에서 한 제스처에
+  // click 이 50ms 넘는 간격으로 두 번 합성되는 케이스 방어. useNativeTap 의 50ms dedup
+  // 만으로는 한 탭이 두 스텝을 건너뛰는 현상이 재발 → 350ms 추가 throttle.
+  const lastAdvanceAtRef = useRef(0);
   const handleAdvance = useCallback(() => {
+    const now = performance.now();
+    if (now - lastAdvanceAtRef.current < 350) return;
+    lastAdvanceAtRef.current = now;
     gameBus.emit('tutorial-advance', undefined);
   }, []);
 
