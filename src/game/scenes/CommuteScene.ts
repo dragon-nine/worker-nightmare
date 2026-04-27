@@ -40,6 +40,8 @@ export class CommuteScene extends Phaser.Scene {
   /** 튜토리얼 스텝 — 'done' 이면 정상 게임, 그 외 = 튜토리얼 진행 중 */
   private tutorialStep: TutorialStep = 'done';
   private unsubTutorialAdvance: (() => void) | null = null;
+  /** 한 탭이 두 스텝 건너뛰는 합성 click 방어용 — React 단 throttle 의 이중 가드 */
+  private lastTutorialAdvanceAt = 0;
   /** free-play 시작 시점 스냅샷 — 실패 시 롤백용 */
   private freePlayStart: {
     rowIdx: number;
@@ -211,6 +213,10 @@ export class CommuteScene extends Phaser.Scene {
 
   /** 튜토리얼 다이얼로그 탭 → 다음 스텝 */
   private onTutorialAdvance() {
+    // React 측에서 350ms throttle 하지만, 양쪽에서 합성 click 안전망
+    const now = performance.now();
+    if (now - this.lastTutorialAdvanceAt < 250) return;
+    this.lastTutorialAdvanceAt = now;
     const cur = this.tutorialStep;
     // intro 탭 → 길 강조 연출 후 path-intro
     if (cur === 'intro') {

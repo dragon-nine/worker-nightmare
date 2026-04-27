@@ -153,10 +153,11 @@ export function GameContainer() {
       {screen === 'settings' && <SettingsOverlay />}
       {(screen === 'playing' || screen === 'paused') && <GameplayHUD />}
       {screen === 'paused' && <PauseOverlay />}
-      {screen === 'revive-prompt' && gameOverData && (
+      {/* 부활 모달 — 'revive-ad' 동안에도 유지해서 광고 띄우기 전 게임오버 화면이 깜빡 노출되는 것 방지 */}
+      {(screen === 'revive-prompt' || screen === 'revive-ad') && gameOverData && (
         <ReviveScreen data={gameOverData} onSkip={() => gameBus.emit('screen-change', 'game-over')} />
       )}
-      {(screen === 'game-over' || screen === 'revive-ad') && gameOverData && <GameOverScreen data={gameOverData} />}
+      {screen === 'game-over' && gameOverData && <GameOverScreen data={gameOverData} />}
       {challengeScore !== null && (
         <ChallengeOverlay score={challengeScore} onClose={() => setChallengeScore(null)} />
       )}
