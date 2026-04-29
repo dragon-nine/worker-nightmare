@@ -18,7 +18,7 @@ import { gameBus } from '../event-bus';
  */
 
 /** 다음 정답이 이 시간 안에 들어와야 콤보 유지 (ms) */
-const COMBO_INTERVAL_MS = 1000;
+const COMBO_INTERVAL_MS = 500;
 
 /** 이 횟수 이상이면 level 1 (부분 효과) — 옆 sprite 만 변형 */
 const LEVEL1_THRESHOLD = 5;
