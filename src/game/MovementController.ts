@@ -78,12 +78,15 @@ export function scrollToCurrentRow(deps: MovementDeps, duration = 100) {
 
   const scrollDelta = targetContainerY - deps.road.getContainer().y;
 
-  // 이전 스크롤 tween 취소 후 새로 시작
+  // 이전 스크롤 tween 취소 후 새로 시작.
+  // ease Linear: 시각 진행과 시간 진행이 정확히 동기 → walk anim duration 과 일치해
+  // anim 이 도착 시점에 정확히 한 사이클 끝남. (Quad.easeOut 은 시각 도착이 ~78% 시점이라
+  // anim 이 도착 후에도 진행되어 보이는 잔상이 남음.)
   deps.scene.tweens.killTweensOf(deps.road.getContainer());
   deps.scene.tweens.add({
     targets: deps.road.getContainer(),
     y: targetContainerY,
-    duration, ease: 'Quad.easeOut',
+    duration, ease: 'Linear',
   });
 
   deps.bgManager.scroll(scrollDelta);

@@ -151,9 +151,11 @@ export class Player {
     const animKey = `${key}-walk`;
     if (durationMs != null && this.scene.anims.exists(animKey)) {
       // walk anim 은 BootScene 에서 frame 0(정지 포즈) 빼고 만들어짐.
-      // 이동 tween 은 Quad.easeOut 이라 시각적 도착이 약 80% 시점에 일어남 — anim 을 0.7 배로 단축해
-      // anim 이 시각 도착에 맞춰 끝나도록. 결과: 도착 직전 정지 포즈로 snap → "도착 후 워킹" 잔상 제거.
-      this.sprite.play({ key: animKey, duration: durationMs * 0.7 });
+      // duration 옵션은 phaser 버전에 따라 무시되는 케이스가 있어 frameRate 를 직접 계산해서 강제.
+      // 결과: anim 이 movement 와 같은 시간 안에 정확히 1 cycle 도는 것.
+      const numFrames = this.scene.anims.get(animKey).frames.length;
+      const frameRate = Math.max(1, numFrames * 1000 / durationMs);
+      this.sprite.play({ key: animKey, frameRate, duration: durationMs });
     } else {
       if (this.sprite.anims.isPlaying) this.sprite.anims.stop();
       this.sprite.setTexture(key);
@@ -209,7 +211,8 @@ export class Player {
     this.currentLane = lane;
   }
 
-  /** 전환 성공: 타겟 화면 X로 이동 */
+  /** 전환 성공: 타겟 화면 X로 이동.
+   *  ease Linear: 시각 진행 = 시간 진행 → walk anim duration 과 정확히 동기. */
   animateSwitch(targetScreenX: number, duration = 120) {
     const goingRight = targetScreenX > this.sprite.x;
     const startX = this.sprite.x;
@@ -221,14 +224,14 @@ export class Player {
     this.scene.tweens.add({
       targets: this.sprite,
       x: targetScreenX,
-      duration, ease: 'Quad.easeOut',
+      duration, ease: 'Linear',
     });
     // dust 도 토끼 이동량만큼 같이 이동 (따라다님)
     if (dust) {
       this.scene.tweens.add({
         targets: dust,
         x: dust.x + (targetScreenX - startX),
-        duration, ease: 'Quad.easeOut',
+        duration, ease: 'Linear',
       });
     }
   }
