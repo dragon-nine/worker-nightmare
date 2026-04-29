@@ -42,16 +42,12 @@ export interface CharacterSpec {
 
 export const CHARACTER_SPECS: Record<string, CharacterSpec> = {
   rabbit: {
-    walk: { back: 6, side: 5 },
+    walk: { back: 5, side: 5 },
     combo: {
       level1: { side: 5 },                 // 5+ count: 옆만 — 눈에 불
       level2: { back: 6, side: 5 },        // 10+ count: 앞/옆 모두 — 전체 불
     },
     fall: 7,
-    dust: {
-      fwd:  { frames: 5, xOffset: 0,     yOffset: 0.56,  size: 0.52 },
-      side: { frames: 5, xOffset: 0.415, yOffset: 0.075, size: 0.9  },
-    },
   },
 };
 

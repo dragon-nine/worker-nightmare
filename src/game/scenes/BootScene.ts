@@ -34,12 +34,16 @@ export class BootScene extends Phaser.Scene {
 
     // 스프라이트시트 → 1회 재생 anim 자동 등록 (key: `${textureKey}-walk`).
     // 움직일 때마다 1사이클 돌리고 멈추면 프레임 0 으로 복귀 (Player 가 animationcomplete 에서 처리).
+    // 캐릭터 walk variant (back/side, combo 포함) 는 frame 0 (정지 포즈) 을 anim 에서 제외 — 이동 시간에 정확히 매칭되도록.
+    // fall / dust 는 frame 0 부터 사용 (효과 시작 프레임).
+    const isWalkVariant = (k: string) => /-(back|side)(-combo[12])?$/.test(k);
     for (const [key, , , , frames] of gameConfig.assets.spritesheets) {
       const animKey = `${key}-walk`;
       if (!this.anims.exists(animKey)) {
+        const startFrame = isWalkVariant(key) ? 1 : 0;
         this.anims.create({
           key: animKey,
-          frames: this.anims.generateFrameNumbers(key, { start: 0, end: frames - 1 }),
+          frames: this.anims.generateFrameNumbers(key, { start: startFrame, end: frames - 1 }),
           frameRate: 8,
           repeat: 0,
         });

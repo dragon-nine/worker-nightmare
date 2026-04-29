@@ -26,6 +26,9 @@ export function GameplayHUD() {
   const scoreRef = useRef<HTMLSpanElement>(null);
   const coinsRef = useRef<HTMLSpanElement>(null);
   const gaugeFillRef = useRef<HTMLDivElement>(null);
+  // 콤보 카운트 — DOM 직접 조작 (입력마다 바뀌므로 리렌더 회피)
+  const comboBoxRef = useRef<HTMLDivElement>(null);
+  const comboCountRef = useRef<HTMLSpanElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
   const [tutorialStep, setTutorialStep] = useState<TutorialStep>(tutorialDone ? 'done' : 'intro');
   const [battleHud, setBattleHud] = useState<BattleHudData | null>(null);
@@ -61,8 +64,25 @@ export function GameplayHUD() {
     const unsub6 = gameBus.on('battle-countdown', (value) => {
       setBattleCountdown(value);
     });
-    const unsub7 = gameBus.on('combo-state', ({ level }) => {
+    const unsub7 = gameBus.on('combo-state', ({ count, level }) => {
       setComboLevel(level);
+      const box = comboBoxRef.current;
+      const num = comboCountRef.current;
+      if (!box || !num) return;
+      if (count >= 2) {
+        num.textContent = String(count);
+        box.style.opacity = '1';
+        box.animate(
+          [
+            { transform: 'scale(1)' },
+            { transform: 'scale(1.35)', offset: 0.4 },
+            { transform: 'scale(1)' },
+          ],
+          { duration: 260, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' },
+        );
+      } else {
+        box.style.opacity = '0';
+      }
     });
     // 초기값 주입 (재마운트/부활 시 깜빡임 방지)
     if (scoreRef.current) scoreRef.current.textContent = String(hudState.getScore());
@@ -242,33 +262,83 @@ export function GameplayHUD() {
         );
       })()}
 
-      {/* 점수 — 콤보 레벨 2 (10+ 연속): 안=흰색, 테두리=노랑(#f5f784), 하이라이트=시안(#74edf2) 글로우 */}
+      {/* 점수 — 콤보 영향 없음, 항상 기본 스타일 */}
+      {pos('scoreText') && !(battleMode && battleCountdown !== null) && (
+        <Text
+          ref={scoreRef}
+          size={scoreFontSize}
+          weight={700}
+          color={scoreEl?.textStyle?.color || '#fff'}
+          style={{
+            ...boxStyle('scoreText'),
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            WebkitTextStroke: `${scoreStrokeW}px ${scoreStrokeColor}`,
+            paintOrder: 'stroke fill',
+            ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
+          }}
+        >
+          {hudState.getScore()}
+        </Text>
+      )}
+
+      {/* 콤보 카운트 — 점수 바로 아래. count >= 2 일 때 페이드인 + 매 증가마다 바운스. 레벨에 따라 색/크기 progressively. */}
       {pos('scoreText') && !(battleMode && battleCountdown !== null) && (() => {
+        const sp = pos('scoreText')!;
+        const scoreBoxLeft = sp.x - sp.displayWidth * sp.originX;
+        const scoreBoxTop = sp.y - sp.displayHeight * sp.originY;
+        const comboTop = scoreBoxTop + scoreFontSize * 1.25;
+        const baseSize = Math.max(13 * scale, scoreFontSize * 0.21);
+        const levelMult = comboLevel >= 2 ? 1.25 : (comboLevel >= 1 ? 1.1 : 1.0);
+        const comboFontSize = baseSize * levelMult;
         const comboFull = comboLevel >= 2;
-        const fillColor = comboFull ? '#ffffff' : (scoreEl?.textStyle?.color || '#fff');
-        const strokeColor = comboFull ? '#f5f784' : scoreStrokeColor;
-        const highlight = comboFull
-          ? `0 0 ${6 * scale}px #74edf2, 0 0 ${14 * scale}px #74edf2, 0 0 ${24 * scale}px rgba(116,237,242,0.7)`
-          : 'none';
+        const comboPartial = comboLevel >= 1;
+        const comboColor = comboFull ? '#ffffff' : (comboPartial ? '#fff5d8' : '#ffd24a');
+        const comboStroke = comboFull ? '#f5f784' : '#321900';
+        const comboGlow = comboFull
+          ? `0 0 ${5 * scale}px #74edf2, 0 0 ${12 * scale}px rgba(116,237,242,0.7)`
+          : (comboPartial ? `0 0 ${5 * scale}px rgba(255,210,74,0.7)` : `0 ${2 * scale}px ${4 * scale}px rgba(0,0,0,0.5)`);
         return (
-          <Text
-            ref={scoreRef}
-            size={scoreFontSize}
-            weight={700}
-            color={fillColor}
+          <div
+            ref={comboBoxRef}
             style={{
-              ...boxStyle('scoreText'),
+              position: 'absolute',
+              top: `calc(var(--sat, 0px) + ${comboTop}px)`,
+              left: scoreBoxLeft,
+              width: sp.displayWidth,
               display: 'flex',
-              alignItems: 'flex-start',
               justifyContent: 'center',
-              WebkitTextStroke: `${scoreStrokeW}px ${strokeColor}`,
-              paintOrder: 'stroke fill',
-              textShadow: highlight,
+              opacity: 0,
+              pointerEvents: 'none',
+              transformOrigin: 'center center',
+              transition: 'opacity 0.18s ease-out',
               ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
             }}
           >
-            {hudState.getScore()}
-          </Text>
+            <Text
+              size={comboFontSize}
+              weight={900}
+              color={comboColor}
+              style={{
+                WebkitTextStroke: `${3 * scale}px ${comboStroke}`,
+                paintOrder: 'stroke fill',
+                letterSpacing: 0.5,
+                lineHeight: 1,
+                textShadow: comboGlow,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span ref={comboCountRef} style={{ fontSize: comboFontSize * 1.7 }}>0</span>
+              <span
+                style={{
+                  fontSize: comboFontSize * 0.6,
+                  marginLeft: comboFontSize * 0.4,
+                  WebkitTextStroke: `${1.6 * scale}px ${comboStroke}`,
+                }}
+              >COMBO!</span>
+            </Text>
+          </div>
         );
       })()}
 

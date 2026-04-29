@@ -150,7 +150,10 @@ export class Player {
   private setFacing(key: string, durationMs?: number) {
     const animKey = `${key}-walk`;
     if (durationMs != null && this.scene.anims.exists(animKey)) {
-      this.sprite.play({ key: animKey, duration: durationMs });
+      // walk anim 은 BootScene 에서 frame 0(정지 포즈) 빼고 만들어짐.
+      // 이동 tween 은 Quad.easeOut 이라 시각적 도착이 약 80% 시점에 일어남 — anim 을 0.7 배로 단축해
+      // anim 이 시각 도착에 맞춰 끝나도록. 결과: 도착 직전 정지 포즈로 snap → "도착 후 워킹" 잔상 제거.
+      this.sprite.play({ key: animKey, duration: durationMs * 0.7 });
     } else {
       if (this.sprite.anims.isPlaying) this.sprite.anims.stop();
       this.sprite.setTexture(key);
