@@ -329,12 +329,12 @@ export function GameplayHUD() {
                 whiteSpace: 'nowrap',
               }}
             >
-              <span ref={comboCountRef} style={{ fontSize: comboFontSize * 1.7 }}>0</span>
+              <span ref={comboCountRef} style={{ fontSize: comboFontSize * 1.5 }}>0</span>
               <span
                 style={{
-                  fontSize: comboFontSize * 0.6,
-                  marginLeft: comboFontSize * 0.4,
-                  WebkitTextStroke: `${1.6 * scale}px ${comboStroke}`,
+                  fontSize: comboFontSize * 1.35,
+                  marginLeft: comboFontSize * 0.3,
+                  WebkitTextStroke: `${2.4 * scale}px ${comboStroke}`,
                 }}
               >COMBO!</span>
             </Text>

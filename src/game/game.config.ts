@@ -45,7 +45,7 @@ export const CHARACTER_SPECS: Record<string, CharacterSpec> = {
     walk: { back: 5, side: 5 },
     combo: {
       level1: { side: 5 },                 // 5+ count: 옆만 — 눈에 불
-      level2: { back: 6, side: 5 },        // 10+ count: 앞/옆 모두 — 전체 불
+      level2: { back: 5, side: 5 },        // 10+ count: 앞/옆 모두 — 전체 불
     },
     fall: 7,
   },
