@@ -187,14 +187,22 @@ export class Player {
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
   }
 
-  /** DOM 미러 렌더용 정보 추출 */
+  /** DOM 미러 렌더용 정보 추출 — frame 단위까지 sync 해서 sprite sheet anim 도 그대로 보여줄 수 있게. */
   getMirrorInfo() {
+    const tex = this.sprite.texture;
+    const frameName = this.sprite.frame.name;
+    const frame = Number.parseInt(frameName, 10) || 0;
+    // texture.frameTotal 은 __BASE 가상 frame 까지 포함해서 +1 됨 → 실제 sprite frame 수는 -1.
+    // 단일 png(정적) 는 frameTotal=1 → 1 로 두면 background-size 100% 처리 분기.
+    const totalFrames = Math.max(1, tex.frameTotal - 1);
     return {
       x: this.sprite.x,
       y: this.sprite.y,
-      texKey: this.sprite.texture.key,
+      texKey: tex.key,
       flipX: this.sprite.flipX,
       size: this.rabbitSize,
+      frame,
+      totalFrames,
     };
   }
 
