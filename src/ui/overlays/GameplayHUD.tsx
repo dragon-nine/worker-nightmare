@@ -65,11 +65,14 @@ export function GameplayHUD() {
       setBattleCountdown(value);
     });
     const unsub7 = gameBus.on('combo-state', ({ count, level }) => {
-      setComboLevel(level);
       const box = comboBoxRef.current;
       const num = comboCountRef.current;
       if (!box || !num) return;
-      if (count >= 2) {
+      // 콤보 popup 은 level >= 1 (count >= 5) 부터 노출. level 0 (count 1~4) 은 표시 안 함.
+      // fade out 중엔 setComboLevel 호출 안 해서 마지막 level 색 그대로 유지하며 사라짐
+      // (reset 시 잠깐 level 0 노란색이 비치는 잔상 방지).
+      if (level >= 1) {
+        setComboLevel(level);
         num.textContent = String(count);
         box.style.opacity = '1';
         box.animate(
