@@ -21,8 +21,9 @@ export function TutorialOverlay() {
   const [step, setStep] = useState<TutorialStep>(
     storage.getBool('tutorialDone') ? 'done' : 'intro'
   );
-  // DOM 미러 토끼 — transition 중 Phaser 위치/텍스처를 받아 ref 로 직접 업데이트 (리렌더 0)
-  const mirrorRef = useRef<HTMLImageElement>(null);
+  // DOM 미러 토끼 — transition 중 Phaser 위치/텍스처/frame 을 받아 ref 로 직접 업데이트 (리렌더 0).
+  // sprite sheet 의 현재 frame 까지 sync 하려면 <img> 가 아닌 <div> + background-image 로 처리.
+  const mirrorRef = useRef<HTMLDivElement>(null);
   // DOM 미러 도로 — transition-road 중 한 번에 타일 배열 받아 렌더
   const [roadTiles, setRoadTiles] = useState<Array<{ x: number; y: number; w: number; h: number; texKey: string }> | null>(null);
   // free-play 카운터
@@ -57,9 +58,27 @@ export function TutorialOverlay() {
       el.style.left = `${info.x}px`;
       el.style.top = `${info.y}px`;
       el.style.transform = `translate(-50%, -50%)${info.flipX ? ' scaleX(-1)' : ''}`;
+
       const src = `${BASE}character/${info.texKey}.png`;
-      if (el.src !== src && !el.src.endsWith(`/character/${info.texKey}.png`)) {
-        el.src = src;
+      const desiredBg = `url("${src}")`;
+      if (el.style.backgroundImage !== desiredBg) {
+        el.style.backgroundImage = desiredBg;
+        el.style.backgroundRepeat = 'no-repeat';
+      }
+      // sprite sheet (frame > 1) → background-size 로 가로 스트립 펼친 뒤 frame 단위로 position-x 이동
+      // 단일 png → 박스에 맞춤
+      if (info.totalFrames > 1) {
+        const sizePct = info.totalFrames * 100;
+        const desiredSize = `${sizePct}% 100%`;
+        if (el.style.backgroundSize !== desiredSize) {
+          el.style.backgroundSize = desiredSize;
+        }
+        const denom = info.totalFrames - 1
+        const posPct = denom > 0 ? (info.frame / denom) * 100 : 0;
+        el.style.backgroundPositionX = `${posPct}%`;
+      } else if (el.style.backgroundSize !== '100% 100%') {
+        el.style.backgroundSize = '100% 100%';
+        el.style.backgroundPositionX = '0';
       }
     });
     return unsub;
@@ -124,11 +143,10 @@ export function TutorialOverlay() {
           })}
         </div>
       )}
-      {/* DOM 미러 토끼 — transition 중엔 글로우, transition-road 중엔 글로우 없이 일반 표시 */}
-      <img
+      {/* DOM 미러 토끼 — transition 중엔 글로우, transition-road 중엔 글로우 없이 일반 표시.
+          background-image 로 sprite sheet 의 현재 frame 까지 sync. */}
+      <div
         ref={mirrorRef}
-        alt=""
-        draggable={false}
         className={step === 'transition' ? styles.tutorialGlow : undefined}
         style={{
           position: 'absolute',

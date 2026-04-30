@@ -94,6 +94,8 @@ type EventMap = {
   'play-sfx': string;
   // Gameplay HUD: Phaser → React
   'score-update': number;
+  /** 콤보 상태 — count: 누적 콤보 횟수, level: 단계 (0=꺼짐, 1=옆 sprite 만, 2=전체 효과) */
+  'combo-state': { count: number; level: 0 | 1 | 2 };
   'timer-update': number;  // 0~1 비율
   'coin-update': number;   // 이번 판 획득 코인 수 (누적값 아님)
   // Gameplay HUD: React → Phaser
@@ -107,7 +109,8 @@ type EventMap = {
   // Tutorial: 다이얼로그 탭해서 다음으로 (React → Phaser)
   'tutorial-advance': void;
   // Tutorial transition 중: 토끼 미러 정보 (DOM 오버레이에 CSS 글로우 적용)
-  'rabbit-mirror': { x: number; y: number; texKey: string; flipX: boolean; size: number } | null;
+  // frame/totalFrames 는 sprite sheet 기준 — DOM 미러가 background-position 으로 같은 frame 표시
+  'rabbit-mirror': { x: number; y: number; texKey: string; flipX: boolean; size: number; frame: number; totalFrames: number } | null;
   // Tutorial transition-road 중: 도로 타일 전체 미러
   'road-mirror': Array<{ x: number; y: number; w: number; h: number; texKey: string }> | null;
   // Tutorial free-play 카운터 업데이트

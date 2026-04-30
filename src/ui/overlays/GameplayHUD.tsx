@@ -26,10 +26,15 @@ export function GameplayHUD() {
   const scoreRef = useRef<HTMLSpanElement>(null);
   const coinsRef = useRef<HTMLSpanElement>(null);
   const gaugeFillRef = useRef<HTMLDivElement>(null);
+  // 콤보 카운트 — DOM 직접 조작 (입력마다 바뀌므로 리렌더 회피)
+  const comboBoxRef = useRef<HTMLDivElement>(null);
+  const comboCountRef = useRef<HTMLSpanElement>(null);
   const tutorialDone = storage.getBool('tutorialDone');
   const [tutorialStep, setTutorialStep] = useState<TutorialStep>(tutorialDone ? 'done' : 'intro');
   const [battleHud, setBattleHud] = useState<BattleHudData | null>(null);
   const [battleCountdown, setBattleCountdown] = useState<number | null>(null);
+  // 콤보 단계 — level 2 (10+ 연속) 일 때 점수 색상 변경. 글로우/오라 같은 추가 효과는 없음.
+  const [comboLevel, setComboLevel] = useState<0 | 1 | 2>(0);
 
   useEffect(() => {
     // 점수 — DOM 직접 조작 (리렌더 0번)
@@ -59,10 +64,33 @@ export function GameplayHUD() {
     const unsub6 = gameBus.on('battle-countdown', (value) => {
       setBattleCountdown(value);
     });
+    const unsub7 = gameBus.on('combo-state', ({ count, level }) => {
+      const box = comboBoxRef.current;
+      const num = comboCountRef.current;
+      if (!box || !num) return;
+      // 콤보 popup 은 level >= 1 (count >= 5) 부터 노출. level 0 (count 1~4) 은 표시 안 함.
+      // fade out 중엔 setComboLevel 호출 안 해서 마지막 level 색 그대로 유지하며 사라짐
+      // (reset 시 잠깐 level 0 노란색이 비치는 잔상 방지).
+      if (level >= 1) {
+        setComboLevel(level);
+        num.textContent = String(count);
+        box.style.opacity = '1';
+        box.animate(
+          [
+            { transform: 'scale(1)' },
+            { transform: 'scale(1.35)', offset: 0.4 },
+            { transform: 'scale(1)' },
+          ],
+          { duration: 260, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' },
+        );
+      } else {
+        box.style.opacity = '0';
+      }
+    });
     // 초기값 주입 (재마운트/부활 시 깜빡임 방지)
     if (scoreRef.current) scoreRef.current.textContent = String(hudState.getScore());
     if (coinsRef.current) coinsRef.current.textContent = String(hudState.getCoins());
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); };
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); };
   }, [tutorialDone]);
 
   const handleSwitch = useCallback(() => {
@@ -237,7 +265,7 @@ export function GameplayHUD() {
         );
       })()}
 
-      {/* 점수 */}
+      {/* 점수 — 콤보 영향 없음, 항상 기본 스타일 */}
       {pos('scoreText') && !(battleMode && battleCountdown !== null) && (
         <Text
           ref={scoreRef}
@@ -257,6 +285,65 @@ export function GameplayHUD() {
           {hudState.getScore()}
         </Text>
       )}
+
+      {/* 콤보 카운트 — 점수 바로 아래. count >= 2 일 때 페이드인 + 매 증가마다 바운스. 레벨에 따라 색/크기 progressively. */}
+      {pos('scoreText') && !(battleMode && battleCountdown !== null) && (() => {
+        const sp = pos('scoreText')!;
+        const scoreBoxLeft = sp.x - sp.displayWidth * sp.originX;
+        const scoreBoxTop = sp.y - sp.displayHeight * sp.originY;
+        const comboTop = scoreBoxTop + scoreFontSize * 1.25;
+        const baseSize = Math.max(13 * scale, scoreFontSize * 0.21);
+        const levelMult = comboLevel >= 2 ? 1.25 : (comboLevel >= 1 ? 1.1 : 1.0);
+        const comboFontSize = baseSize * levelMult;
+        const comboFull = comboLevel >= 2;
+        const comboPartial = comboLevel >= 1;
+        const comboColor = comboFull ? '#ffffff' : (comboPartial ? '#fff5d8' : '#ffd24a');
+        const comboStroke = comboFull ? '#f5f784' : '#321900';
+        const comboGlow = comboFull
+          ? `0 0 ${5 * scale}px #74edf2, 0 0 ${12 * scale}px rgba(116,237,242,0.7)`
+          : (comboPartial ? `0 0 ${5 * scale}px rgba(255,210,74,0.7)` : `0 ${2 * scale}px ${4 * scale}px rgba(0,0,0,0.5)`);
+        return (
+          <div
+            ref={comboBoxRef}
+            style={{
+              position: 'absolute',
+              top: `calc(var(--sat, 0px) + ${comboTop}px)`,
+              left: scoreBoxLeft,
+              width: sp.displayWidth,
+              display: 'flex',
+              justifyContent: 'center',
+              opacity: 0,
+              pointerEvents: 'none',
+              transformOrigin: 'center center',
+              transition: 'opacity 0.18s ease-out',
+              ...(tutorialStep === 'transition-road' ? { zIndex: 125 } : {}),
+            }}
+          >
+            <Text
+              size={comboFontSize}
+              weight={900}
+              color={comboColor}
+              style={{
+                WebkitTextStroke: `${3 * scale}px ${comboStroke}`,
+                paintOrder: 'stroke fill',
+                letterSpacing: 0.5,
+                lineHeight: 1,
+                textShadow: comboGlow,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span ref={comboCountRef} style={{ fontSize: comboFontSize * 1.5 }}>0</span>
+              <span
+                style={{
+                  fontSize: comboFontSize * 1.35,
+                  marginLeft: comboFontSize * 0.3,
+                  WebkitTextStroke: `${2.4 * scale}px ${comboStroke}`,
+                }}
+              >COMBO!</span>
+            </Text>
+          </div>
+        );
+      })()}
 
       {/* 튜토리얼 스텝에 따라 버튼 활성/비활성 — prompt-forward 에선 switch 잠금 등 */}
       {(() => {

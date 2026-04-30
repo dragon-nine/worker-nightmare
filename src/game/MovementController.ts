@@ -6,6 +6,7 @@ import type { TutorialStep } from './event-bus';
 import { BackgroundManager } from './BackgroundManager';
 import { isBattleMode } from './services/game-mode';
 import { storage } from './services/storage';
+import { combo } from './services/combo';
 
 export interface MovementDeps {
   scene: Phaser.Scene;
@@ -30,8 +31,8 @@ export interface MovementDeps {
   setGuideCount(c: number): void;
   getTutorialStep(): TutorialStep;
   onTutorialAction(action: 'forward' | 'switch'): void;
-  onCrash(): void;
-  onForwardCrash(): void;
+  /** 충돌 처리 단일 entrypoint. kind='switch' 일 땐 opts.bumpX 필수 (튕길 X 좌표). */
+  onCrash(kind: 'forward' | 'switch', opts?: { bumpX?: number }): void;
   playSfx(key: string, volume: number): void;
   vibrate(pattern: number | number[]): void;
   /** 이번 판에서 획득한 코인 수 */
@@ -77,12 +78,15 @@ export function scrollToCurrentRow(deps: MovementDeps, duration = 100) {
 
   const scrollDelta = targetContainerY - deps.road.getContainer().y;
 
-  // 이전 스크롤 tween 취소 후 새로 시작
+  // 이전 스크롤 tween 취소 후 새로 시작.
+  // ease Linear: 시각 진행과 시간 진행이 정확히 동기 → walk anim duration 과 일치해
+  // anim 이 도착 시점에 정확히 한 사이클 끝남. (Quad.easeOut 은 시각 도착이 ~78% 시점이라
+  // anim 이 도착 후에도 진행되어 보이는 잔상이 남음.)
   deps.scene.tweens.killTweensOf(deps.road.getContainer());
   deps.scene.tweens.add({
     targets: deps.road.getContainer(),
     y: targetContainerY,
-    duration, ease: 'Quad.easeOut',
+    duration, ease: 'Linear',
   });
 
   deps.bgManager.scroll(scrollDelta);
@@ -111,17 +115,15 @@ export function switchLane(deps: MovementDeps) {
 
   if (!canSwitch) {
     if (isBattleMode()) {
-      deps.onCrash();
+      deps.onCrash('switch');
       return;
     }
     if (deps.getGodMode()) return;
-    deps.setIsFalling(true);
-    deps.hud.stopTimer();
-    deps.playSfx('sfx-crash', 0.7);
+    // 충돌 효과 + 떨어짐 애니 + onDeath 까지 단일 함수에서 처리
     const lane = deps.player.currentLane;
     const crashLane = lane < NUM_LANES - 1 ? lane + 1 : lane - 1;
     const bumpX = laneScreenX(deps, crashLane);
-    deps.player.animateCrashSwitch(bumpX, () => deps.onCrash());
+    deps.onCrash('switch', { bumpX });
     return;
   }
 
@@ -132,6 +134,7 @@ export function switchLane(deps: MovementDeps) {
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
   deps.hud.addTime(deps.getScore());
+  combo.increment(deps.scene.time.now);
 
   const slowMove = isTutorialSlowMove(deps);
   const moveDur = slowMove ? 380 : 120;
@@ -158,7 +161,7 @@ export function moveForward(deps: MovementDeps) {
 
   const currentRow = deps.road.rows[deps.getCurrentRowIdx()];
   if (currentRow.isTurn && deps.player.currentLane !== currentRow.type) {
-    deps.onForwardCrash();
+    deps.onCrash('forward');
     return;
   }
 
@@ -168,7 +171,7 @@ export function moveForward(deps: MovementDeps) {
 
   const canPass = nextRow.isTurn || nextRow.type === deps.player.currentLane;
   if (!canPass) {
-    deps.onForwardCrash();
+    deps.onCrash('forward');
     return;
   }
 
@@ -183,6 +186,7 @@ export function moveForward(deps: MovementDeps) {
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
   deps.hud.addTime(deps.getScore());
+  combo.increment(deps.scene.time.now);
 
   while (deps.road.rows.length - deps.getCurrentRowIdx() < 15) {
     deps.road.addNextRow();
@@ -214,7 +218,7 @@ export function moveForward(deps: MovementDeps) {
   const scrollDur = slowMove ? 380 : 100;
   // 튜토리얼 step 은 애니메이션 시작 후 'transition' 으로 전환 (slowMove 계산 후에 호출)
   if (step === 'prompt-forward' || step === 'free-play') deps.onTutorialAction('forward');
-  deps.player.animateForward(() => scrollToCurrentRow(deps, scrollDur));
+  deps.player.animateForward(scrollDur, () => scrollToCurrentRow(deps, scrollDur));
 
   deps.setCurrentRowIdx(deps.road.cleanupOldRows(deps.getCurrentRowIdx()));
 }

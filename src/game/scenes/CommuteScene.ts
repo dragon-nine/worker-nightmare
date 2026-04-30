@@ -13,6 +13,7 @@ import { hudState } from '../hud-state';
 import { storage } from '../services/storage';
 import { getBattleHudSnapshot } from '../services/battle-state';
 import { isBattleMode } from '../services/game-mode';
+import { combo } from '../services/combo';
 import { BackgroundManager } from '../BackgroundManager';
 import {
   switchLane as doSwitchLane,
@@ -21,7 +22,7 @@ import {
   type MovementDeps,
 } from '../MovementController';
 import {
-  onForwardCrash, onCrash, onDeath,
+  onCrash, onDeath,
   type LifecycleDeps,
 } from '../GameLifecycle';
 import { setupReactListeners } from '../ReactListeners';
@@ -93,6 +94,9 @@ export class CommuteScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#000000');
 
+    // 새 게임 시작 — 이전 세션의 콤보 상태 (있다면) 정리
+    combo.reset();
+
     this.bgManager = new BackgroundManager(this);
     this.bgManager.create();
 
@@ -123,6 +127,8 @@ export class CommuteScene extends Phaser.Scene {
     const playerScreenX = laneScreenX(this.movementDeps(), startLane);
     const characterId = storage.getSelectedCharacter();
     this.player = new Player(this, this.laneW, playerScreenX, playerScreenY, startLane, characterId);
+    // 씬 종료 시 Player 의 gameBus 리스너 (combo-state 등) 정리
+    this.events.once('shutdown', () => this.player.destroy());
 
     this.hud = new HUD(this, () => onDeath(this.lifecycleDeps()), {
       duration: isBattleMode() ? 30 : undefined,
@@ -169,6 +175,7 @@ export class CommuteScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     if (!this.gameOver) {
       this.hud.update(delta);
+      combo.tick(_time);
       if (_time - this.lastBattleEmitAt >= 120) {
         this.lastBattleEmitAt = _time;
         this.emitBattleHud();
@@ -338,7 +345,9 @@ export class CommuteScene extends Phaser.Scene {
     this.vibrate([30, 40, 60]);
     this.cameras.main.shake(200, 0.015);
     this.player.setHurt(true);
-    this.player.animateForwardCrash(() => {
+    // 일반 죽음(GameLifecycle.onCrash)과 동일한 비율 — 0.7 타일만 휘청
+    const bumpY = this.player.y - this.tileH * 0.7;
+    this.player.animateForwardCrash(bumpY, () => {
       this.setTutorialStep('free-play-fail');
     });
     logEvent('tutorial_free_play_fail', { type: 'forward', success_count: this.freePlaySuccessCount });
@@ -417,13 +426,14 @@ export class CommuteScene extends Phaser.Scene {
       setIsFalling: (v) => { this.isFalling = v; },
       getGuideCount: () => this.guideCount,
       setGuideCount: (c) => { this.guideCount = c; },
-      onCrash: () => {
-        if (this.tutorialStep === 'free-play') { this.onFreePlaySwitchCrash(); return; }
-        onCrash(this.lifecycleDeps());
-      },
-      onForwardCrash: () => {
-        if (this.tutorialStep === 'free-play') { this.onFreePlayForwardCrash(); return; }
-        onForwardCrash(this.lifecycleDeps());
+      onCrash: (kind, opts) => {
+        // 튜토리얼 free-play 중에는 게임오버 대신 자체 핸들러로 라우팅
+        if (this.tutorialStep === 'free-play') {
+          if (kind === 'forward') this.onFreePlayForwardCrash();
+          else this.onFreePlaySwitchCrash();
+          return;
+        }
+        onCrash(this.lifecycleDeps(), kind, opts);
       },
       playSfx: (key, vol) => this.playSfx(key, vol),
       vibrate: (p) => this.vibrate(p),

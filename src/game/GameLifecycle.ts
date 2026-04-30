@@ -7,6 +7,7 @@ import { submitScore as submitApiScore } from './services/api';
 import { settleBattle } from './services/battle-state';
 import { handleThreeDayPromotionOnGameEnd } from './services/promotion';
 import { isBattleMode } from './services/game-mode';
+import { combo } from './services/combo';
 import {
   calcViewLeft, panViewTo, scrollToCurrentRow,
   type MovementDeps,
@@ -22,35 +23,51 @@ export interface LifecycleDeps extends MovementDeps {
   showPopup(message: string, color: string): void;
 }
 
-export function onForwardCrash(deps: LifecycleDeps) {
+export type CrashKind = 'forward' | 'switch';
+export interface CrashOpts {
+  /** switch 충돌일 때 어느 X 좌표로 튕기다가 떨어질지 (lane bump 위치). forward 면 무시. */
+  bumpX?: number;
+}
+
+/**
+ * 충돌 처리의 단일 entrypoint.
+ * 모든 죽음 경로(앞/옆)는 이 함수만 호출해 완전히 동일한 효과 — 빨간 tint, 진동, 카메라 흔들림,
+ * SFX, 타이머 정지, isFalling 셋팅 — 를 즉시 적용한 뒤 종류에 맞는 떨어짐 애니메이션을 재생,
+ * 끝나면 onDeath. God 모드 / 대전 모드는 위에서 분기.
+ */
+export function onCrash(deps: LifecycleDeps, kind: CrashKind, opts: CrashOpts = {}) {
   if (deps.getGodMode()) return;
   if (isBattleMode()) {
-    applyBattlePenalty(deps, 'forward');
+    applyBattlePenalty(deps, kind);
     return;
   }
+
+  // 1) 공통 임팩트 — 어떤 종류든 동일
   deps.setIsFalling(true);
   deps.hud.stopTimer();
   deps.player.setHurt(true);
   deps.playSfx('sfx-crash', 0.7);
   deps.vibrate([30, 40, 60]);
   deps.scene.cameras.main.shake(200, 0.015);
-  deps.player.animateForwardCrash(() => onDeath(deps));
-}
+  combo.reset();
 
-export function onCrash(deps: LifecycleDeps) {
-  if (deps.getGodMode()) return;
-  if (isBattleMode()) {
-    applyBattlePenalty(deps, 'switch');
+  // 2) 종류별 떨어짐 애니메이션 → 끝나면 onDeath
+  if (kind === 'forward') {
+    // 한 타일의 70% 만 위로 튕김 — 풀 타일이면 새 토끼 sprite 와 합쳐 너무 높이 떠 보임.
+    // 0.7 = "휘청"하는 정도. 조정 시 이 값만.
+    const bumpY = deps.player.y - deps.tileH * 0.7;
+    deps.player.animateForwardCrash(bumpY, () => onDeath(deps));
     return;
   }
-  deps.setIsFalling(true);
-  deps.player.setHurt(true);
-  deps.vibrate([30, 40, 60]);
-  deps.scene.cameras.main.shake(200, 0.015);
-  onDeath(deps);
+  // switch — bumpX 가 없으면 (방어적) 그냥 onDeath
+  if (opts.bumpX == null) {
+    onDeath(deps);
+    return;
+  }
+  deps.player.animateCrashSwitch(opts.bumpX, () => onDeath(deps));
 }
 
-function applyBattlePenalty(deps: LifecycleDeps, type: 'forward' | 'switch') {
+function applyBattlePenalty(deps: LifecycleDeps, type: CrashKind) {
   deps.setIsFalling(true);
   deps.hud.stopTimer();
   deps.player.setHurt(true);
@@ -102,6 +119,7 @@ export function revive(deps: LifecycleDeps) {
 
   deps.player.setHurt(false);
   deps.player.resetSprite();
+  combo.reset();
 
   const { height } = deps.scene.scale;
   const playerScreenY = height * PLAYER_Y_RATIO - deps.tileH / 2;
