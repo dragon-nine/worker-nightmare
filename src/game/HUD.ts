@@ -13,6 +13,8 @@ export class HUD {
   private maxTime: number;
   private startTime: number;
   private allowTimeBonus: boolean;
+  /** 고정 회복량 (초). 설정 시 도전 모드의 리니어 커브 대신 항상 이 값을 사용. */
+  private fixedTimeBonus: number | undefined;
   elapsed = 0;
 
   timeLeft = START_TIME;
@@ -29,13 +31,14 @@ export class HUD {
   constructor(
     scene: Phaser.Scene,
     onTimeUp: () => void,
-    options?: { duration?: number; allowTimeBonus?: boolean },
+    options?: { duration?: number; allowTimeBonus?: boolean; fixedTimeBonus?: number },
   ) {
     this.scene = scene;
     this.onTimeUp = onTimeUp;
     this.maxTime = options?.duration ?? MAX_TIME;
     this.startTime = options?.duration ?? START_TIME;
     this.allowTimeBonus = options?.allowTimeBonus ?? true;
+    this.fixedTimeBonus = options?.fixedTimeBonus;
     this.timeLeft = this.startTime;
   }
 
@@ -71,14 +74,10 @@ export class HUD {
     gameBus.emit('score-update', score);
   }
 
-  addTime(score = 0) {
+  addTime() {
     if (!this.allowTimeBonus) return;
-    // 기본 시간 기반 커브 (기존 유지): 시작 0.4초 → 90초 후 0.15초
-    let bonus = Math.max(0.15, 0.4 - (this.elapsed / 90) * 0.25);
-    // 초반 적응 추가 보너스 (계단형)
-    if (score < 25)      bonus += 2.0;
-    else if (score < 35) bonus += 1.0;
-    else if (score < 50) bonus += 0.5;
+    // 스테이지 모드: 고정 timeBonus. 도전 모드: 시간 기반 리니어 커브 (0.4 → 0.15 over 90s).
+    const bonus = this.fixedTimeBonus ?? Math.max(0.15, 0.4 - (this.elapsed / 90) * 0.25);
     this.timeLeft = Math.min(this.maxTime, this.timeLeft + bonus);
     this.emitTimer();
   }

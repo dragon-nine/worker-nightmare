@@ -12,17 +12,21 @@ import { gameBus, type TutorialStep } from '../event-bus';
 import { hudState } from '../hud-state';
 import { storage } from '../services/storage';
 import { getBattleHudSnapshot } from '../services/battle-state';
-import { isBattleMode } from '../services/game-mode';
+import { isBattleMode, isStageMode, getCurrentStageId } from '../services/game-mode';
+import { obstaclesForCurrentMode, getStage } from '../services/stages';
 import { combo } from '../services/combo';
 import { BackgroundManager } from '../BackgroundManager';
+import { CloudManager } from '../CloudManager';
+import { OvertimeManager } from '../OvertimeManager';
 import {
   switchLane as doSwitchLane,
   moveForward as doMoveForward,
   laneScreenX,
+  scrollToCurrentRow,
   type MovementDeps,
 } from '../MovementController';
 import {
-  onCrash, onDeath,
+  onCrash, onDeath, endStage,
   type LifecycleDeps,
 } from '../GameLifecycle';
 import { setupReactListeners } from '../ReactListeners';
@@ -66,6 +70,8 @@ export class CommuteScene extends Phaser.Scene {
   /** 부활 시점의 점수 — endGame에서 부활 후 추가 획득량 계산용. -1 = 부활 안 함 */
   private scoreAtRevive = -1;
   private bgManager!: BackgroundManager;
+  private cloudManager!: CloudManager;
+  private overtimeManager!: OvertimeManager;
 
   private laneWorldX: number[] = [];
   private laneW = 0;
@@ -130,11 +136,27 @@ export class CommuteScene extends Phaser.Scene {
     // 씬 종료 시 Player 의 gameBus 리스너 (combo-state 등) 정리
     this.events.once('shutdown', () => this.player.destroy());
 
+    // 모드별 HUD 옵션:
+    //   - 대전: 30초 고정, 회복 X
+    //   - 스테이지: stage 정의의 maxTime + 고정 timeBonus
+    //   - 도전(normal): 기본 5초, 회복은 시간 기반 리니어 커브
+    const stageDef = isStageMode() ? getStage(getCurrentStageId()) : undefined;
     this.hud = new HUD(this, () => onDeath(this.lifecycleDeps()), {
-      duration: isBattleMode() ? 30 : undefined,
+      duration: isBattleMode() ? 30 : stageDef?.maxTime,
       allowTimeBonus: !isBattleMode(),
+      fixedTimeBonus: stageDef?.timeBonus,
     });
     this.hud.create();
+
+    this.cloudManager = new CloudManager(this);
+    this.events.once('shutdown', () => this.cloudManager.stop());
+
+    this.overtimeManager = new OvertimeManager(
+      this,
+      () => ({ x: this.player.x, y: this.player.y }),
+      this.laneW,
+    );
+    this.events.once('shutdown', () => this.overtimeManager.stop());
 
     // 중요: 리스너부터 먼저 등록 (GameplayHUD 표시 전에 준비 완료)
     setupReactListeners({
@@ -205,6 +227,7 @@ export class CommuteScene extends Phaser.Scene {
         gameBus.emit('battle-countdown', null);
         this.inputLocked = false;
         this.hud.startTimer();
+        // 대전 / 스테이지 모드는 장애물 없음 — cloudManager.start() 호출 안 함
       });
       return;
     }
@@ -215,6 +238,7 @@ export class CommuteScene extends Phaser.Scene {
       logEvent('game_start');
       storage.recordPlayStart();
       this.hud.startTimer();
+      if (obstaclesForCurrentMode().cloud) this.cloudManager.start();
     }
   }
 
@@ -369,6 +393,7 @@ export class CommuteScene extends Phaser.Scene {
     logEvent('game_start');
     storage.recordPlayStart();
     this.hud.startTimer();
+    if (obstaclesForCurrentMode().cloud) this.cloudManager.start();
   }
 
   /* ── Popup ── */
@@ -445,7 +470,54 @@ export class CommuteScene extends Phaser.Scene {
       },
       getTutorialStep: () => this.tutorialStep,
       onTutorialAction: (action) => this.onTutorialAction(action),
+      triggerOvertime: () => this.overtimeManager.trigger(),
+      triggerStageClear: () => endStage(this.lifecycleDeps()),
+      triggerRewind: (count) => this.startRewind(count),
     };
+  }
+
+  /**
+   * 뒤로가기 장애물 발동 — N칸 후진 + 후진 애니메이션 동안 입력 차단.
+   * 콤보는 자연스럽게 끊김(입력 못 함 → 인터벌 초과 → 자동 만료).
+   * 점수는 차감 X (오로지 위치 + 시간 손실).
+   */
+  private startRewind(count: number) {
+    if (this.inputLocked) return;
+    const targetIdx = Math.max(0, this.currentRowIdx - count);
+    const actualCount = this.currentRowIdx - targetIdx;
+    if (actualCount <= 0) return;
+
+    this.inputLocked = true;
+    this.player.setHurt(true);
+    this.playSfx('sfx-crash', 0.6);
+    this.vibrate([30, 50, 30, 50]);
+
+    // 후진 도중 turn 을 가로지르면 캐릭터 lane 도 변경되어야 함 — 목적지 row 의 lane 으로 정렬.
+    // scrollToCurrentRow 가 player.currentLane 을 읽어 X 좌표를 결정하므로 먼저 갱신.
+    this.currentRowIdx = targetIdx;
+    const targetRow = this.road.rows[targetIdx];
+    if (targetRow) {
+      this.player.currentLane = targetRow.type;
+      this.player.faceNextTile(targetRow.type);
+    }
+
+    const dur = actualCount * 220;
+
+    // ── 이펙트 ──
+    // 빨간 화면 플래시 — 즉각적인 임팩트
+    this.cameras.main.flash(180, 255, 70, 70);
+    // 카메라 흔들림 — 후진 진행 동안 지속
+    this.cameras.main.shake(dur, 0.014);
+    // "반려!" 팝업 (직장인 metaphor)
+    this.showPopup(`반려! ←${actualCount}`, '#ff8b8b');
+
+    scrollToCurrentRow(this.movementDeps(), dur);
+
+    this.time.delayedCall(dur + 80, () => {
+      this.inputLocked = false;
+      this.player.setHurt(false);
+      this.justSwitched = false;
+    });
   }
 
   private lifecycleDeps(): LifecycleDeps {

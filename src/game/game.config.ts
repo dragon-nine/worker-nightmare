@@ -167,6 +167,12 @@ export const gameConfig = {
       ['gauge-full', 'ui/gauge-full.png'],
       ['go-rabbit', 'game-over-screen/gameover-rabbit.png'],
       ['coin', 'items/coin.png'],
+      ['cloud-1', 'character/cloud-1.png'],
+      ['cloud-2', 'character/cloud-2.png'],
+      ['cloud-3', 'character/cloud-3.png'],
+      ['paper-pile', 'items/paper-pile.png'],
+      ['paper-1', 'items/paper-1.png'],
+      ['paper-2', 'items/paper-2.png'],
     ] as [string, string][],
     /** 스프라이트시트 (가로 배치): [key, path, frameWidth, frameHeight, frameCount]. 자동으로 `${key}-walk` 루프 anim 생성. 캐릭터 항목은 `CHARACTER_SPECS` 에서 자동 생성. */
     spritesheets: buildCharacterSpritesheets(),

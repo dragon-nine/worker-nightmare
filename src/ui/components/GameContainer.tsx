@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import { createGameConfig } from '../../game/config';
-import { gameBus, type GameScreen, type GameOverData } from '../../game/event-bus';
+import { gameBus, type GameScreen, type GameOverData, type StageClearData } from '../../game/event-bus';
 import { adService } from '../../game/services/ad-service';
 import { logEvent, logScreen, getCurrentScreenName } from '../../game/services/analytics';
 import { isGoogle, isTossNative } from '../../game/platform';
@@ -24,6 +24,8 @@ import { ReviveScreen } from '../overlays/ReviveScreen';
 import { MockAdModal } from '../overlays/MockAdModal';
 import { CharacterUnlockPopup } from '../overlays/CharacterUnlockPopup';
 import { RewardPopup } from '../overlays/RewardPopup';
+import { StageSelectScreen } from '../overlays/StageSelectScreen';
+import { StageClearScreen } from '../overlays/StageClearScreen';
 import { Toast } from './Toast';
 
 const GAME_CONTAINER_ID = 'game-container';
@@ -35,6 +37,7 @@ export function GameContainer() {
   const [challengeScore, setChallengeScore] = useState<number | null>(null);
   const [showAdRemove, setShowAdRemove] = useState(false);
   const [reviveFailReason, setReviveFailReason] = useState<'skipped' | 'failed' | null>(null);
+  const [stageClearData, setStageClearData] = useState<StageClearData | null>(null);
 
   useEffect(() => {
     if (gameRef.current) return;
@@ -93,7 +96,8 @@ export function GameContainer() {
     const unsub3 = gameBus.on('show-challenge', (score) => setChallengeScore(score));
     const unsub4 = gameBus.on('show-ad-remove', () => setShowAdRemove(true));
     const unsub5 = gameBus.on('revive-fail', (reason) => setReviveFailReason(reason));
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
+    const unsub6 = gameBus.on('stage-clear-data', (data) => setStageClearData(data));
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); };
   }, []);
 
   // 앱 라이프사이클 이벤트 — 이탈 분석용
@@ -158,6 +162,8 @@ export function GameContainer() {
         <ReviveScreen data={gameOverData} onSkip={() => gameBus.emit('screen-change', 'game-over')} />
       )}
       {screen === 'game-over' && gameOverData && <GameOverScreen data={gameOverData} />}
+      {screen === 'stage-select' && <StageSelectScreen />}
+      {screen === 'stage-clear' && stageClearData && <StageClearScreen data={stageClearData} />}
       {challengeScore !== null && (
         <ChallengeOverlay score={challengeScore} onClose={() => setChallengeScore(null)} />
       )}

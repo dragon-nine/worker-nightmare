@@ -19,4 +19,11 @@ export interface RoadRow {
   decoration?: Phaser.GameObjects.Container;
   coin?: Phaser.GameObjects.Image;
   coinCollected?: boolean;
+  dust?: Phaser.GameObjects.Image;
+  dustConsumed?: boolean;
+  /** 뒤로가기 장애물 — 통과 시 N칸 후진 */
+  rewind?: Phaser.GameObjects.Container;
+  /** 뒤로가기 칸 수 (1~3) */
+  rewindCount?: number;
+  rewindConsumed?: boolean;
 }

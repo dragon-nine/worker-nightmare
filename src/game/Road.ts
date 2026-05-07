@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { RoadRow, RoadType } from './constants';
+import { obstaclesForCurrentMode } from './services/stages';
 
 /**
  * 직선 타일에 코인이 스폰될 확률.
@@ -12,6 +13,28 @@ import type { RoadRow, RoadType } from './constants';
  */
 const COIN_SPAWN_RATE = 0.2;
 
+/**
+ * 타일 장애물(먼지더미/후진) 통합 스폰 — 5~30 행 간격 랜덤 (부드러운 균등).
+ * 같은 행에 여러 장애물 겹치지 않게 단일 슬롯으로 관리. 구름은 별도(시간 기반).
+ */
+const TILE_OBSTACLE_MIN_ROW = 8;
+const TILE_OBSTACLE_MIN_GAP = 5;
+const TILE_OBSTACLE_MAX_GAP = 30;
+
+function pickNextObstacleAt(currentIdx: number): number {
+  const gap = TILE_OBSTACLE_MIN_GAP + Math.floor(Math.random() * (TILE_OBSTACLE_MAX_GAP - TILE_OBSTACLE_MIN_GAP + 1));
+  return currentIdx + gap;
+}
+
+/** 후진 칸 수 분포 — 35% 2칸, 30% 3칸, 20% 4칸, 15% 5칸 */
+function pickRewindCount(): number {
+  const r = Math.random();
+  if (r < 0.35) return 2;
+  if (r < 0.65) return 3;
+  if (r < 0.85) return 4;
+  return 5;
+}
+
 export class Road {
   private scene: Phaser.Scene;
   private container: Phaser.GameObjects.Container;
@@ -23,6 +46,8 @@ export class Road {
   rows: RoadRow[] = [];
   startY = 0;
   private straightRemaining = 0;
+  /** 다음 타일 장애물(먼지/후진) 배치할 행 idx — 같은 행에 두 종류 겹치지 않도록 단일 슬롯 */
+  private nextObstacleAt = -1;
 
   constructor(
     scene: Phaser.Scene,
@@ -136,12 +161,17 @@ export class Road {
   }
 
   cleanupOldRows(currentRowIdx: number): number {
-    while (currentRowIdx > 10) {
+    // 후진 장애물이 최대 5칸까지 보내므로 충분한 행 보존
+    const KEEP_BEHIND = 13;
+    while (currentRowIdx > KEEP_BEHIND) {
       const old = this.rows.shift()!;
       old.tiles.forEach(t => t.destroy());
       old.decoration?.destroy();
       old.coin?.destroy();
+      old.dust?.destroy();
+      old.rewind?.destroy();
       currentRowIdx--;
+      this.nextObstacleAt--;
     }
     return currentRowIdx;
   }
@@ -181,9 +211,67 @@ export class Road {
       if (this.rows.length > 3 && Math.random() < COIN_SPAWN_RATE) {
         this.spawnCoin(row, this.laneWorldX[type], y);
       }
+
+      // 타일 장애물 (먼지더미 / 후진) — 통합 5~30 행 간격 단일 슬롯.
+      // 같은 행에 여러 종류 겹치지 않음. 코인 있는 행도 회피.
+      const rowIdx = this.rows.length;
+      const obs = obstaclesForCurrentMode();
+      const enabledTileObs: Array<'dust' | 'rewind'> = [];
+      if (obs.dust)   enabledTileObs.push('dust');
+      if (obs.rewind) enabledTileObs.push('rewind');
+
+      if (enabledTileObs.length > 0 && !row.coin && rowIdx >= TILE_OBSTACLE_MIN_ROW) {
+        if (this.nextObstacleAt < 0) this.nextObstacleAt = pickNextObstacleAt(rowIdx);
+        if (rowIdx >= this.nextObstacleAt) {
+          const choice = enabledTileObs[Math.floor(Math.random() * enabledTileObs.length)];
+          if (choice === 'dust') this.spawnDust(row, this.laneWorldX[type], y);
+          else                   this.spawnRewind(row, this.laneWorldX[type], y, pickRewindCount());
+          this.nextObstacleAt = pickNextObstacleAt(rowIdx);
+        }
+      }
     }
 
     this.rows.push(row);
+  }
+
+  private spawnDust(row: RoadRow, x: number, y: number) {
+    const size = this.laneW * 0.85;
+    const dust = this.scene.add.image(x, y - this.tileH * 0.05, 'paper-pile')
+      .setDisplaySize(size, size)
+      .setOrigin(0.5, 0.5)
+      .setDepth(8);
+    this.container.add(dust);
+    row.dust = dust;
+  }
+
+  /**
+   * 뒤로가기 장애물 — 타일 위에 페인트된 표지판 느낌.
+   * 추후 에셋 받으면 교체. count = 후진할 칸 수 (1~3).
+   */
+  private spawnRewind(row: RoadRow, x: number, y: number, count: number) {
+    const cx = x;
+    const cy = y;
+    const bgSize = this.laneW * 0.85; // 타일을 거의 다 덮음
+
+    // 타일 위에 평평하게 깔린 배경 (붉은 사각형 — 도로에 페인트된 경고 표지)
+    const bg = this.scene.add.rectangle(cx, cy, bgSize, bgSize, 0xff5544, 0.92)
+      .setStrokeStyle(this.laneW * 0.05, 0xffffff, 1);
+
+    // 텍스트 "←N" — 타일 글자처럼 굵고 크게
+    const fontPx = Math.round(bgSize * 0.5);
+    const text = this.scene.add.text(cx, cy, `←${count}`, {
+      fontFamily: 'GMarketSans, sans-serif',
+      fontSize: `${fontPx}px`,
+      color: '#ffffff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5, 0.55);
+
+    const wrap = this.scene.add.container(0, 0, [bg, text]).setDepth(7);
+    this.container.add(wrap);
+    // idle 흔들림 없음 — 타일 위에 평평하게 고정
+
+    row.rewind = wrap;
+    row.rewindCount = count;
   }
 
   private spawnCoin(row: RoadRow, x: number, y: number) {

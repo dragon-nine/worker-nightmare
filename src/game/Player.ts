@@ -316,7 +316,7 @@ export class Player {
   }
 
   /** 대전 패널티: 잠깐 앞으로 튕겼다가 제자리 복귀 */
-  animateForwardPenalty(onDone: () => void) {
+  animateForwardPenalty(onDone: () => void, holdMs = 180) {
     const startY = this.sprite.y;
     this.setFacing(this.keyBack);
     this.sprite.setDisplaySize(this.rabbitSize, this.rabbitSize);
@@ -328,7 +328,7 @@ export class Player {
       duration: 90,
       ease: 'Quad.easeOut',
       yoyo: true,
-      hold: 180,
+      hold: holdMs,
       onComplete: () => {
         this.sprite.setY(startY);
         onDone();
@@ -337,7 +337,7 @@ export class Player {
   }
 
   /** 대전 패널티: 잘못된 방향으로 살짝 튕겼다가 제자리 복귀 */
-  animateSwitchPenalty(direction: 'left' | 'right', onDone: () => void) {
+  animateSwitchPenalty(direction: 'left' | 'right', onDone: () => void, holdMs = 180) {
     const startX = this.sprite.x;
     const offset = this.rabbitSize * 0.18 * (direction === 'right' ? 1 : -1);
     this.setFacing(this.keySide);
@@ -351,7 +351,7 @@ export class Player {
       duration: 90,
       ease: 'Quad.easeOut',
       yoyo: true,
-      hold: 180,
+      hold: holdMs,
       onComplete: () => {
         this.sprite.setX(startX);
         onDone();

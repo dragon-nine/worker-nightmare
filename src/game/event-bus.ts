@@ -12,7 +12,9 @@ export type GameScreen =
   | 'settings'
   | 'revive-prompt' // 부활 옵션 모달 (게임오버 직후)
   | 'game-over'      // 보상/종료 화면
-  | 'revive-ad';     // 부활 광고 시청 중
+  | 'revive-ad'      // 부활 광고 시청 중
+  | 'stage-select'   // 스테이지 선택 화면
+  | 'stage-clear';   // 스테이지 클리어 결과 화면
 
 export interface RewardPopupItem {
   kind: 'coin' | 'gem';
@@ -80,9 +82,18 @@ export interface GameOverData {
   battle?: BattleResultData | null;
 }
 
+export interface StageClearData {
+  stageId: number;
+  score: number;
+  targetScore: number;
+  rewardCoins: number;
+  isLastStage: boolean;
+}
+
 type EventMap = {
   'screen-change': GameScreen;
   'game-over-data': GameOverData;
+  'stage-clear-data': StageClearData;
   // React → Phaser actions
   'start-game': void;
   'restart-game': void;  // 게임오버 화면에서 바로 재시작

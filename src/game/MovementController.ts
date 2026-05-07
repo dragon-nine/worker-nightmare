@@ -4,7 +4,8 @@ import { Player } from './Player';
 import { HUD } from './HUD';
 import type { TutorialStep } from './event-bus';
 import { BackgroundManager } from './BackgroundManager';
-import { isBattleMode } from './services/game-mode';
+import { isBattleMode, isStageMode, getCurrentStageId } from './services/game-mode';
+import { getStage } from './services/stages';
 import { storage } from './services/storage';
 import { combo } from './services/combo';
 
@@ -39,6 +40,12 @@ export interface MovementDeps {
   getCoinsEarnedThisGame(): number;
   /** 코인 픽업 시 호출 — 카운터 +1 */
   incrementCoinsEarnedThisGame(): void;
+  /** 먼지 더미 통과 시 호출 — 야근(시야 제한) 모드 트리거. origin = burst 발생 좌표 */
+  triggerOvertime(origin?: { x: number; y: number }): void;
+  /** 스테이지 모드 목표 점수 도달 시 호출 — 클리어 처리(저장/보상/UI 전환) */
+  triggerStageClear(): void;
+  /** 뒤로가기 장애물 통과 시 호출 — count 칸 강제 후진, 후진 동안 입력 차단 */
+  triggerRewind(count: number): void;
 }
 
 /* ── View helpers ── */
@@ -133,7 +140,7 @@ export function switchLane(deps: MovementDeps) {
   deps.setJustSwitched(true);
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
-  deps.hud.addTime(deps.getScore());
+  deps.hud.addTime();
   combo.increment(deps.scene.time.now);
 
   const slowMove = isTutorialSlowMove(deps);
@@ -185,11 +192,50 @@ export function moveForward(deps: MovementDeps) {
   deps.setCurrentRowIdx(nextIdx);
   deps.setScore(deps.getScore() + 1);
   deps.hud.updateScore(deps.getScore());
-  deps.hud.addTime(deps.getScore());
+  deps.hud.addTime();
   combo.increment(deps.scene.time.now);
+
+  // 스테이지 모드 — 목표 점수 도달 즉시 클리어. 이 시점 이후 로직(코인/먼지/애니)은 진행 안 함.
+  if (isStageMode()) {
+    const stage = getStage(getCurrentStageId());
+    if (stage && deps.getScore() >= stage.targetScore) {
+      deps.triggerStageClear();
+      return;
+    }
+  }
 
   while (deps.road.rows.length - deps.getCurrentRowIdx() < 15) {
     deps.road.addNextRow();
+  }
+
+  // 먼지 더미 — 통과 시 야근 모드 트리거 (튜토리얼/대전 제외)
+  if (nextRow.dust && !nextRow.dustConsumed && step === 'done' && !isBattleMode()) {
+    nextRow.dustConsumed = true;
+    const dust = nextRow.dust;
+    const container = deps.road.getContainer();
+    const burstX = container.x + dust.x;
+    const burstY = container.y + dust.y;
+    deps.scene.tweens.killTweensOf(dust);
+    dust.destroy();
+    deps.triggerOvertime({ x: burstX, y: burstY });
+  }
+
+  // 뒤로가기 장애물 — 통과 시 N칸 후진 + 후진 동안 입력 차단 (튜토리얼/대전 제외)
+  if (nextRow.rewind && !nextRow.rewindConsumed && step === 'done' && !isBattleMode()) {
+    nextRow.rewindConsumed = true;
+    const count = nextRow.rewindCount ?? 1;
+    const wrap = nextRow.rewind;
+    deps.scene.tweens.killTweensOf(wrap);
+    deps.scene.tweens.add({
+      targets: wrap,
+      alpha: 0,
+      scale: 1.45,
+      duration: 220,
+      ease: 'Quad.easeOut',
+      onComplete: () => wrap.destroy(),
+    });
+    deps.triggerRewind(count);
+    return; // 이번 moveForward 의 후속 처리 (스크롤 등) 는 rewind 시퀀스가 대신 처리
   }
 
   // 코인 수집 — 잔액만 충전. 점수/시간엔 영향 없음.

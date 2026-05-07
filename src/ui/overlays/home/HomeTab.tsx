@@ -157,12 +157,24 @@ export function HomeTab({ scale }: Props) {
   const handleStart = () => {
     gameBus.emit('play-sfx', 'sfx-click');
     clearBattle();
-    setGameMode('normal');
     if (!tutorialDone) {
+      // 튜토리얼은 도전 모드(normal)에서 진행 — 끝나야 스테이지 시스템 등장
+      setGameMode('normal');
       gameBus.emit('screen-change', 'story');
     } else {
-      gameBus.emit('start-game', undefined);
+      // 기본 진입 = 스테이지 선택
+      gameBus.emit('screen-change', 'stage-select');
     }
+  };
+
+  // 도전 모드(기존 무한 점수 게임) — 사이드 진입
+  const handleChallenge = () => {
+    gameBus.emit('play-sfx', 'sfx-click');
+    clearBattle();
+    setGameMode('normal');
+    // 첫 진입 = start-game, 재진입 = restart-game. 둘 중 활성 listener 하나만 동작.
+    gameBus.emit('start-game', undefined);
+    gameBus.emit('restart-game', undefined);
   };
 
   const handleSettings = () => {
@@ -522,6 +534,25 @@ export function HomeTab({ scale }: Props) {
             scale={scale}
             onClick={handleStart}
           />
+          {tutorialDone && (
+            <div style={{ marginTop: 10 * scale, textAlign: 'center' }}>
+              <TapButton
+                onTap={handleChallenge}
+                style={{
+                  padding: `${8 * scale}px ${20 * scale}px`,
+                  background: 'rgba(255,255,255,0.10)',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: 999,
+                  color: '#ffffff',
+                  fontFamily: 'GMarketSans, sans-serif',
+                  fontSize: 13 * scale,
+                  fontWeight: 700,
+                }}
+              >
+                ⚡ 도전 모드 (무한)
+              </TapButton>
+            </div>
+          )}
         </div>
       </div>
     </div>
