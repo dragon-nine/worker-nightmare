@@ -26,6 +26,9 @@ import { CharacterUnlockPopup } from '../overlays/CharacterUnlockPopup';
 import { RewardPopup } from '../overlays/RewardPopup';
 import { StageSelectScreen } from '../overlays/StageSelectScreen';
 import { StageClearScreen } from '../overlays/StageClearScreen';
+import { StageIntroOverlay } from '../overlays/StageIntroOverlay';
+import { StageFailModal } from '../overlays/StageFailModal';
+import { isStageMode } from '../../game/services/game-mode';
 import { Toast } from './Toast';
 
 const GAME_CONTAINER_ID = 'game-container';
@@ -157,11 +160,17 @@ export function GameContainer() {
       {screen === 'settings' && <SettingsOverlay />}
       {(screen === 'playing' || screen === 'paused') && <GameplayHUD />}
       {screen === 'paused' && <PauseOverlay />}
+      {/* 스테이지 인트로 — 홈에서 시작 버튼 누르면 화면 위에 모달로 표시 */}
+      <StageIntroOverlay />
       {/* 부활 모달 — 'revive-ad' 동안에도 유지해서 광고 띄우기 전 게임오버 화면이 깜빡 노출되는 것 방지 */}
       {(screen === 'revive-prompt' || screen === 'revive-ad') && gameOverData && (
         <ReviveScreen data={gameOverData} onSkip={() => gameBus.emit('screen-change', 'game-over')} />
       )}
-      {screen === 'game-over' && gameOverData && <GameOverScreen data={gameOverData} />}
+      {screen === 'game-over' && gameOverData && (
+        isStageMode()
+          ? <StageFailModal data={gameOverData} />
+          : <GameOverScreen data={gameOverData} />
+      )}
       {screen === 'stage-select' && <StageSelectScreen />}
       {screen === 'stage-clear' && stageClearData && <StageClearScreen data={stageClearData} />}
       {challengeScore !== null && (

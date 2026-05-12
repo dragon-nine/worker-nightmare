@@ -17,7 +17,7 @@ interface Props {
   onClose: () => void;
 }
 
-type TabKey = 'daily' | 'weekly' | 'all';
+export type TabKey = 'daily' | 'weekly' | 'all';
 
 type CharKey = 'rabbit' | 'penguin' | 'sheep' | 'cat' | 'koala' | 'lion';
 
@@ -121,13 +121,45 @@ function normalizeChar(c: string | null | undefined): CharKey {
 export function RankingModal({ onClose }: Props) {
   const scale = useResponsiveScale();
   const [tab, setTab] = useState<TabKey>('daily');
+
+  return createPortal(
+    <ModalShell
+      onClose={onClose}
+      maxWidth={360}
+      zIndex={1000}
+      tabs={TABS}
+      activeTab={tab}
+      onTabChange={(k) => setTab(k as TabKey)}
+    >
+      <Text size={20 * scale} weight={900} color="#fff" align="center" style={{ marginBottom: 14 * scale }}>
+        🏆 랭킹
+      </Text>
+      <RankingPanel period={tab} scale={scale} listMaxHeight={320 * scale} />
+    </ModalShell>,
+    document.body,
+  );
+}
+
+// ── 공용 랭킹 패널 (모달 + 풀스크린 탭에서 재사용) ──────────
+export function RankingPanel({
+  period,
+  scale,
+  listMaxHeight,
+  hideCountdown = false,
+}: {
+  period: TabKey;
+  scale: number;
+  /** 리스트 영역 최대 높이. 미지정 시 자식 높이만큼 늘어남 (탭 화면용). */
+  listMaxHeight?: number;
+  /** 카운트다운 라벨 숨김 (탭 화면이 자체 표시할 때). */
+  hideCountdown?: boolean;
+}) {
   const myUserId = getStoredUserId();
   const localCharacter = storage.getSelectedCharacter();
 
   const dailyCountdown = useCountdown(useMemo(() => nextMidnight(), []));
   const weeklyCountdown = useCountdown(useMemo(() => nextMonday(), []));
 
-  // 탭별 서버 데이터
   const [top, setTop] = useState<LeaderEntry[]>([]);
   const [me, setMe] = useState<LeaderEntry | null>(null);
   const [above, setAbove] = useState<LeaderEntry[]>([]);
@@ -137,11 +169,10 @@ export function RankingModal({ onClose }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    const apiPeriod = toApiPeriod(tab);
+    const apiPeriod = toApiPeriod(period);
     const cached = RANK_CACHE.get(apiPeriod);
     const fresh = cached && Date.now() - cached.at < RANK_TTL_MS;
 
-    // 캐시 있으면 즉시 표시 (로딩 X). fresh 아니면 백그라운드 refresh.
     if (cached) {
       setTop(cached.data.top);
       setMe(cached.data.me);
@@ -165,57 +196,47 @@ export function RankingModal({ onClose }: Props) {
         setBelow(lb.around?.below ?? []);
       })
       .catch((e) => {
-        if (cancelled || cached) return; // 캐시 표시 중이면 에러 무시
+        if (cancelled || cached) return;
         setError('랭킹을 불러오지 못했어요');
         console.warn('[ranking] fetch failed:', e);
       })
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
-  }, [tab]);
+  }, [period]);
 
-  // 표시 행 계산: me.rank ≤ 10 이면 top + below(앞뒤 2개씩 보장하기 위한 덧붙임)
-  // me.rank > 10 이면 top + 구분선 + above + me + below
   const meRank = me?.rank ?? null;
   const meInTop = meRank !== null && meRank <= 10;
 
   let topRows: LeaderEntry[] = top;
-  if (meInTop && meRank !== null) {
-    // 내 뒤로 2개 보장: 부족분만큼 below에서 채움
-    const haveBelowInTop = 10 - meRank; // top 내에서 내 뒤 개수
-    const needExtra = Math.max(0, 2 - haveBelowInTop);
-    if (needExtra > 0 && below.length > 0) {
-      topRows = [...top, ...below.slice(0, needExtra)];
+  if (meInTop && top.length > 0) {
+    // me가 top에 들어있을 때 me 뒤로 1~2개 행을 더 보장.
+    // below[0] 은 me.rank+1 부터 시작하므로 top 에 이미 들어있는 rank 와 겹칠 수 있음 → 필터링.
+    const lastTopRank = top[top.length - 1].rank;
+    const extras = below.filter((b) => b.rank > lastTopRank).slice(0, 2);
+    if (extras.length > 0) {
+      topRows = [...top, ...extras];
     }
   }
 
   const resolveCharacter = (entry: Pick<LeaderEntry, 'user_id' | 'character'>): CharKey =>
     normalizeChar(entry.user_id === myUserId ? localCharacter : entry.character);
 
-  return createPortal(
-    <ModalShell
-      onClose={onClose}
-      maxWidth={360}
-      zIndex={1000}
-      tabs={TABS}
-      activeTab={tab}
-      onTabChange={(k) => setTab(k as TabKey)}
-    >
-      <Text size={20 * scale} weight={900} color="#fff" align="center" style={{ marginBottom: 14 * scale }}>
-        🏆 랭킹
-      </Text>
-
-      <div style={{ textAlign: 'center', margin: `0 0 ${12 * scale}px` }}>
-        <Text size={12 * scale} color="#9ba0ab" align="center">
-          {tab === 'daily' && `리셋까지 ${dailyCountdown}`}
-          {tab === 'weekly' && `리셋까지 ${weeklyCountdown}`}
-          {tab === 'all' && '역대 랭킹'}
-        </Text>
-      </div>
+  return (
+    <>
+      {!hideCountdown && (
+        <div style={{ textAlign: 'center', margin: `0 0 ${12 * scale}px` }}>
+          <Text size={12 * scale} color="#9ba0ab" align="center">
+            {period === 'daily' && `리셋까지 ${dailyCountdown}`}
+            {period === 'weekly' && `리셋까지 ${weeklyCountdown}`}
+            {period === 'all' && '역대 랭킹'}
+          </Text>
+        </div>
+      )}
 
       <div
         style={{
-          maxHeight: 320 * scale,
-          overflowY: 'auto',
+          maxHeight: listMaxHeight,
+          overflowY: listMaxHeight ? 'auto' : 'visible',
           borderRadius: 12 * scale,
           background: 'rgba(0,0,0,0.3)',
           border: `${1 * scale}px solid rgba(255,255,255,0.08)`,
@@ -246,13 +267,12 @@ export function RankingModal({ onClose }: Props) {
             name={entry.nickname}
             score={entry.score}
             char={resolveCharacter(entry)}
-            reward={getReward(tab, entry.rank)}
+            reward={getReward(period, entry.rank)}
             scale={scale}
             isMe={entry.user_id === myUserId}
           />
         ))}
 
-        {/* 내 순위가 top10 밖이면 구분선(···) + above + me + below */}
         {!loading && !error && me && !meInTop && (
           <>
             <div
@@ -275,7 +295,7 @@ export function RankingModal({ onClose }: Props) {
                 name={entry.nickname}
                 score={entry.score}
                 char={resolveCharacter(entry)}
-                reward={getReward(tab, entry.rank)}
+                reward={getReward(period, entry.rank)}
                 scale={scale}
               />
             ))}
@@ -285,7 +305,7 @@ export function RankingModal({ onClose }: Props) {
               name={me.nickname}
               score={me.score}
               char={resolveCharacter(me)}
-              reward={getReward(tab, me.rank)}
+              reward={getReward(period, me.rank)}
               scale={scale}
               isMe
             />
@@ -296,15 +316,14 @@ export function RankingModal({ onClose }: Props) {
                 name={entry.nickname}
                 score={entry.score}
                 char={resolveCharacter(entry)}
-                reward={getReward(tab, entry.rank)}
+                reward={getReward(period, entry.rank)}
                 scale={scale}
               />
             ))}
           </>
         )}
       </div>
-    </ModalShell>,
-    document.body,
+    </>
   );
 }
 

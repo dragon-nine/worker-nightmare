@@ -224,8 +224,8 @@ export function endGame(deps: LifecycleDeps) {
   try { deps.playSfx('sfx-game-over', 0.6); } catch { /* 무시 */ }
   try { deps.vibrate([40, 80, 50, 80]); } catch { /* 무시 */ }
 
-  // 부활: 도전(normal) 모드에서만. 대전/스테이지는 실패 시 즉시 재시도/홈.
-  const canRevive = !isBattleMode() && !isStageMode() && !deps.getHasRevived();
+  // 부활: 도전(normal) + 스테이지 모드에서만. 대전은 실패 시 즉시 결과.
+  const canRevive = !isBattleMode() && !deps.getHasRevived();
 
   try {
     logEvent('game_over', {

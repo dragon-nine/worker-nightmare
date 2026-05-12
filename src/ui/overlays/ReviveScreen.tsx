@@ -4,6 +4,8 @@ import { TapButton } from '../components/TapButton';
 import { isAdRemoved } from '../../game/services/billing';
 import { fetchLeaderboardNearScore } from '../../game/services/api';
 import { computePbMessage, computeRivalMessage, computeTopMessage, computeSurpassMessage, type RivalMessage } from './rival-message';
+import { isStageMode, getCurrentStageId } from '../../game/services/game-mode';
+import { getStage } from '../../game/services/stages';
 import styles from './overlay.module.css';
 
 // 부활 선택 제한시간 — 안 누르면 자동 스킵 → 게임오버 화면으로 전환
@@ -34,8 +36,12 @@ interface Props {
 export function ReviveScreen({ data, onSkip }: Props) {
   const { score, bestScore } = data;
   const adRemoved = isAdRemoved();
+  const stageMode = isStageMode();
   // PB 메시지가 즉시 폴백 — 리더보드 응답 오면 라이벌/탑 메시지로 갱신.
-  const [rival, setRival] = useState<RivalMessage | null>(() => computePbMessage(score, bestScore, 'revive'));
+  // 스테이지 모드는 라이벌 메시지 대신 별도 stage 목표 멘트를 표시하므로 null 시작.
+  const [rival, setRival] = useState<RivalMessage | null>(() =>
+    stageMode ? null : computePbMessage(score, bestScore, 'revive'),
+  );
 
   // 광고 부활 클릭 후 → 카운트다운/입력 정지. 광고 콜백이 screen-change 처리할 때까지 대기.
   const adInFlightRef = useRef(false);
@@ -83,8 +89,9 @@ export function ReviveScreen({ data, onSkip }: Props) {
   }, []);
 
   // 격려 메시지 — 이판 점수 anchor 로 바로 위 랭커 조회 → 부활 후 따라잡을 실제 목표.
-  // (초기값은 PB 폴백, 응답 오면 갱신)
+  // (초기값은 PB 폴백, 응답 오면 갱신). 스테이지 모드는 라이벌 비교 무관 → skip.
   useEffect(() => {
+    if (stageMode) return;
     fetchLeaderboardNearScore('daily', score)
       .then((res) => {
         const above = res.above?.[0];
@@ -100,7 +107,7 @@ export function ReviveScreen({ data, onSkip }: Props) {
         }
       })
       .catch(() => { /* PB 폴백 유지 */ });
-  }, [score]);
+  }, [score, stageMode]);
 
   const handleAdRevive = () => {
     if (adInFlightRef.current) return; // 중복 클릭 차단
@@ -206,8 +213,10 @@ export function ReviveScreen({ data, onSkip }: Props) {
             </span>
           </div>
 
-          {/* 라이벌 메시지 */}
-          {rival && <RivalLine msg={rival} scale={scale} />}
+          {/* 격려 메시지 — 스테이지 모드는 목표 점수 비교, 무한 모드는 라이벌/PB */}
+          {stageMode
+            ? <StageGoalLine scale={scale} score={score} />
+            : (rival && <RivalLine msg={rival} scale={scale} />)}
 
           {/* 광고 보고 부활 */}
           <TapButton onTap={handleAdRevive} style={{ width: '100%' }}>
@@ -315,6 +324,41 @@ function SkipButtonWithProgress({ scale, progress, secondsLeft }: {
  * 라이벌/격려 메시지 한 줄 — RivalCard 와 비슷하지만 콘텐츠 기반 높이.
  * (모달 안에서 자동 높이가 필요해 별도 인라인 컴포넌트로 분리)
  */
+/** 스테이지 모드용 격려 멘트 — "N점 더 획득하고 레벨 X 클리어?" */
+function StageGoalLine({ scale, score }: { scale: number; score: number }) {
+  const stageId = getCurrentStageId();
+  const stage = getStage(stageId);
+  if (!stage) return null;
+  const gap = Math.max(0, stage.targetScore - score);
+  const text = gap > 0
+    ? `${gap}점 더 획득하고 레벨 ${stageId} 클리어?`
+    : `이대로 레벨 ${stageId} 클리어!`;
+  return (
+    <div
+      style={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 2 * scale,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: 'GMarketSans, sans-serif',
+          fontSize: 14 * scale,
+          fontWeight: 800,
+          color: '#ffd24a',
+          letterSpacing: 0.3,
+          textAlign: 'center',
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
+}
+
 function RivalLine({ msg, scale }: { msg: RivalMessage; scale: number }) {
   const accent = msg.kind === 'rival' ? '#ffd24a'
     : msg.kind === 'top' ? '#ffd24a'

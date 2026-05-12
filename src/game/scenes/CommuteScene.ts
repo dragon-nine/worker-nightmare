@@ -118,17 +118,40 @@ export class CommuteScene extends Phaser.Scene {
     this.viewLeft = 0;
 
     this.road = new Road(this, this.laneWorldX, this.laneW, this.tileH, NUM_LANES);
+    // 스테이지 모드 — turn row 갯수 T 미리 결정 → row 갯수 = (target - T) + 1
+    // caster forward 만으론 score = target - T (부족), turn row 마다 switch 입력해야 score = target 도달
+    if (isStageMode()) {
+      const sd = getStage(getCurrentStageId());
+      if (sd) {
+        const turnCount = Math.max(1, Math.floor(sd.targetScore / 3));
+        this.road.setMaxRows(sd.targetScore - turnCount + 1);
+        this.road.setStageTurnQuota(turnCount);
+      }
+    }
+
     const playerScreenY = height * PLAYER_Y_RATIO - this.tileH / 2;
     const tutorialDoneAtInit = storage.getBool('tutorialDone');
     if (!tutorialDoneAtInit && !isBattleMode()) {
       // 튜토리얼용 도로: row 1 즉시 턴 → 방향전환 연습 가능
       this.road.generateTutorialInitial(height, height * PLAYER_Y_RATIO);
     } else {
-      this.road.generateInitialStand(height, startLane, height * PLAYER_Y_RATIO);
+      this.road.generateInitialStand(height, startLane, height * PLAYER_Y_RATIO, isStageMode());
     }
-
     this.currentRowIdx = 0;
     this.road.getContainer().setX(-(this.viewLeft * this.laneW));
+
+    // 스테이지 모드 — finish 마커를 target row 자리에 그리기
+    if (isStageMode()) {
+      const sd = getStage(getCurrentStageId());
+      if (sd) {
+        try {
+          this.road.setStageGoal(this.currentRowIdx + sd.targetScore);
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error('[stage-init] setStageGoal threw', e);
+        }
+      }
+    }
 
     const playerScreenX = laneScreenX(this.movementDeps(), startLane);
     const characterId = storage.getSelectedCharacter();
@@ -176,6 +199,7 @@ export class CommuteScene extends Phaser.Scene {
     gameBus.emit('screen-change', 'playing');
     this.emitBattleHud();
     if (isBattleMode()) this.startGame();
+
 
     // 튜토리얼 시작 — startGame 전에 독립적으로 구동
     if (!tutorialDoneAtInit && !isBattleMode()) {
@@ -399,14 +423,16 @@ export class CommuteScene extends Phaser.Scene {
   /* ── Popup ── */
 
   private showPopup(message: string, color: string) {
-    const { width } = this.scale;
-    const popup = this.add.text(width / 2, 70, message, {
+    // 플레이어(토끼) 머리 위에서 떠오르며 사라지도록 — 충돌 위치 즉각 인식
+    const x = this.player.x;
+    const startY = this.player.y - 60;
+    const popup = this.add.text(x, startY, message, {
       fontFamily: 'GMarketSans, sans-serif', fontSize: '22px', color, fontStyle: 'bold',
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(300);
 
     this.tweens.add({
-      targets: popup, y: 40, alpha: 0, scale: 1.3,
+      targets: popup, y: startY - 36, alpha: 0, scale: 1.3,
       duration: 700, onComplete: () => popup.destroy(),
     });
   }
@@ -472,6 +498,7 @@ export class CommuteScene extends Phaser.Scene {
       onTutorialAction: (action) => this.onTutorialAction(action),
       triggerOvertime: () => this.overtimeManager.trigger(),
       triggerStageClear: () => endStage(this.lifecycleDeps()),
+      getGameOver: () => this.gameOver,
       triggerRewind: (count) => this.startRewind(count),
     };
   }

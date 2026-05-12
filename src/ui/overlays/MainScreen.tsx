@@ -7,6 +7,7 @@ import { BottomTabBar, type HomeTab as TabKey } from './home/BottomTabBar';
 import { HomeTab } from './home/HomeTab';
 import { ShopTab } from './home/ShopTab';
 import { CharactersTab } from './home/CharactersTab';
+import { RankingTab } from './home/RankingTab';
 import styles from './overlay.module.css';
 
 export function MainScreen() {
@@ -40,6 +41,7 @@ export function MainScreen() {
       {/* ── 탭 컨텐츠 (배경 + 탭별 헤더 포함) ── */}
       {tab === 'home' && <HomeTab scale={scale} />}
       {tab === 'shop' && <ShopTab scale={scale} />}
+      {tab === 'ranking' && <RankingTab scale={scale} />}
       {tab === 'characters' && <CharactersTab scale={scale} />}
 
       {/* ── 하단 탭바 ── */}

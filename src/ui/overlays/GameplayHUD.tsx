@@ -7,6 +7,7 @@ import { useLayout } from '../hooks/useLayout';
 import { TapButton } from '../components/TapButton';
 import { Text } from '../components/Text';
 import { TutorialOverlay } from './TutorialOverlay';
+import { StageProgressBar } from './StageProgressBar';
 import styles from './overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
@@ -406,6 +407,7 @@ export function GameplayHUD() {
         );
       })()}
       {battleHud && <BattleRaceLane data={battleHud} scale={scale} />}
+      {!battleMode && <StageProgressBar scale={scale} />}
       {battleMode && battleCountdown !== null && (
         <div
           style={{

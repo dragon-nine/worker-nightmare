@@ -146,6 +146,10 @@ type EventMap = {
   'ad-show-end': void;
   // Debug
   'toggle-godmode': void;
+  /** 디버그 모달 열기 (비밀번호 입력 단계부터) */
+  'open-debug': void;
+  /** 홈에서 시작 버튼 누름 — 스테이지 인트로 팝업 표시 요청 (payload: stageId) */
+  'stage-intro-show': number;
   // 서버 프로필 동기 완료 — nickname/character/owned 등 업데이트됨
   'profile-synced': void;
   // 서버 에셋 동기 완료 — coins/gems/owned/selected 캐시 업데이트됨

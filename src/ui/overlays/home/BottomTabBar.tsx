@@ -1,7 +1,12 @@
+import { Fragment } from 'react';
 import { TapButton } from '../../components/TapButton';
 import { Text } from '../../components/Text';
 
-export type HomeTab = 'shop' | 'home' | 'characters';
+const BASE = import.meta.env.BASE_URL || '/';
+
+export type HomeTab = 'shop' | 'ranking' | 'home' | 'characters';
+type LockedTab = 'battle';
+type AnyTab = HomeTab | LockedTab;
 
 interface Props {
   active: HomeTab;
@@ -10,8 +15,9 @@ interface Props {
 }
 
 interface TabDef {
-  key: HomeTab;
+  key: AnyTab;
   label: string;
+  locked?: boolean;
   icon: (size: number, color: string) => React.ReactNode;
 }
 
@@ -19,38 +25,66 @@ const TABS: TabDef[] = [
   {
     key: 'shop',
     label: '상점',
-    icon: (s, c) => (
-      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9h18l-1.5 11a2 2 0 01-2 1.7H6.5a2 2 0 01-2-1.7L3 9z" />
-        <path d="M8 9V6a4 4 0 018 0v3" />
-      </svg>
+    icon: (s) => (
+      <img
+        src={`${BASE}ui/tabbar/shop.png`}
+        alt=""
+        draggable={false}
+        style={{ width: s * 1.4, height: s * 1.4, objectFit: 'contain', display: 'block' }}
+      />
+    ),
+  },
+  {
+    key: 'ranking',
+    label: '랭킹',
+    icon: (s) => (
+      <img
+        src={`${BASE}ui/tabbar/ranking.png`}
+        alt=""
+        draggable={false}
+        style={{ width: s * 1.4, height: s * 1.4, objectFit: 'contain', display: 'block' }}
+      />
     ),
   },
   {
     key: 'home',
     label: '홈',
-    icon: (s, c) => (
-      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 11l9-8 9 8" />
-        <path d="M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
-      </svg>
+    icon: (s) => (
+      <img
+        src={`${BASE}ui/tabbar/home.png`}
+        alt=""
+        draggable={false}
+        style={{ width: s * 1.4, height: s * 1.4, objectFit: 'contain', display: 'block' }}
+      />
+    ),
+  },
+  {
+    key: 'battle',
+    label: '',
+    locked: true,
+    icon: (s) => (
+      <img
+        src={`${BASE}ui/tabbar/lock.png`}
+        alt=""
+        draggable={false}
+        style={{ width: s * 1.4, height: s * 1.4, objectFit: 'contain', display: 'block' }}
+      />
     ),
   },
   {
     key: 'characters',
     label: '캐릭터',
-    icon: (s, c) => (
-      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        {/* 토끼 실루엣 */}
-        <ellipse cx="12" cy="15" rx="5" ry="5" />
-        <ellipse cx="9" cy="6" rx="1.6" ry="3.5" />
-        <ellipse cx="15" cy="6" rx="1.6" ry="3.5" />
-        <circle cx="10.5" cy="14" r="0.6" fill={c} />
-        <circle cx="13.5" cy="14" r="0.6" fill={c} />
-      </svg>
+    icon: (s) => (
+      <img
+        src={`${BASE}ui/tabbar/character.png`}
+        alt=""
+        draggable={false}
+        style={{ width: s * 1.4, height: s * 1.4, objectFit: 'contain', display: 'block' }}
+      />
     ),
   },
 ];
+
 
 export function BottomTabBar({ active, onChange, scale }: Props) {
   const barH = 76 * scale;
@@ -82,30 +116,44 @@ export function BottomTabBar({ active, onChange, scale }: Props) {
           padding: `0 ${8 * scale}px`,
         }}
       >
-        {TABS.map((tab) => {
-          const isActive = active === tab.key;
-          const accent = isActive ? '#ffd24a' : 'rgba(255,255,255,0.9)';
+        {TABS.map((tab, idx) => {
+          const isActive = !tab.locked && active === tab.key;
+          const accent = tab.locked
+            ? 'rgba(255,255,255,0.4)'
+            : isActive
+            ? '#ffd24a'
+            : 'rgba(255,255,255,0.9)';
           return (
+            <Fragment key={tab.key}>
             <TapButton
-              key={tab.key}
-              onTap={() => onChange(tab.key)}
-              pressScale={0.9}
+              onTap={() => {
+                if (tab.locked) return;
+                onChange(tab.key as HomeTab);
+              }}
+              pressScale={tab.locked ? 1 : 0.9}
               style={{
                 flex: 1,
+                margin: `${6 * scale}px ${2 * scale}px`,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 3 * scale,
                 position: 'relative',
+                opacity: tab.locked ? 0.55 : 1,
+                cursor: tab.locked ? 'default' : 'pointer',
+                background: isActive ? 'rgba(255,210,74,0.12)' : 'transparent',
+                borderRadius: 16 * scale,
+                border: isActive ? `${1 * scale}px solid rgba(255,210,74,0.30)` : `${1 * scale}px solid transparent`,
+                transition: 'background 0.15s ease-out',
               }}
             >
-              {/* 활성 표시 — 상단 짧은 인디케이터 */}
+              {/* 활성 표시 — 하단바 상단 라인에 짧은 인디케이터 */}
               {isActive && (
                 <div
                   style={{
                     position: 'absolute',
-                    top: 0,
+                    top: -7 * scale,
                     left: '50%',
                     transform: 'translateX(-50%)',
                     width: 28 * scale,
@@ -118,9 +166,9 @@ export function BottomTabBar({ active, onChange, scale }: Props) {
               )}
               <div
                 style={{
+                  position: 'relative',
                   transform: isActive ? `scale(1.08)` : 'scale(1)',
                   transition: 'transform 0.15s ease-out',
-                  filter: isActive ? 'drop-shadow(0 0 4px #ffd24a80)' : 'none',
                 }}
               >
                 {tab.icon(iconSize, accent)}
@@ -130,13 +178,22 @@ export function BottomTabBar({ active, onChange, scale }: Props) {
                 weight={isActive ? 900 : 700}
                 color={accent}
                 as="span"
-                style={{
-                  textShadow: isActive ? '0 0 6px #ffd24a60' : 'none',
-                }}
               >
                 {tab.label}
               </Text>
             </TapButton>
+            {idx < TABS.length - 1 && (
+              <div
+                style={{
+                  width: 1,
+                  height: 32 * scale,
+                  alignSelf: 'center',
+                  background: 'rgba(255,255,255,0.10)',
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            </Fragment>
           );
         })}
       </div>

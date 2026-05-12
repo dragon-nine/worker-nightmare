@@ -44,6 +44,8 @@ export interface MovementDeps {
   triggerOvertime(origin?: { x: number; y: number }): void;
   /** 스테이지 모드 목표 점수 도달 시 호출 — 클리어 처리(저장/보상/UI 전환) */
   triggerStageClear(): void;
+  /** 클리어 중복 트리거 방지용 — 이미 게임 종료 상태(피니쉬 또는 게임오버) 여부 */
+  getGameOver(): boolean;
   /** 뒤로가기 장애물 통과 시 호출 — count 칸 강제 후진, 후진 동안 입력 차단 */
   triggerRewind(count: number): void;
 }
@@ -143,6 +145,19 @@ export function switchLane(deps: MovementDeps) {
   deps.hud.addTime();
   combo.increment(deps.scene.time.now);
 
+  // 스테이지 모드 — score 도달 시 클리어
+  if (isStageMode()) {
+    const stage = getStage(getCurrentStageId());
+    if (stage && deps.getScore() >= stage.targetScore) {
+      if (!deps.getGameOver()) {
+        deps.road.burstFinishMarker();
+        deps.hud.stopTimer();
+        deps.scene.time.delayedCall(1000, () => deps.triggerStageClear());
+      }
+      return;
+    }
+  }
+
   const slowMove = isTutorialSlowMove(deps);
   const moveDur = slowMove ? 380 : 120;
   const faceDelay = slowMove ? 600 : 350;
@@ -195,17 +210,25 @@ export function moveForward(deps: MovementDeps) {
   deps.hud.addTime();
   combo.increment(deps.scene.time.now);
 
-  // 스테이지 모드 — 목표 점수 도달 즉시 클리어. 이 시점 이후 로직(코인/먼지/애니)은 진행 안 함.
+  // 스테이지 모드 — score 도달 시 클리어
   if (isStageMode()) {
     const stage = getStage(getCurrentStageId());
     if (stage && deps.getScore() >= stage.targetScore) {
-      deps.triggerStageClear();
+      if (!deps.getGameOver()) {
+        deps.road.burstFinishMarker();
+        deps.hud.stopTimer();
+        deps.scene.time.delayedCall(1000, () => deps.triggerStageClear());
+      }
       return;
     }
   }
 
+  // addNextRow 가 limit 도달로 추가 안 할 수 있으니, rows.length 변동 없으면 종료
+  let _prevLen = deps.road.rows.length;
   while (deps.road.rows.length - deps.getCurrentRowIdx() < 15) {
     deps.road.addNextRow();
+    if (deps.road.rows.length === _prevLen) break;
+    _prevLen = deps.road.rows.length;
   }
 
   // 먼지 더미 — 통과 시 야근 모드 트리거 (튜토리얼/대전 제외)

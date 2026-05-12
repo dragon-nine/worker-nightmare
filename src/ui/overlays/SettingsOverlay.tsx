@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { gameBus } from '../../game/event-bus';
 import { storage } from '../../game/services/storage';
 import { useAudioToggles } from '../hooks/useAudioToggles';
@@ -11,9 +12,30 @@ const META_INTRO_PENDING_KEY = 'home.metaIntroPending';
 const META_INTRO_SHOWN_KEY = 'home.metaIntroShown';
 const META_TIP_DISMISSED_KEY = 'home.metaTipDismissed';
 
+const SECRET_TAP_THRESHOLD = 10;
+const SECRET_TAP_WINDOW_MS = 10_000;
+
 export function SettingsOverlay() {
   const scale = useResponsiveScale();
   const { bgmMuted, sfxMuted, handleBgmToggle, handleSfxToggle } = useAudioToggles();
+  const tapCountRef = useRef(0);
+  const tapWindowStartRef = useRef(0);
+
+  const handleTitleTap = () => {
+    const now = Date.now();
+    if (tapCountRef.current === 0 || now - tapWindowStartRef.current > SECRET_TAP_WINDOW_MS) {
+      tapCountRef.current = 1;
+      tapWindowStartRef.current = now;
+      return;
+    }
+    tapCountRef.current += 1;
+    if (tapCountRef.current >= SECRET_TAP_THRESHOLD) {
+      tapCountRef.current = 0;
+      // 설정 모달 닫고 → 메인에서 디버그 모달 (비밀번호 게이트) 띄움
+      gameBus.emit('screen-change', 'main');
+      gameBus.emit('open-debug', undefined);
+    }
+  };
 
   const handleClose = () => {
     gameBus.emit('play-sfx', 'sfx-click');
@@ -31,10 +53,22 @@ export function SettingsOverlay() {
 
   return (
     <ModalShell onClose={handleClose} maxWidth={340}>
-      {/* 타이틀 */}
-      <Text size={30 * scale} weight={900} align="center" style={{ marginBottom: 20 * scale }}>
-        설정
-      </Text>
+      {/* 타이틀 — 비밀 탭(10초 안에 10번)으로 디버그 모달 진입 */}
+      <TapButton
+        onTap={handleTitleTap}
+        pressScale={1}
+        style={{
+          width: '100%',
+          marginBottom: 20 * scale,
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+        }}
+      >
+        <Text size={30 * scale} weight={900} align="center">
+          설정
+        </Text>
+      </TapButton>
 
       {/* 설정 카드 */}
       <div style={{

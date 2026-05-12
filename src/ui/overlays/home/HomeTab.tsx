@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gameBus } from '../../../game/event-bus';
 import { storage } from '../../../game/services/storage';
 import { ALL_MISSION_IDS, getClaimableMissionCount } from '../../../game/services/missions';
@@ -6,6 +6,7 @@ import { isAdRemoved } from '../../../game/services/billing';
 import { fetchMyRanks, getStoredUserId } from '../../../game/services/api';
 import { clearBattle } from '../../../game/services/battle-state';
 import { setGameMode } from '../../../game/services/game-mode';
+import { STAGES, getLastClearedStage } from '../../../game/services/stages';
 import { getReward, nextDailyKey, nextWeeklyKey, type RewardPeriod } from '../../../game/services/rewards';
 import { syncCurrenciesFromStorage } from '../../../game/services/assets';
 import { CoinIcon, GemIcon } from '../../components/CurrencyIcons';
@@ -16,14 +17,12 @@ import { ModalShell } from '../../components/ModalShell';
 import { AttendanceModal } from './AttendanceModal';
 import { DebugModal } from './DebugModal';
 import { MissionModal } from './MissionModal';
-import { RankingModal } from './RankingModal';
 import { ProfileModal, getNickname } from './ProfileModal';
 import styles from '../overlay.module.css';
 
 const BASE = import.meta.env.BASE_URL || '/';
 const META_INTRO_PENDING_KEY = 'home.metaIntroPending';
 const META_INTRO_SHOWN_KEY = 'home.metaIntroShown';
-const META_TIP_DISMISSED_KEY = 'home.metaTipDismissed';
 
 /**
  * 앱 첫 로드에서만 등장 애니메이션을 재생하기 위한 모듈 플래그.
@@ -38,22 +37,14 @@ interface Props {
 
 export function HomeTab({ scale }: Props) {
   const tutorialDone = storage.getBool('tutorialDone');
-  const bestScore = storage.getBestScore();
+  const currentLevel = Math.min(getLastClearedStage() + 1, STAGES.length);
   const coins = storage.getNum('coins');
   const gems = storage.getNum('gems');
   const adRemoved = isAdRemoved();
-  const [openModal, setOpenModal] = useState<'attendance' | 'mission' | 'ranking' | 'profile' | 'debug' | null>(null);
+  const [openModal, setOpenModal] = useState<'attendance' | 'mission' | 'profile' | 'debug' | null>(null);
   const [nickname, setNickname] = useState(getNickname);
   const [, setAssetVersion] = useState(0);
   const [showMetaIntro, setShowMetaIntro] = useState(false);
-  const [hasSeenMetaIntro, setHasSeenMetaIntro] = useState(
-    () => localStorage.getItem(META_INTRO_SHOWN_KEY) === '1',
-  );
-  const [dismissedTips, setDismissedTips] = useState<Record<'attendance' | 'mission' | 'ranking', boolean>>({
-    attendance: false,
-    mission: false,
-    ranking: false,
-  });
   const selectedChar = storage.getSelectedCharacter();
 
   // 뱃지 — 모달 닫힐 때마다 재계산 (claim 후 즉시 반영)
@@ -93,17 +84,16 @@ export function HomeTab({ scale }: Props) {
     return gameBus.on('assets-synced', () => setAssetVersion((value) => value + 1));
   }, []);
 
+  // 설정 모달의 비밀 탭(10초 안 10탭) → 디버그 모달 진입
+  useEffect(() => {
+    return gameBus.on('open-debug', () => setOpenModal('debug'));
+  }, []);
+
   useEffect(() => {
     const introPending = localStorage.getItem(META_INTRO_PENDING_KEY) === '1';
     if (!introPending) return;
-    setDismissedTips(readDismissedTips());
     setShowMetaIntro(true);
   }, [tutorialDone]);
-
-  useEffect(() => {
-    setHasSeenMetaIntro(localStorage.getItem(META_INTRO_SHOWN_KEY) === '1');
-    setDismissedTips(readDismissedTips());
-  }, []);
 
   // 랭킹 보상 체크 — 접속 시 1회, 완료된 기간의 내 순위 조회 후 보상 적립
   useEffect(() => {
@@ -158,23 +148,14 @@ export function HomeTab({ scale }: Props) {
     gameBus.emit('play-sfx', 'sfx-click');
     clearBattle();
     if (!tutorialDone) {
-      // 튜토리얼은 도전 모드(normal)에서 진행 — 끝나야 스테이지 시스템 등장
       setGameMode('normal');
       gameBus.emit('screen-change', 'story');
-    } else {
-      // 기본 진입 = 스테이지 선택
-      gameBus.emit('screen-change', 'stage-select');
+      return;
     }
-  };
-
-  // 도전 모드(기존 무한 점수 게임) — 사이드 진입
-  const handleChallenge = () => {
-    gameBus.emit('play-sfx', 'sfx-click');
-    clearBattle();
-    setGameMode('normal');
-    // 첫 진입 = start-game, 재진입 = restart-game. 둘 중 활성 listener 하나만 동작.
-    gameBus.emit('start-game', undefined);
-    gameBus.emit('restart-game', undefined);
+    // 현재 스테이지 — 인트로 모달 띄움. 사용자가 시작 누르면 게임 시작.
+    const lastCleared = getLastClearedStage();
+    const nextStageId = Math.min(lastCleared + 1, STAGES.length);
+    gameBus.emit('stage-intro-show', nextStageId);
   };
 
   const handleSettings = () => {
@@ -186,21 +167,11 @@ export function HomeTab({ scale }: Props) {
     localStorage.removeItem(META_INTRO_PENDING_KEY);
     localStorage.setItem(META_INTRO_SHOWN_KEY, '1');
     localStorage.removeItem('app.isNewUser');
-    setHasSeenMetaIntro(true);
     setShowMetaIntro(false);
   };
 
-  const dismissMetaTip = (target: 'attendance' | 'mission' | 'ranking') => {
-    setDismissedTips((prev) => {
-      const next = { ...prev, [target]: true };
-      localStorage.setItem(META_TIP_DISMISSED_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const handleMetaShortcut = (target: 'attendance' | 'mission' | 'ranking') => {
+  const handleMetaShortcut = (target: 'attendance' | 'mission') => {
     gameBus.emit('play-sfx', 'sfx-click');
-    dismissMetaTip(target);
     setOpenModal(target);
   };
 
@@ -210,6 +181,7 @@ export function HomeTab({ scale }: Props) {
       style={{
         position: 'absolute',
         inset: 0,
+        background: '#0a0a14',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -218,7 +190,7 @@ export function HomeTab({ scale }: Props) {
     >
       {/* 페이지 배경 */}
       <img
-        src={`${BASE}main-screen/main-bg.png`}
+        src={`${BASE}main-screen/main-bg.jpg`}
         alt=""
         style={{
           position: 'absolute',
@@ -271,117 +243,9 @@ export function HomeTab({ scale }: Props) {
         </div>
       </div>
 
-      {/* 우측 플로팅 메뉴 — 출석 / 미션 / 랭킹 */}
-      <div
-        className={introClass}
-        style={{
-          position: 'absolute',
-          right: 10 * scale,
-          top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: 8 * scale,
-          zIndex: 5,
-          pointerEvents: 'auto',
-          animationDelay: '0.15s',
-        }}
-      >
-        <GuideMenuItem
-          scale={scale}
-          showTip={hasSeenMetaIntro && !dismissedTips.attendance}
-          title="출석"
-          desc="매일 접속 보상 챙기기"
-          bubbleAccent="#ffffff"
-          button={(
-            <FloatingMenuButton
-              icon={
-                <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                  <circle cx="12" cy="15" r="1.5" fill="#ffd24a" stroke="none" />
-                </svg>
-              }
-              label="출석"
-              accent="#ffffff"
-              badge={attendanceBadge}
-              scale={scale}
-              onTap={() => handleMetaShortcut('attendance')}
-            />
-          )}
-        />
-        <GuideMenuItem
-          scale={scale}
-          showTip={hasSeenMetaIntro && !dismissedTips.mission}
-          title="임무"
-          desc="플레이하면 보상이 쌓여요"
-          bubbleAccent="#ffffff"
-          button={(
-            <FloatingMenuButton
-              icon={
-                <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 11l3 3 8-8" />
-                  <path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h11" />
-                </svg>
-              }
-              label="미션"
-              accent="#ffffff"
-              badge={missionBadge}
-              scale={scale}
-              onTap={() => handleMetaShortcut('mission')}
-            />
-          )}
-        />
-        <GuideMenuItem
-          scale={scale}
-          showTip={hasSeenMetaIntro && !dismissedTips.ranking}
-          title="랭킹"
-          desc="점수 올리고 순위 보상 받기"
-          bubbleAccent="#ffd24a"
-          button={(
-            <FloatingMenuButton
-              icon={
-                <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#ffd24a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M8 21h8" />
-                  <path d="M12 17v4" />
-                  <path d="M7 4h10v5a5 5 0 01-10 0V4z" />
-                  <path d="M7 6H4v2a3 3 0 003 3" />
-                  <path d="M17 6h3v2a3 3 0 01-3 3" />
-                </svg>
-              }
-              label="랭킹"
-              accent="#ffd24a"
-              scale={scale}
-              onTap={() => handleMetaShortcut('ranking')}
-            />
-          )}
-        />
-        {import.meta.env.DEV && (
-          <FloatingMenuButton
-            icon={
-              <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14.7 6.3a4 4 0 015.66 5.66l-1.06-1.06a2.5 2.5 0 00-3.54-3.54l-1.06-1.06z" />
-                <path d="M13.5 7.5l-9 9a2.12 2.12 0 003 3l9-9" />
-                <circle cx="6.5" cy="17.5" r="1" fill="#fff" stroke="none" />
-              </svg>
-            }
-            label="디버그"
-            accent="#ffffff"
-            scale={scale}
-            onTap={() => {
-              gameBus.emit('play-sfx', 'sfx-click');
-              setOpenModal('debug');
-            }}
-          />
-        )}
-      </div>
-
       {/* 모달 */}
       {openModal === 'attendance' && <AttendanceModal onClose={closeModal} />}
       {openModal === 'mission' && <MissionModal onClose={closeModal} />}
-      {openModal === 'ranking' && <RankingModal onClose={closeModal} />}
       {openModal === 'profile' && <ProfileModal onClose={closeModal} />}
       {openModal === 'debug' && <DebugModal onClose={closeModal} />}
       {showMetaIntro && (
@@ -395,14 +259,79 @@ export function HomeTab({ scale }: Props) {
         />
       )}
 
-      {/* 좌측 플로팅: 부활 광고 제거 (출석과 대칭) — 구매 후 숨김 */}
+      {/* 타이틀 */}
+      <div
+        className={introClass}
+        style={{
+          marginTop: `calc(var(--sat, 0px) + ${72 * scale}px)`,
+          animationDelay: '0.15s',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <img
+          src={`${BASE}main-screen/main-text.png`}
+          alt="직장인 잔혹사"
+          draggable={false}
+          style={{ width: 331 * scale, display: 'block', objectFit: 'contain' }}
+        />
+      </div>
+
+      {/* 우측 플로팅 메뉴 — 출석 / 미션 (타이틀 아래, 세로) */}
+      <div
+        className={introClass}
+        style={{
+          position: 'absolute',
+          right: 10 * scale,
+          top: `calc(var(--sat, 0px) + ${190 * scale}px)`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: 8 * scale,
+          zIndex: 5,
+          pointerEvents: 'auto',
+          animationDelay: '0.15s',
+        }}
+      >
+        <FloatingMenuButton
+          icon={
+            <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+              <circle cx="12" cy="15" r="1.5" fill="#ffd24a" stroke="none" />
+            </svg>
+          }
+          label="출석"
+          accent="#ffffff"
+          badge={attendanceBadge}
+          scale={scale}
+          onTap={() => handleMetaShortcut('attendance')}
+        />
+        <FloatingMenuButton
+          icon={
+            <svg width={26 * scale} height={26 * scale} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3 8-8" />
+              <path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h11" />
+            </svg>
+          }
+          label="미션"
+          accent="#ffffff"
+          badge={missionBadge}
+          scale={scale}
+          onTap={() => handleMetaShortcut('mission')}
+        />
+      </div>
+
+      {/* 좌측 플로팅 — 광고제거 (타이틀 아래, 구매 후 숨김) */}
       {!adRemoved && (
         <div
           className={introClass}
           style={{
             position: 'absolute',
             left: 10 * scale,
-            top: `calc(var(--sat, 0px) + ${100 * scale}px)`,
+            top: `calc(var(--sat, 0px) + ${190 * scale}px)`,
             zIndex: 5,
             pointerEvents: 'auto',
             animationDelay: '0.15s',
@@ -425,24 +354,6 @@ export function HomeTab({ scale }: Props) {
           />
         </div>
       )}
-
-      {/* 타이틀 */}
-      <div
-        className={introClass}
-        style={{
-          marginTop: `calc(var(--sat, 0px) + ${72 * scale}px)`,
-          animationDelay: '0.15s',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <img
-          src={`${BASE}main-screen/main-text.png`}
-          alt="직장인 잔혹사"
-          draggable={false}
-          style={{ width: 331 * scale, display: 'block', objectFit: 'contain' }}
-        />
-      </div>
 
       {/* 선택된 캐릭터 — 타이틀 바로 아래, 남은 세로 공간 가득 */}
       <div
@@ -517,7 +428,7 @@ export function HomeTab({ scale }: Props) {
               letterSpacing: 0.5,
             }}
           >
-            ★ BEST {bestScore}
+            레벨 {currentLevel}
           </Text>
         </div>
 
@@ -534,125 +445,8 @@ export function HomeTab({ scale }: Props) {
             scale={scale}
             onClick={handleStart}
           />
-          {tutorialDone && (
-            <div style={{ marginTop: 10 * scale, textAlign: 'center' }}>
-              <TapButton
-                onTap={handleChallenge}
-                style={{
-                  padding: `${8 * scale}px ${20 * scale}px`,
-                  background: 'rgba(255,255,255,0.10)',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  borderRadius: 999,
-                  color: '#ffffff',
-                  fontFamily: 'GMarketSans, sans-serif',
-                  fontSize: 13 * scale,
-                  fontWeight: 700,
-                }}
-              >
-                ⚡ 도전 모드 (무한)
-              </TapButton>
-            </div>
-          )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function readDismissedTips(): Record<'attendance' | 'mission' | 'ranking', boolean> {
-  const raw = localStorage.getItem(META_TIP_DISMISSED_KEY);
-  if (!raw) {
-    return { attendance: false, mission: false, ranking: false };
-  }
-  if (raw === '1') {
-    return { attendance: true, mission: true, ranking: true };
-  }
-  try {
-    const parsed = JSON.parse(raw) as Partial<Record<'attendance' | 'mission' | 'ranking', boolean>>;
-    return {
-      attendance: parsed.attendance === true,
-      mission: parsed.mission === true,
-      ranking: parsed.ranking === true,
-    };
-  } catch {
-    return { attendance: false, mission: false, ranking: false };
-  }
-}
-
-function GuideBubble({
-  scale,
-  title,
-  desc,
-  accent,
-}: {
-  scale: number;
-  title: string;
-  desc: string;
-  accent: string;
-}) {
-  return (
-    <div
-      className={styles.fadeInUp}
-      style={{
-        marginRight: 8 * scale,
-        padding: `${8 * scale}px ${10 * scale}px`,
-        borderRadius: 16 * scale,
-        background: 'rgba(10, 12, 20, 0.9)',
-        border: `${1 * scale}px solid ${accent === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(255, 210, 74, 0.35)'}`,
-        boxShadow: `0 ${8 * scale}px ${18 * scale}px rgba(0, 0, 0, 0.24)`,
-        maxWidth: 176 * scale,
-        position: 'relative',
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          right: -6 * scale,
-          width: 12 * scale,
-          height: 12 * scale,
-          background: 'rgba(10, 12, 20, 0.9)',
-          borderTop: `${1 * scale}px solid ${accent === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(255, 210, 74, 0.35)'}`,
-          borderRight: `${1 * scale}px solid ${accent === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(255, 210, 74, 0.35)'}`,
-          transform: 'translateY(-50%) rotate(45deg)',
-        }}
-      />
-      <Text size={12 * scale} color={accent} weight={900}>
-        {title}
-      </Text>
-      <Text size={11 * scale} color="rgba(255,255,255,0.88)" style={{ marginTop: 2 * scale, lineHeight: 1.35 }}>
-        {desc}
-      </Text>
-    </div>
-  );
-}
-
-function GuideMenuItem({
-  scale,
-  showTip,
-  title,
-  desc,
-  bubbleAccent,
-  button,
-}: {
-  scale: number;
-  showTip: boolean;
-  title: string;
-  desc: string;
-  bubbleAccent: string;
-  button: ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        gap: 8 * scale,
-      }}
-    >
-      {showTip && <GuideBubble scale={scale} title={title} desc={desc} accent={bubbleAccent} />}
-      {button}
     </div>
   );
 }

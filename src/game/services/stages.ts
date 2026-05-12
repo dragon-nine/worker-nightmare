@@ -13,11 +13,14 @@ export interface StageObstacles {
   rewind: boolean;
 }
 
+export type StageBackground = 'office' | 'night-street';
+
 export interface StageDef {
   id: number;
   targetScore: number;
   rewardCoins: number;
   obstacles: StageObstacles;
+  background: StageBackground;
   /** 게이지 최대 시간 (초) — 시작 시간 + 회복 cap */
   maxTime: number;
   /** forward 입력 1회당 회복 시간 (초, 고정) — 도전 모드의 리니어 커브 대신 사용 */
@@ -25,11 +28,12 @@ export interface StageDef {
 }
 
 export const STAGES: StageDef[] = [
-  { id: 1, targetScore: 100, rewardCoins: 30,  obstacles: { cloud: false, dust: false, rewind: false }, maxTime: 5, timeBonus: 0.40 },
-  { id: 2, targetScore: 200, rewardCoins: 50,  obstacles: { cloud: true,  dust: false, rewind: false }, maxTime: 5, timeBonus: 0.30 },
-  { id: 3, targetScore: 300, rewardCoins: 80,  obstacles: { cloud: true,  dust: true,  rewind: false }, maxTime: 5, timeBonus: 0.25 },
-  { id: 4, targetScore: 400, rewardCoins: 120, obstacles: { cloud: false, dust: false, rewind: true  }, maxTime: 5, timeBonus: 0.25 },
-  { id: 5, targetScore: 500, rewardCoins: 200, obstacles: { cloud: true,  dust: true,  rewind: false }, maxTime: 5, timeBonus: 0.20 },
+  { id: 1, targetScore: 100, rewardCoins: 30,  obstacles: { cloud: false, dust: false, rewind: false }, background: 'office',       maxTime: 5, timeBonus: 0.40 },
+  { id: 2, targetScore: 150, rewardCoins: 50,  obstacles: { cloud: true,  dust: false, rewind: false }, background: 'office',       maxTime: 5, timeBonus: 0.30 },
+  { id: 3, targetScore: 150, rewardCoins: 60,  obstacles: { cloud: false, dust: true,  rewind: false }, background: 'office',       maxTime: 5, timeBonus: 0.30 },
+  { id: 4, targetScore: 150, rewardCoins: 70,  obstacles: { cloud: false, dust: false, rewind: true  }, background: 'office',       maxTime: 5, timeBonus: 0.30 },
+  { id: 5, targetScore: 300, rewardCoins: 150, obstacles: { cloud: true,  dust: true,  rewind: true  }, background: 'office',       maxTime: 5, timeBonus: 0.25 },
+  { id: 6, targetScore: 300, rewardCoins: 200, obstacles: { cloud: true,  dust: true,  rewind: true  }, background: 'night-street', maxTime: 5, timeBonus: 0.25 },
 ];
 
 const STORAGE_KEY = 'stage.lastCleared';
@@ -69,15 +73,15 @@ export function resetStageProgress(): void {
 
 /**
  * 현재 게임 모드에 따라 활성 장애물 결정.
- * - 대전 모드: 둘 다 X
- * - 도전 모드(normal): 둘 다 O
+ * - 대전 모드: 모두 X
+ * - 도전 모드(normal, 무한): 모두 X — 끝없이 달리는 모드라 장애물 없음
  * - 스테이지 모드: 현재 스테이지 정의에 따름
  */
 import { isBattleMode, isStageMode, getCurrentStageId } from './game-mode';
 
 export function obstaclesForCurrentMode(): StageObstacles {
   if (isBattleMode()) return { cloud: false, dust: false, rewind: false };
-  if (!isStageMode()) return { cloud: true, dust: true, rewind: false };
+  if (!isStageMode()) return { cloud: false, dust: false, rewind: false };
   const stage = getStage(getCurrentStageId());
   return stage?.obstacles ?? { cloud: false, dust: false, rewind: false };
 }
